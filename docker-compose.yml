@@ -1,0 +1,56 @@
+# Local development only. Credentials below are not used anywhere else.
+# Backend and React run on the host, outside Docker.
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: zalihe
+      POSTGRES_USER: zalihe
+      POSTGRES_PASSWORD: zalihe
+    ports:
+      # 5433 on the host, because a locally installed PostgreSQL already uses 5432.
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zalihe -d zalihe"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # WordPress + WooCommerce for testing the sales channel integration.
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: wordpress
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  wordpress:
+    image: wordpress:6-php8.3-apache
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: mariadb
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    ports:
+      - "8080:80"
+    volumes:
+      - wordpress-data:/var/www/html
+
+volumes:
+  postgres-data:
+  mariadb-data:
+  wordpress-data:

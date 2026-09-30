@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Zalihe.Application/Zalihe.Application.csproj" />
+    <Project Path="src/Zalihe.Domain/Zalihe.Domain.csproj" />
+    <Project Path="src/Zalihe.Infrastructure/Zalihe.Infrastructure.csproj" />
+    <Project Path="src/Zalihe.Web/Zalihe.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Zalihe.Application.Tests/Zalihe.Application.Tests.csproj" />
+    <Project Path="tests/Zalihe.Domain.Tests/Zalihe.Domain.Tests.csproj" />
+    <Project Path="tests/Zalihe.IntegrationTests/Zalihe.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

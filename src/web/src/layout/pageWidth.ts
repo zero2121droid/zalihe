@@ -3,8 +3,8 @@ import { useMatches } from 'react-router'
 /**
  * How wide a page's content may grow (DESIGN.md "Oblik i raspored"). The layout is fluid up to
  * this limit; text sizes never depend on screen width, zooming is left to the OS and browser.
- * - `wide`: screens built around tables (items, movements, reports), up to 1920 px
- * - `normal`: everything else (home, settings), up to 1180 px
+ * - `wide`: screens with tables and overviews (home, items, import, reports), up to 1920 px
+ * - `normal`: text and form pages (e.g. settings), up to 1180 px
  */
 export type PageWidth = 'normal' | 'wide'
 

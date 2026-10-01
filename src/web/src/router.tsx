@@ -28,9 +28,9 @@ export const routes: RouteObject[] = [
     children: [
       {
         element: <AppLayout />,
-        // Content width per page: 'wide' for table screens, 'normal' (default) otherwise.
+        // Content width per page: 'wide' for screens with tables and overviews, 'normal' (default) for text and forms.
         children: [
-          { path: '/', element: <HomePage /> },
+          { path: '/', element: <HomePage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items', element: <ItemsPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/import', element: <ImportPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/:id', element: <ItemDetailPage />, handle: { width: 'wide' } satisfies RouteHandle },

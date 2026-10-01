@@ -53,7 +53,7 @@ public record SaveItemResult(ItemDto? Item, IReadOnlyList<AppError> Errors, bool
 /// Items of the current company. Tenant filtering is done by the global query filter,
 /// so no query here mentions TenantId.
 /// </summary>
-public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider timeProvider)
+public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser currentUser, TimeProvider timeProvider)
 {
     public async Task<PagedResult<ItemDto>> ListAsync(ItemListQuery query, CancellationToken ct)
     {
@@ -139,6 +139,7 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
 
         db.Items.Add(item);
         db.StockLevels.Add(new StockLevel(item, item.CreatedAt));
+        db.ItemChanges.Add(ItemChange.Created(item, currentUser.UserId, item.CreatedAt));
         await db.SaveChangesAsync(ct);
 
         return await ResultFor(item.Id, ct);
@@ -159,7 +160,7 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
             return new SaveItemResult(null, errors);
         }
 
-        item.Update(
+        var changes = item.Update(
             command.Name,
             command.Sku,
             command.Unit,
@@ -169,6 +170,11 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
             command.GroupName,
             command.PurchasePrice,
             command.SalePrice);
+        if (ItemChange.Updated(item, changes, currentUser.UserId, timeProvider.GetUtcNow()) is { } change)
+        {
+            db.ItemChanges.Add(change);
+        }
+
         await db.SaveChangesAsync(ct);
 
         return await ResultFor(item.Id, ct);
@@ -183,8 +189,15 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
             return false;
         }
 
+        if (item.IsActive == isActive)
+        {
+            // Already in that state: nothing changes and nothing is logged.
+            return true;
+        }
+
         if (isActive) item.Activate();
         else item.Deactivate();
+        db.ItemChanges.Add(ItemChange.ActiveChanged(item, currentUser.UserId, timeProvider.GetUtcNow()));
         await db.SaveChangesAsync(ct);
         return true;
     }

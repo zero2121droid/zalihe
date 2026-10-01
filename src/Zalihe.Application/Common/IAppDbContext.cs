@@ -12,6 +12,7 @@ namespace Zalihe.Application.Common;
 public interface IAppDbContext
 {
     DbSet<Item> Items { get; }
+    DbSet<ItemChange> ItemChanges { get; }
     DbSet<StockMovement> StockMovements { get; }
     DbSet<StockLevel> StockLevels { get; }
 

@@ -157,7 +157,13 @@
       "value": "Vrednost po nabavnoj ceni",
       "noPrice": "nema nabavne cene"
     },
-    "noFilterResults": "Nijedan artikal nije u ovom stanju."
+    "noFilterResults": "Nijedan artikal nije u ovom stanju.",
+    "changes": {
+      "created": "Artikal napravljen",
+      "updated": "Artikal izmenjen",
+      "deactivated": "Artikal deaktiviran",
+      "activated": "Artikal aktiviran"
+    }
   },
   "stock": {
     "status": {
@@ -205,15 +211,22 @@
       "submit": "Zabeleži"
     },
     "history": {
-      "title": "Istorija kretanja",
-      "empty": "Još nema kretanja za ovaj artikal.",
+      "title": "Istorija",
+      "empty": "Još nema zapisa za ovaj artikal.",
       "columns": {
         "when": "Vreme",
         "type": "Vrsta",
         "quantity": "Količina",
-        "note": "Napomena",
-        "user": "Uneo"
-      }
+        "user": "Uneo",
+        "details": "Detalji"
+      },
+      "filters": {
+        "label": "Filter istorije",
+        "all": "Sve",
+        "stock": "Količina",
+        "changes": "Izmene artikla"
+      },
+      "emptyValue": "prazno"
     }
   }
 }

@@ -157,7 +157,13 @@
       "value": "Value at purchase price",
       "noPrice": "no purchase price"
     },
-    "noFilterResults": "No items match this filter."
+    "noFilterResults": "No items match this filter.",
+    "changes": {
+      "created": "Item created",
+      "updated": "Item edited",
+      "deactivated": "Item deactivated",
+      "activated": "Item activated"
+    }
   },
   "stock": {
     "status": {
@@ -205,15 +211,22 @@
       "submit": "Record"
     },
     "history": {
-      "title": "Movement history",
-      "empty": "No movements for this item yet.",
+      "title": "History",
+      "empty": "Nothing recorded for this item yet.",
       "columns": {
         "when": "Time",
         "type": "Type",
         "quantity": "Quantity",
-        "note": "Note",
-        "user": "Entered by"
-      }
+        "user": "Entered by",
+        "details": "Details"
+      },
+      "filters": {
+        "label": "History filter",
+        "all": "All",
+        "stock": "Quantity",
+        "changes": "Item changes"
+      },
+      "emptyValue": "empty"
     }
   }
 }

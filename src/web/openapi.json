@@ -99,97 +99,6 @@
             }
           }
         }
-      },
-      "get": {
-        "tags": [
-          "Stock"
-        ],
-        "operationId": "ListStockMovements",
-        "parameters": [
-          {
-            "name": "itemId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "maximum": 2147483647,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "maximum": 100,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32",
-              "default": 20
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PagedResultOfStockMovementDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PagedResultOfStockMovementDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PagedResultOfStockMovementDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/stock/summary": {
@@ -516,6 +425,107 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ItemDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/history": {
+      "get": {
+        "tags": [
+          "Items"
+        ],
+        "operationId": "GetItemHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "default": "all",
+              "$ref": "#/components/schemas/ItemHistoryFilter"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfItemHistoryEntryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfItemHistoryEntryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfItemHistoryEntryDto"
                 }
               }
             }
@@ -1007,6 +1017,32 @@
           }
         }
       },
+      "ItemChangeDto": {
+        "required": [
+          "kind",
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ItemChangeKind"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemFieldChangeDto"
+            }
+          }
+        }
+      },
+      "ItemChangeKind": {
+        "enum": [
+          "created",
+          "updated",
+          "deactivated",
+          "activated"
+        ]
+      },
       "ItemDto": {
         "required": [
           "id",
@@ -1098,6 +1134,84 @@
             "format": "double"
           }
         }
+      },
+      "ItemFieldChangeDto": {
+        "required": [
+          "field",
+          "oldValue",
+          "newValue"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "oldValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ItemHistoryEntryDto": {
+        "required": [
+          "id",
+          "occurredAt",
+          "userName",
+          "movement",
+          "change"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "userName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "movement": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StockMovementDto"
+              }
+            ]
+          },
+          "change": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ItemChangeDto"
+              }
+            ]
+          }
+        }
+      },
+      "ItemHistoryFilter": {
+        "enum": [
+          "all",
+          "stock",
+          "changes"
+        ]
       },
       "ItemRequest": {
         "required": [
@@ -1219,7 +1333,7 @@
           }
         }
       },
-      "PagedResultOfStockMovementDto": {
+      "PagedResultOfItemHistoryEntryDto": {
         "required": [
           "items",
           "totalCount",
@@ -1231,7 +1345,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StockMovementDto"
+              "$ref": "#/components/schemas/ItemHistoryEntryDto"
             }
           },
           "totalCount": {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Zalihe.Domain.Tenants;
 
 namespace Zalihe.Domain.Items;
@@ -54,8 +55,11 @@ public class Item : ITenantOwned
         Update(name, sku, unit, minStock, barcode, category, groupName, purchasePrice, salePrice);
     }
 
-    /// <summary>Changes the item's data. The same rules apply as when creating it.</summary>
-    public void Update(
+    /// <summary>
+    /// Changes the item's data. The same rules apply as when creating it.
+    /// Returns the fields that actually changed, for the item's change log.
+    /// </summary>
+    public IReadOnlyList<ItemFieldChange> Update(
         string name,
         string sku,
         Unit unit,
@@ -78,6 +82,17 @@ public class Item : ITenantOwned
         var newSalePrice = Money(salePrice, nameof(salePrice));
         var newMinStock = Quantity(minStock, nameof(minStock));
 
+        var changes = new List<ItemFieldChange>();
+        Track(changes, "name", Name, newName);
+        Track(changes, "sku", Sku, newSku);
+        Track(changes, "barcode", Barcode, newBarcode);
+        Track(changes, "unit", Code(Unit), Code(unit));
+        Track(changes, "category", Category, newCategory);
+        Track(changes, "groupName", GroupName, newGroupName);
+        Track(changes, "purchasePrice", Invariant(PurchasePrice), Invariant(newPurchasePrice));
+        Track(changes, "salePrice", Invariant(SalePrice), Invariant(newSalePrice));
+        Track(changes, "minStock", Invariant(MinStock), Invariant(newMinStock));
+
         Name = newName;
         Sku = newSku;
         Barcode = newBarcode;
@@ -87,6 +102,7 @@ public class Item : ITenantOwned
         PurchasePrice = newPurchasePrice;
         SalePrice = newSalePrice;
         MinStock = newMinStock;
+        return changes;
     }
 
     /// <summary>
@@ -103,6 +119,19 @@ public class Item : ITenantOwned
         Name = null!;
         Sku = null!;
     }
+
+    // Values are recorded in a language-neutral form; clients format them for the user's language.
+    private void Track(List<ItemFieldChange> changes, string field, string? oldValue, string? newValue)
+    {
+        // A new item has no previous values (Name is null before the first Update): nothing to log.
+        if (Name is null || oldValue == newValue) return;
+        changes.Add(new ItemFieldChange { Field = field, OldValue = oldValue, NewValue = newValue });
+    }
+
+    private static string Code(Unit unit) => unit.ToString().ToLowerInvariant();
+
+    // "G29" drops trailing zeros: 12.50 and 12.5 are the same value.
+    private static string? Invariant(decimal? value) => value?.ToString("G29", CultureInfo.InvariantCulture);
 
     /// <summary>True when the value has no more decimals than <paramref name="decimals"/>.</summary>
     public static bool HasAtMostDecimals(decimal value, int decimals) => decimal.Round(value, decimals) == value;

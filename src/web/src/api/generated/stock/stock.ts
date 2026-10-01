@@ -25,8 +25,6 @@ import type {
 
 import type {
   ApiProblemDetails,
-  ListStockMovementsParams,
-  PagedResultOfStockMovementDto,
   ProblemDetails,
   RecordMovementRequest,
   RecordMovementResponse,
@@ -138,116 +136,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRecordStockMovementMutationOptions(options), queryClient);
     }
-    export const getListStockMovementsUrl = (itemId: string,
-    params?: ListStockMovementsParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/items/${itemId}/movements?${stringifiedParams}` : `/api/items/${itemId}/movements`
-}
-
-export const listStockMovements = async (itemId: string,
-    params?: ListStockMovementsParams, options?: Parameters<typeof customFetch>[1]): Promise<PagedResultOfStockMovementDto> => {
-
-  return customFetch<PagedResultOfStockMovementDto>(getListStockMovementsUrl(itemId,params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListStockMovementsQueryKey = (itemId: string,
-    params?: ListStockMovementsParams,) => {
-    return [
-    `/api/items/${itemId}/movements`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getListStockMovementsQueryOptions = <TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(itemId: string,
-    params?: ListStockMovementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListStockMovementsQueryKey(itemId,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockMovements>>> = ({ signal }) => listStockMovements(itemId,params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: itemId !== null && itemId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ListStockMovementsQueryResult = NonNullable<Awaited<ReturnType<typeof listStockMovements>>>
-export type ListStockMovementsQueryError = ErrorType<ApiProblemDetails | ProblemDetails>
-
-
-export function useListStockMovements<TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
- itemId: string,
-    params: undefined |  ListStockMovementsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listStockMovements>>,
-          TError,
-          Awaited<ReturnType<typeof listStockMovements>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListStockMovements<TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
- itemId: string,
-    params?: ListStockMovementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof listStockMovements>>,
-          TError,
-          Awaited<ReturnType<typeof listStockMovements>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListStockMovements<TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
- itemId: string,
-    params?: ListStockMovementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useListStockMovements<TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
- itemId: string,
-    params?: ListStockMovementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getListStockMovementsQueryOptions(itemId,params,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export const getGetStockSummaryUrl = () => {
+    export const getGetStockSummaryUrl = () => {
 
 
 

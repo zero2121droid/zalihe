@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zalihe.Application.Common;
@@ -38,18 +37,6 @@ public class StockController(StockService stockService) : ControllerBase
 
         return StatusCode(StatusCodes.Status201Created, new RecordMovementResponse(result.Movement!, result.Stock!.Value));
     }
-
-    /// <summary>Movements of an item, newest first.</summary>
-    [HttpGet("api/items/{itemId:guid}/movements", Name = "ListStockMovements")]
-    [ProducesResponseType<PagedResult<StockMovementDto>>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
-    public async Task<ActionResult<PagedResult<StockMovementDto>>> History(
-        Guid itemId,
-        [FromQuery, Range(1, int.MaxValue, ErrorMessage = "validation.out_of_range")] int page = 1,
-        [FromQuery, Range(1, Paging.MaxPageSize, ErrorMessage = "validation.out_of_range")] int pageSize = Paging.DefaultPageSize,
-        CancellationToken ct = default) =>
-        await stockService.GetHistoryAsync(itemId, page, pageSize, ct) is { } history ? history : NotFound();
 
     /// <summary>Counts of active items below minimum and out of stock.</summary>
     [HttpGet("api/stock/summary", Name = "GetStockSummary")]

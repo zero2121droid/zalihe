@@ -206,13 +206,13 @@ public class StockTests(ZaliheApiFactory factory)
         await RecordAsync(client, itemId, "sale", 3);
 
         // Act
-        var page1 = await client.GetFromJsonAsync<JsonElement>($"/api/items/{itemId}/movements?pageSize=2");
-        var page2 = await client.GetFromJsonAsync<JsonElement>($"/api/items/{itemId}/movements?pageSize=2&page=2");
+        var page1 = await client.GetFromJsonAsync<JsonElement>($"/api/items/{itemId}/history?filter=stock&pageSize=2");
+        var page2 = await client.GetFromJsonAsync<JsonElement>($"/api/items/{itemId}/history?filter=stock&pageSize=2&page=2");
 
         // Assert
         page1.GetProperty("totalCount").GetInt32().ShouldBe(3);
-        page1.GetProperty("items").EnumerateArray().Select(m => m.GetProperty("quantity").GetDecimal()).ShouldBe([-3m, -2m]);
-        page2.GetProperty("items").EnumerateArray().Select(m => m.GetProperty("quantity").GetDecimal()).ShouldBe([10m]);
+        page1.GetProperty("items").EnumerateArray().Select(e => e.GetProperty("movement").GetProperty("quantity").GetDecimal()).ShouldBe([-3m, -2m]);
+        page2.GetProperty("items").EnumerateArray().Select(e => e.GetProperty("movement").GetProperty("quantity").GetDecimal()).ShouldBe([10m]);
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public class StockTests(ZaliheApiFactory factory)
 
         // Act
         var record = await RecordAsync(companyB, itemId, "sale", 5);
-        var history = await companyB.GetAsync($"/api/items/{itemId}/movements");
+        var history = await companyB.GetAsync($"/api/items/{itemId}/history");
 
         // Assert
         record.StatusCode.ShouldBe(HttpStatusCode.NotFound);

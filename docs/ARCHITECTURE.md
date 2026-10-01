@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „kretanja zaliha” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „dnevnik izmena artikla” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -142,6 +142,8 @@ zalihe/
 
 **`Items/Item.cs`**: artikal. Konstruktor i `Update()` čuvaju ista pravila (`Update()` prvo proveri sve vrednosti, pa tek onda menja, da odbijena izmena ne ostavi artikal napola izmenjen): naziv i šifra su obavezni i skraćuju se, prazni neobavezni tekstovi postaju `null`, minimalna zaliha i cene ne mogu biti negativne. Količina može imati najviše 3 decimale, a novac 2 (`HasAtMostDecimals()`), što odgovara kolonama `decimal(18,3)` i `decimal(18,2)`. Svaka WooCommerce varijacija je poseban artikal, a `GroupName` služi samo za grupisanje u prikazu. Artikal se **nikad ne briše**, jer mu istorija kretanja mora ostati: `Deactivate()` ga sklanja iz liste i izbora, a `Activate()` vraća.
 
+**`Items/ItemChange.cs`**: dnevnik izmena artikla: napravljen, izmenjen (sa poljima staro → novo), deaktiviran, aktiviran. Kao i kretanja, zapisi se samo dodaju. `Item.Update()` vraća spisak polja koja su se stvarno promenila, sa vrednostima u neutralnom obliku (`"12.5"`, `"kom"`), a frontend ih formatira za jezik korisnika. Ako se ništa nije promenilo, zapisa nema.
+
 **`Items/Unit.cs`**: jedinica mere kao `enum` (kom, kg, g, l, ml, m, pak). Fiksna lista omogućava da se količine u izveštajima sabiraju. U API-ju putuje kao kod (`"kom"`), a frontend ga prevodi (`items.units.kom`, na engleskom „pcs”).
 
 **`Stock/StockMovement.cs`**: jedno kretanje zaliha. Fabričke metode `Receipt`, `Sale`, `Return`, `Adjustment` i `AdjustmentToCount` jedine prave kretanje i čuvaju predznak i broj decimala. `AdjustmentToCount` vraća `null` kad je prebrojano isto kao trenutno, jer nema šta da se upiše.
@@ -175,7 +177,9 @@ zalihe/
 
 **`Stock/StockService.cs`**: `RecordAsync()` (transakcija, zaključavanje, kretanje i stanje zajedno; za korekciju je napomena obavezna), `GetHistoryAsync()` (najnovije prvo, sa imenom korisnika) i `GetSummaryAsync()` (koliko aktivnih artikala je ispod minimuma ili bez zaliha).
 
-**Izmene u `ItemService`**: lista i jedan artikal sada dolaze sa stanjem, statusom, vrednošću (stanje × nabavna cena) i prodajom u poslednjih 30 dana, u jednom upitu. Lista ima i filter po statusu.
+**`Items/ItemHistoryService.cs`**: istorija artikla: kretanja i izmene zajedno, najnovije prvo, sa filterom (`all`, `stock`, `changes`). Spajanje i paginacija rade se u bazi (`UNION ALL` samo nad ID-jevima i vremenom), a zatim se učitaju redovi te strane.
+
+**Izmene u `ItemService`**: pri pravljenju, izmeni, deaktivaciji i aktivaciji upisuje i zapis u dnevnik izmena, u istoj transakciji (ponovna deaktivacija već neaktivnog artikla ne pravi zapis). lista i jedan artikal sada dolaze sa stanjem, statusom, vrednošću (stanje × nabavna cena) i prodajom u poslednjih 30 dana, u jednom upitu. Lista ima i filter po statusu.
 
 ### Zalihe.Infrastructure
 
@@ -188,6 +192,8 @@ zalihe/
 - Ovde dolaze **global query filteri** za `TenantId`, sa prvim entitetom koji sadrži podatke firme.
 
 **`Identity/UserDirectory.cs`**: imena korisnika za istoriju kretanja. Korisnici nemaju global query filter, pa je ovo jedino mesto koje ih izričito ograničava na trenutnu firmu.
+
+**Dnevnik izmena u `AppDbContext.cs`**: tabela `ItemChanges`, a promenjena polja su jedan JSON dokument po zapisu (`jsonb`). Migracija `AddItemChanges` postojećim artiklima dodaje zapis „napravljen” sa njihovim datumom, bez korisnika.
 
 **Kretanja u `AppDbContext.cs`**: tabele `StockMovements` (indeksi za istoriju po artiklu i prodaju po periodu) i `StockLevels` (ključ je `ItemId`, `RowVersion` mapiran na `xmin`), plus `LockStockLevelAsync()` sa `SELECT *, xmin … FOR UPDATE`. Migracija `AddStockMovements` postojećim artiklima dodaje stanje 0.
 
@@ -289,7 +295,7 @@ Primer odgovora sa greškom:
 
 **JSON podešavanja u `Program.cs`**: enumi putuju kao kodovi (`"kom"`), a brojevi moraju biti JSON brojevi (`NumberHandling.Strict`). Bez toga bi OpenAPI opisivao brojeve kao „broj ili tekst”, pa bi TypeScript tipovi bili `number | string`. Ista podešavanja važe i za generisanje OpenAPI dokumenta (`ConfigureHttpJsonOptions`).
 
-**`Stock/StockController.cs`**: `POST /api/items/{id}/movements`, `GET /api/items/{id}/movements` i `GET /api/stock/summary`. Namerno nema endpointa za izmenu ili brisanje kretanja.
+**`Stock/StockController.cs`**: `POST /api/items/{id}/movements` i `GET /api/stock/summary`. Istorija je u `GET /api/items/{id}/history` (`ItemsController`), zajedno sa izmenama artikla. Namerno nema endpointa za izmenu ili brisanje kretanja.
 
 **`Auth/HttpCurrentUser.cs`**: `ICurrentUser` iz claima prijavljenog korisnika.
 
@@ -312,7 +318,7 @@ src/web/
 └── src/
     ├── main.tsx            ulazna tačka: fontovi, Mantine stilovi, i18n, ruter
     ├── AppProviders.tsx    Mantine tema + TanStack Query (koriste ga i testovi)
-    ├── queryClient.ts      podrazumevana podešavanja za upite
+    ├── queryClient.ts      podrazumevana podešavanja za upite (greške 4xx se ne ponavljaju)
     ├── router.tsx          sve rute aplikacije
     ├── theme.ts            Mantine tema i dizajn tokeni iz DESIGN.md
     ├── i18n.ts             podešavanje react-i18next, izbor jezika
@@ -387,7 +393,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`pages/items/ItemsPage.tsx`**: ekran „Artikli” po maketi: naslov sa brojem artikala, pretraga, tabela (artikal sa kategorijom, šifra, minimalna zaliha sa jedinicom mere) i paginacija „1–20 od N”. Pretraga i strana su u adresi (`/items?q=etiop&page=2`), pa ih osvežavanje i dugme „nazad” čuvaju. Pretraga se šalje 300 ms posle poslednjeg slova (`useDebouncedValue`), a `keepPreviousData` drži staru listu dok stiže nova, pa tabela ne treperi. Klik na red otvara izmenu; za tastaturu je naziv artikla pravo dugme. Prekidač „Prikaži neaktivne” (`?inactive=1`) uključuje neaktivne artikle, koji imaju oznaku „Neaktivan” (tekst, ne samo boja). Kolone Stanje, Status, Prodaja 30d i Vrednost dolaze sa kretanjima zaliha.
 
-**`pages/items/ItemDetailPage.tsx`**: stranica artikla (`/items/{id}`): traka sa stanjem, minimumom, prodajom za 30 dana i vrednošću, dugmad Izmeni / Prijem / Prodaja / Povrat / Korekcija i istorija kretanja sa paginacijom. Klik na artikal u listi vodi ovde.
+**`pages/items/ItemDetailPage.tsx`**: stranica artikla (`/items/{id}`): traka sa stanjem, minimumom, prodajom za 30 dana i vrednošću, dugmad Izmeni / Prijem / Prodaja / Povrat / Korekcija i istorija (kretanja i izmene artikla, sa filterima Sve / Količina / Izmene artikla). `formatChangeValue()` prikazuje zabeležene vrednosti u formatu jezika, sa jedinicom i valutom. Klik na artikal u listi vodi ovde.
 
 **`pages/items/MovementModal.tsx`**: unos kretanja. Ispod količine prikazuje stanje posle unosa ili razliku kod korekcije, i upozorenje kad stanje ide u minus. To je samo prikaz: stvarnu promenu računa API.
 
@@ -437,6 +443,8 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 **`Zalihe.Domain.Tests/Stock/`**: predznaci kretanja, korekcija na prebrojano, stanje kao zbir kretanja i pravila statusa.
 
 **`Zalihe.IntegrationTests/Stock/StockTests.cs`**: prijem, prodaja u minus, korekcija, greške, 10 istovremenih prijema, stanje jednako zbiru kretanja u bazi, istorija, filter po statusu, prodaja 30 dana i vrednost, i izolacija: firma B ne može da upiše kretanje ni vidi istoriju artikla firme A.
+
+**`Zalihe.IntegrationTests/Items/ItemHistoryTests.cs`**: zapis „napravljen” sa korisnikom, izmena sa starim i novim vrednostima, nema zapisa kad se ništa ne promeni, deaktivacija i aktivacija, spajanje i filteri istorije, izolacija firmi.
 
 **`Zalihe.IntegrationTests/Tenancy/TenantFilterTests.cs`**: svaki entitet sa kolonom `TenantId` mora da implementira `ITenantOwned` i da ima filter, a upit bez postavljene firme mora da baci izuzetak.
 

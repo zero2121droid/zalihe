@@ -25,10 +25,12 @@ import type {
 
 import type {
   ApiProblemDetails,
+  GetItemHistoryParams,
   ItemDto,
   ItemRequest,
   ListItemsParams,
   PagedResultOfItemDto,
+  PagedResultOfItemHistoryEntryDto,
   ProblemDetails
 } from '../model';
 
@@ -413,7 +415,116 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateItemMutationOptions(options), queryClient);
     }
-    export const getListItemCategoriesUrl = () => {
+    export const getGetItemHistoryUrl = (id: string,
+    params?: GetItemHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/items/${id}/history?${stringifiedParams}` : `/api/items/${id}/history`
+}
+
+export const getItemHistory = async (id: string,
+    params?: GetItemHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<PagedResultOfItemHistoryEntryDto> => {
+
+  return customFetch<PagedResultOfItemHistoryEntryDto>(getGetItemHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetItemHistoryQueryKey = (id: string,
+    params?: GetItemHistoryParams,) => {
+    return [
+    `/api/items/${id}/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetItemHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getItemHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(id: string,
+    params?: GetItemHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetItemHistoryQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItemHistory>>> = ({ signal }) => getItemHistory(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItemHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetItemHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getItemHistory>>>
+export type GetItemHistoryQueryError = ErrorType<ApiProblemDetails | ProblemDetails>
+
+
+export function useGetItemHistory<TData = Awaited<ReturnType<typeof getItemHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params: undefined |  GetItemHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getItemHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemHistory<TData = Awaited<ReturnType<typeof getItemHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params?: GetItemHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getItemHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemHistory<TData = Awaited<ReturnType<typeof getItemHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params?: GetItemHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetItemHistory<TData = Awaited<ReturnType<typeof getItemHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params?: GetItemHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetItemHistoryQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListItemCategoriesUrl = () => {
 
 
 

@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Item> Items => Set<Item>();
+    public DbSet<ItemChange> ItemChanges => Set<ItemChange>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockLevel> StockLevels => Set<StockLevel>();
 
@@ -60,6 +61,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             item.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId).OnDelete(DeleteBehavior.Restrict);
             item.HasIndex(i => new { i.TenantId, i.Sku }).IsUnique();
             item.HasIndex(i => new { i.TenantId, i.Name });
+        });
+
+        builder.Entity<ItemChange>(change =>
+        {
+            change.Property(c => c.Kind).HasConversion<string>().HasMaxLength(16);
+            // Changed fields are stored as one JSON document per entry.
+            change.OwnsMany(c => c.Changes, field =>
+            {
+                field.ToJson();
+                field.Property(f => f.Field).HasMaxLength(32);
+            });
+            change.HasOne<Item>().WithMany().HasForeignKey(c => c.ItemId).OnDelete(DeleteBehavior.Restrict);
+            change.HasOne<Tenant>().WithMany().HasForeignKey(c => c.TenantId).OnDelete(DeleteBehavior.Restrict);
+            change.HasOne<User>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);
+            change.HasIndex(c => new { c.ItemId, c.OccurredAt });
         });
 
         builder.Entity<StockMovement>(movement =>

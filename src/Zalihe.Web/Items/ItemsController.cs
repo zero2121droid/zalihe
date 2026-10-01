@@ -12,7 +12,7 @@ namespace Zalihe.Web.Items;
 [Authorize]
 [Route("api/items")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
-public class ItemsController(ItemService itemService) : ControllerBase
+public class ItemsController(ItemService itemService, ItemHistoryService historyService) : ControllerBase
 {
     /// <summary>
     /// Items of the current company, paged, searchable by name, SKU or barcode.
@@ -37,6 +37,22 @@ public class ItemsController(ItemService itemService) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<ActionResult<ItemDto>> Get(Guid id, CancellationToken ct) =>
         await itemService.GetAsync(id, ct) is { } item ? item : NotFound();
+
+    /// <summary>
+    /// Everything that happened to the item, newest first: stock movements and changes of the
+    /// item itself (created, edited, deactivated, activated), with who did it.
+    /// </summary>
+    [HttpGet("{id:guid}/history", Name = "GetItemHistory")]
+    [ProducesResponseType<PagedResult<ItemHistoryEntryDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<ActionResult<PagedResult<ItemHistoryEntryDto>>> History(
+        Guid id,
+        [FromQuery] ItemHistoryFilter filter = ItemHistoryFilter.All,
+        [FromQuery, Range(1, int.MaxValue, ErrorMessage = "validation.out_of_range")] int page = 1,
+        [FromQuery, Range(1, Paging.MaxPageSize, ErrorMessage = "validation.out_of_range")] int pageSize = Paging.DefaultPageSize,
+        CancellationToken ct = default) =>
+        await historyService.GetAsync(id, filter, page, pageSize, ct) is { } history ? history : NotFound();
 
     /// <summary>Categories in use, for suggestions in the item form.</summary>
     [HttpGet("categories", Name = "ListItemCategories")]

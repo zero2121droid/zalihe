@@ -24,6 +24,7 @@ public static class DependencyInjection
 
         services.AddScoped<AccountService>();
         services.AddScoped<ItemService>();
+        services.AddScoped<ItemHistoryService>();
         services.AddScoped<StockService>();
         services.AddScoped<IUserDirectory, UserDirectory>();
 

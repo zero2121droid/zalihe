@@ -4,10 +4,10 @@
  * Zalihe.Web | v1
  * OpenAPI spec version: 1.0.0
  */
-import type { StockMovementDto } from './stockMovementDto';
+import type { ItemHistoryEntryDto } from './itemHistoryEntryDto';
 
-export interface PagedResultOfStockMovementDto {
-  items: StockMovementDto[];
+export interface PagedResultOfItemHistoryEntryDto {
+  items: ItemHistoryEntryDto[];
   totalCount: number;
   page: number;
   pageSize: number;

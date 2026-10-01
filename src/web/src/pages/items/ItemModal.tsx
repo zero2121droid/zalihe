@@ -4,6 +4,7 @@ import { type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
 import {
+  getGetItemHistoryQueryKey,
   getGetItemQueryKey,
   getListItemCategoriesQueryKey,
   getListItemsQueryKey,
@@ -80,6 +81,7 @@ export function ItemModal({ opened, onClose, item }: ItemModalProps) {
       queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }),
       queryClient.invalidateQueries({ queryKey: getListItemCategoriesQueryKey() }),
       item && queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(item.id) }),
+      item && queryClient.invalidateQueries({ queryKey: getGetItemHistoryQueryKey(item.id) }),
     ])
     close()
   }

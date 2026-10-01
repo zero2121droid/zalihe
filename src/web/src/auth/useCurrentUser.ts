@@ -15,7 +15,6 @@ export function useCurrentUser() {
       staleTime: 5 * 60 * 1000,
       // A 401 stays valid when the other route guard mounts; sign-in invalidates the query anyway.
       retryOnMount: false,
-      retry: (failureCount, error) => !(error instanceof ApiError && error.status < 500) && failureCount < 2,
     },
   })
 

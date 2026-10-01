@@ -3,13 +3,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
-import { getGetItemQueryKey, getListItemsQueryKey } from '../../api/generated/items/items'
+import { getGetItemHistoryQueryKey, getGetItemQueryKey, getListItemsQueryKey } from '../../api/generated/items/items'
 import type { ItemDto, ManualMovementKind } from '../../api/generated/model'
-import {
-  getGetStockSummaryQueryKey,
-  getListStockMovementsQueryKey,
-  useRecordStockMovement,
-} from '../../api/generated/stock/stock'
+import { getGetStockSummaryQueryKey, useRecordStockMovement } from '../../api/generated/stock/stock'
 import { DecimalInput } from '../../components/DecimalInput'
 import { formatNumber, formatSignedQuantity, readDecimal } from '../../lib/format'
 
@@ -37,7 +33,7 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(item.id) }),
           queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }),
-          queryClient.invalidateQueries({ queryKey: getListStockMovementsQueryKey(item.id) }),
+          queryClient.invalidateQueries({ queryKey: getGetItemHistoryQueryKey(item.id) }),
           queryClient.invalidateQueries({ queryKey: getGetStockSummaryQueryKey() }),
         ])
         close()

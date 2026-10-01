@@ -79,32 +79,6 @@ public class StockService(IAppDbContext db, ICurrentUser currentUser, IUserDirec
         return new RecordMovementResult(ToDto(movement, userName), level.Quantity, []);
     }
 
-    /// <summary>Movements of one item, newest first. Null when the item doesn't exist.</summary>
-    public async Task<PagedResult<StockMovementDto>?> GetHistoryAsync(Guid itemId, int page, int pageSize, CancellationToken ct)
-    {
-        if (!await db.Items.AnyAsync(i => i.Id == itemId, ct))
-        {
-            return null;
-        }
-
-        var movements = db.StockMovements.AsNoTracking().Where(m => m.ItemId == itemId);
-        var totalCount = await movements.CountAsync(ct);
-        var rows = await movements
-            .OrderByDescending(m => m.OccurredAt)
-            .ThenByDescending(m => m.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        var userIds = rows.Where(m => m.UserId is not null).Select(m => m.UserId!.Value).Distinct().ToList();
-        var names = userIds.Count == 0 ? new Dictionary<Guid, string>() : await users.GetNamesAsync(userIds, ct);
-
-        var items = rows
-            .Select(m => ToDto(m, m.UserId is { } id && names.TryGetValue(id, out var name) ? name : null))
-            .ToList();
-        return new PagedResult<StockMovementDto>(items, totalCount, page, pageSize);
-    }
-
     /// <summary>How many active items need attention (see <see cref="StockStatusRules"/>).</summary>
     public async Task<StockSummaryDto> GetSummaryAsync(CancellationToken ct)
     {
@@ -164,6 +138,6 @@ public class StockService(IAppDbContext db, ICurrentUser currentUser, IUserDirec
         return names.GetValueOrDefault(id);
     }
 
-    private static StockMovementDto ToDto(StockMovement m, string? userName) =>
+    internal static StockMovementDto ToDto(StockMovement m, string? userName) =>
         new(m.Id, m.Type, m.Quantity, m.OccurredAt, m.Source, m.ExternalRef, m.Note, userName);
 }

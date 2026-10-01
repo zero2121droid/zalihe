@@ -16,13 +16,13 @@ public class AuthController(
     IAntiforgery antiforgery) : ControllerBase
 {
     /// <summary>Registers a company with its owner and signs the owner in.</summary>
-    [HttpPost("register")]
+    [HttpPost("register", Name = "Register")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken ct)
     {
         var result = await accountService.RegisterAsync(
-            new RegisterCommand(request.CompanyName, request.Email, request.Password, request.Language), ct);
+            new RegisterCommand(request.CompanyName, request.Name, request.Email, request.Password, request.Language), ct);
         if (!result.Succeeded)
         {
             return ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed, result.Errors);
@@ -32,7 +32,7 @@ public class AuthController(
         return NoContent();
     }
 
-    [HttpPost("login")]
+    [HttpPost("login", Name = "Login")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -55,7 +55,7 @@ public class AuthController(
     }
 
     [Authorize]
-    [HttpPost("logout")]
+    [HttpPost("logout", Name = "Logout")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -67,7 +67,7 @@ public class AuthController(
 
     /// <summary>Returns the signed-in user and issues the antiforgery token (XSRF-TOKEN cookie).</summary>
     [Authorize]
-    [HttpGet("me")]
+    [HttpGet("me", Name = "GetCurrentUser")]
     [ProducesResponseType<CurrentUserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
     public async Task<ActionResult<CurrentUserResponse>> Me(CancellationToken ct)
@@ -81,6 +81,6 @@ public class AuthController(
         var tenant = await accountService.GetTenantAsync(user.TenantId, ct);
         CookieAntiforgeryFilter.IssueToken(antiforgery, HttpContext);
 
-        return new CurrentUserResponse(user.Id, user.Email!, user.Language, tenant.Id, tenant.Name);
+        return new CurrentUserResponse(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name);
     }
 }

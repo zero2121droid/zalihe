@@ -9,7 +9,7 @@ using Zalihe.Infrastructure.Persistence;
 
 namespace Zalihe.Infrastructure.Identity;
 
-public record RegisterCommand(string CompanyName, string Email, string Password, string? Language);
+public record RegisterCommand(string CompanyName, string Name, string Email, string Password, string? Language);
 
 public record RegistrationResult(User? User, IReadOnlyList<AppError> Errors)
 {
@@ -39,7 +39,14 @@ public partial class AccountService(
         await db.SaveChangesAsync(ct);
 
         var email = command.Email.Trim();
-        var user = new User { UserName = email, Email = email, TenantId = tenant.Id, Language = language };
+        var user = new User
+        {
+            UserName = email,
+            Email = email,
+            Name = command.Name.Trim(),
+            TenantId = tenant.Id,
+            Language = language,
+        };
         var result = await userManager.CreateAsync(user, command.Password);
         if (!result.Succeeded)
         {

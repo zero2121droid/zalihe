@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<User>(user =>
         {
+            user.Property(u => u.Name).HasMaxLength(User.NameMaxLength);
             user.Property(u => u.Language).HasMaxLength(Languages.MaxLength);
             user.HasOne<Tenant>().WithMany().HasForeignKey(u => u.TenantId).OnDelete(DeleteBehavior.Restrict);
             user.HasIndex(u => u.TenantId);

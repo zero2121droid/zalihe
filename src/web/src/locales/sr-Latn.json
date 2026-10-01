@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "zalihe",
+    "languages": {
+      "sr-Latn": "Srpski",
+      "en": "English"
+    },
+    "language": "Jezik",
+    "loading": "Učitavanje…",
+    "nav": {
+      "main": "Glavna navigacija",
+      "home": "Početna",
+      "openMenu": "Otvori meni"
+    },
+    "logout": "Odjavi se"
+  },
+  "auth": {
+    "login": {
+      "title": "Prijava",
+      "subtitle": "Prijavi se na nalog svoje firme.",
+      "email": "Email",
+      "password": "Lozinka",
+      "rememberMe": "Zapamti me na ovom uređaju",
+      "submit": "Prijavi se",
+      "noAccount": "Nemaš nalog?",
+      "toRegister": "Registruj firmu"
+    },
+    "register": {
+      "title": "Registracija firme",
+      "subtitle": "Napravi nalog za firmu. Kasnije možeš da pozoveš i druge korisnike.",
+      "companyName": "Naziv firme",
+      "name": "Tvoje ime",
+      "email": "Email",
+      "password": "Lozinka",
+      "passwordHint": "Najmanje 8 znakova",
+      "submit": "Registruj firmu",
+      "haveAccount": "Već imaš nalog?",
+      "toLogin": "Prijavi se"
+    }
+  },
+  "home": {
+    "title": "Početna",
+    "empty": {
+      "title": "Još nema artikala",
+      "description": "Kad dodaš artikle, ovde ćeš videti vrednost zaliha, šta treba naručiti i poslednja kretanja."
+    }
+  },
+  "errors": {
+    "common": {
+      "unexpected": "Došlo je do neočekivane greške. Pokušaj ponovo.",
+      "network": "Server nije dostupan. Proveri internet vezu i pokušaj ponovo.",
+      "not_found": "Traženi podatak ne postoji.",
+      "request_failed": "Zahtev nije uspeo. Pokušaj ponovo."
+    },
+    "validation": {
+      "failed": "Proveri označena polja.",
+      "required": "Obavezno polje.",
+      "email": "Unesi ispravnu email adresu.",
+      "max_length": "Unos je predugačak.",
+      "invalid": "Neispravna vrednost.",
+      "unsupported_language": "Izabrani jezik nije podržan."
+    },
+    "auth": {
+      "unauthenticated": "Prijavi se da bi nastavio.",
+      "forbidden": "Nemaš pristup ovom delu aplikacije.",
+      "invalid_credentials": "Pogrešan email ili lozinka.",
+      "locked_out": "Nalog je privremeno zaključan zbog previše neuspešnih pokušaja. Pokušaj ponovo za nekoliko minuta.",
+      "email_taken": "Nalog sa ovom email adresom već postoji.",
+      "password_too_short": "Lozinka mora imati najmanje {{min}} znakova.",
+      "antiforgery_invalid": "Sesija je istekla. Osveži stranicu i pokušaj ponovo."
+    }
+  }
+}

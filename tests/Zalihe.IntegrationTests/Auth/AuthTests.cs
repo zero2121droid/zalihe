@@ -19,11 +19,12 @@ public class AuthTests(ZaliheApiFactory factory)
 
         // Act
         var register = await client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = "  Prodavnica Zalihe  ", email, password = "sigurna-lozinka", language = "en" });
+            new { companyName = "  Prodavnica Zalihe  ", name = " Miljan ", email, password = "sigurna-lozinka", language = "en" });
         var me = await client.GetFromJsonAsync<JsonElement>("/api/auth/me");
 
         // Assert
         register.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        me.GetProperty("name").GetString().ShouldBe("Miljan");
         me.GetProperty("email").GetString().ShouldBe(email);
         me.GetProperty("language").GetString().ShouldBe("en");
         me.GetProperty("tenantName").GetString().ShouldBe("Prodavnica Zalihe");
@@ -52,7 +53,7 @@ public class AuthTests(ZaliheApiFactory factory)
 
         // Act
         var response = await factory.CreateClient().PostAsJsonAsync("/api/auth/register",
-            new { companyName = "Druga Firma", email, password = "sigurna-lozinka" });
+            new { companyName = "Druga Firma", name = "Miljan", email, password = "sigurna-lozinka" });
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -71,7 +72,7 @@ public class AuthTests(ZaliheApiFactory factory)
 
         // Act
         var response = await client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = "Firma", email = UniqueEmail(), password = "kratka" });
+            new { companyName = "Firma", name = "Miljan", email = UniqueEmail(), password = "kratka" });
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -95,7 +96,9 @@ public class AuthTests(ZaliheApiFactory factory)
         var errors = (await response.ReadProblemAsync()).GetProperty("errors").EnumerateArray()
             .Select(e => (Field: e.GetProperty("field").GetString(), Code: e.GetProperty("code").GetString()))
             .ToList();
-        errors.ShouldBe([("companyName", "validation.required"), ("email", "validation.email")], ignoreOrder: true);
+        errors.ShouldBe(
+            [("companyName", "validation.required"), ("name", "validation.required"), ("email", "validation.email")],
+            ignoreOrder: true);
     }
 
     [Fact]
@@ -106,7 +109,7 @@ public class AuthTests(ZaliheApiFactory factory)
 
         // Act
         var response = await client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = "Firma", email = UniqueEmail(), password = "sigurna-lozinka", language = "de" });
+            new { companyName = "Firma", name = "Miljan", email = UniqueEmail(), password = "sigurna-lozinka", language = "de" });
 
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);

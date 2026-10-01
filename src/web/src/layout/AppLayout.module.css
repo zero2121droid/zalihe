@@ -1,0 +1,47 @@
+.navbar {
+  background-color: var(--z-sidebar);
+  border-right: 1px solid var(--z-line);
+  padding: 24px 16px;
+}
+
+.header {
+  background-color: var(--z-sidebar);
+  border-bottom: 1px solid var(--z-line);
+}
+
+/* React Router marks the current page with aria-current; Mantine reads --nl-* for that state. */
+.navLink {
+  --nl-bg: var(--z-surface-2);
+  --nl-color: var(--z-text);
+  color: var(--z-muted);
+}
+
+.navLink:hover {
+  background-color: var(--z-surface-2);
+  color: var(--z-text);
+}
+
+.navLink[aria-current='page'] {
+  color: var(--z-text);
+  font-weight: 500;
+}
+
+.navLink[aria-current='page'] .navIcon {
+  color: var(--z-accent);
+}
+
+.account {
+  border-top: 1px solid var(--z-line);
+  padding: 12px 10px 0;
+}
+
+.main {
+  padding: 28px 36px 40px;
+  max-width: 1180px;
+}
+
+@media (max-width: 48em) {
+  .main {
+    padding: 20px 16px 32px;
+  }
+}

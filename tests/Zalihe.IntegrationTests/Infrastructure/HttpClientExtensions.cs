@@ -9,7 +9,7 @@ public static class HttpClientExtensions
     public static async Task RegisterAsync(this HttpClient client, string email, string password = "sigurna-lozinka")
     {
         var response = await client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = "Test Firma", email, password });
+            new { companyName = "Test Firma", name = "Miljan", email, password });
         response.EnsureSuccessStatusCode();
     }
 

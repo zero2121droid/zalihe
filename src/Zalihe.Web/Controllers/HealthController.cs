@@ -6,7 +6,7 @@ namespace Zalihe.Web.Controllers;
 [Route("api/health")]
 public class HealthController : ControllerBase
 {
-    [HttpGet]
+    [HttpGet(Name = "GetHealth")]
     [ProducesResponseType<HealthResponse>(StatusCodes.Status200OK)]
     public ActionResult<HealthResponse> Get() => new HealthResponse("ok");
 }

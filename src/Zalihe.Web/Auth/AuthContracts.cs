@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Zalihe.Domain.Tenants;
+using Zalihe.Infrastructure.Identity;
 
 namespace Zalihe.Web.Auth;
 
@@ -7,6 +8,9 @@ public record RegisterRequest(
     [Required(ErrorMessage = "validation.required")]
     [MaxLength(Tenant.NameMaxLength, ErrorMessage = "validation.max_length")]
     string CompanyName,
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(User.NameMaxLength, ErrorMessage = "validation.max_length")]
+    string Name,
     [Required(ErrorMessage = "validation.required")]
     [EmailAddress(ErrorMessage = "validation.email")]
     string Email,
@@ -21,4 +25,4 @@ public record LoginRequest(
     string Password,
     bool RememberMe = false);
 
-public record CurrentUserResponse(Guid Id, string Email, string Language, Guid TenantId, string TenantName);
+public record CurrentUserResponse(Guid Id, string Name, string Email, string Language, Guid TenantId, string TenantName);

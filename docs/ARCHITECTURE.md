@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „cookie autentifikacija sa registracijom firme” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „frontend osnova i prijava” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -158,6 +158,7 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 - `Logout`: briše cookie. Ima `[Authorize]` i traži antiforgery token.
 - `Me`: vraća ko je prijavljen i izdaje antiforgery token.
 - `[ProducesResponseType]` atributi opisuju svaki mogući odgovor u OpenAPI-ju, pa Orval generiše tačne tipove, uključujući greške.
+- `Name = "Login"` u `[HttpPost("login", Name = "Login")]` postaje `operationId` u OpenAPI-ju, a od njega Orval pravi ime hooka (`useLogin`). Svaki novi endpoint treba da ima ime.
 
 **`Auth/CookieAntiforgeryFilter.cs`**: zaštita od **CSRF** napada. Problem: ako je korisnik prijavljen, a zlonamerni sajt pošalje formu na API, browser sam doda cookie. Rešenje:
 - `IssueToken()`: `me` postavlja cookie `XSRF-TOKEN` koji JavaScript **može da pročita** (`HttpOnly = false`). Tuđi sajt ne može da pročita cookie-je druge adrese.
@@ -197,7 +198,88 @@ Primer odgovora sa greškom:
 
 ### src/web (React)
 
-Za sada je ovo Vite šablon, a jedina izmena je `vite.config.ts`: **proxy** `/api` → `http://localhost:5131`. U razvoju browser priča samo sa Vite-om (5173), a Vite prosleđuje API pozive backendu. Browser zato vidi jednu adresu, cookie radi bez CORS podešavanja, a produkcija izgleda isto (ASP.NET servira i React i API sa iste adrese).
+```
+src/web/
+├── openapi.json            OpenAPI dokument API-ja (commituje se, iz njega Orval generiše klijent)
+├── orval.config.ts         podešavanje generisanja klijenta
+├── scripts/fetch-openapi.mjs  preuzima openapi.json iz pokrenutog API-ja
+├── vite.config.ts          Vite, proxy /api → backend, podešavanje Vitest-a
+└── src/
+    ├── main.tsx            ulazna tačka: fontovi, Mantine stilovi, i18n, ruter
+    ├── AppProviders.tsx    Mantine tema + TanStack Query (koriste ga i testovi)
+    ├── queryClient.ts      podrazumevana podešavanja za upite
+    ├── router.tsx          sve rute aplikacije
+    ├── theme.ts            Mantine tema i dizajn tokeni iz DESIGN.md
+    ├── i18n.ts             podešavanje react-i18next, izbor jezika
+    ├── locales/            sr-Latn.json i en.json
+    ├── api/
+    │   ├── http.ts         fetch koji koristi generisani klijent
+    │   ├── errors.ts       ApiError i prevođenje kodova grešaka
+    │   └── generated/      GENERISANO, ne menja se ručno
+    ├── auth/               useCurrentUser, zaštita ruta
+    ├── layout/             AuthLayout (prijava) i AppLayout (bočna navigacija)
+    ├── pages/              ekrani: LoginPage, RegisterPage, HomePage
+    ├── components/         male zajedničke komponente (Logo, Eyebrow, LanguageSwitch)
+    ├── lib/format.ts       formatiranje brojeva i datuma preko Intl
+    └── test/               podešavanje testova i pomoćne funkcije
+```
+
+**Kako frontend priča sa API-jem.** Klijent se nikad ne piše ručno:
+1. Backend opisuje endpointe (`[ProducesResponseType]`, `Name = ...`).
+2. `npm run api` preuzme `openapi.json` iz pokrenutog API-ja i pokrene Orval.
+3. Orval u `src/api/generated/` napravi tipove (`CurrentUserResponse`, `RegisterRequest`...) i hookove (`useGetCurrentUser`, `useLogin`...).
+4. Komponente koriste hookove. Ako se API promeni, TypeScript odmah pokaže gde frontend više ne odgovara.
+
+`openapi.json` se commituje, pa se u git diff-u vidi svaka promena API-ja.
+
+**`vite.config.ts`**: **proxy** `/api` → `http://localhost:5131`. U razvoju browser priča samo sa Vite-om (5173), a Vite prosleđuje API pozive backendu. Browser zato vidi jednu adresu, cookie radi bez CORS podešavanja, a produkcija izgleda isto (ASP.NET servira i React i API sa iste adrese). Tu je i podešavanje Vitest-a (jsdom, `src/test/setup.ts`).
+
+**`api/http.ts`**: `customFetch()` je jedina funkcija kroz koju idu svi API pozivi (Orval je poziva iz generisanog koda):
+- šalje cookie (`credentials: 'same-origin'`);
+- za POST, PUT i DELETE čita cookie `XSRF-TOKEN` i šalje ga u headeru `X-XSRF-TOKEN` (antiforgery);
+- za odgovor koji nije 2xx baca `ApiError`, pa TanStack Query zna da je zahtev pao.
+
+**`api/errors.ts`**: greške API-ja na frontendu:
+- `ApiError`: status, kod i lista grešaka po polju, pročitani iz `ProblemDetails`.
+- `formErrorMessage()`: poruka za formu u celini (npr. „Pogrešan email ili lozinka.”). Nepoznat kod daje opštu poruku, a greška mreže „Server nije dostupan”.
+- `fieldErrorMessages()`: poruke po polju (`{ email: "Nalog sa ovom email adresom već postoji." }`), sa parametrima (`{{min}}`). Forma ih samo prosledi u `error` prop polja.
+
+**`theme.ts`**: jedino mesto sa hex vrednostima boja:
+- tokeni iz DESIGN.md kao CSS promenljive (`--z-bg`, `--z-surface`, `--z-accent`, `--z-status-low`...), u bloku `dark` u `cssVariablesResolver`. Svetla tema se kasnije dodaje popunjavanjem bloka `light`;
+- Mantine-ove promenljive (`--mantine-color-body`, `--mantine-color-dimmed`...) usmerene na te tokene, pa i ugrađene komponente izgledaju po dizajnu;
+- paleta `olive` (primarna boja oko akcenta) i `dark` (Mantine iz nje izvodi podrazumevane boje tamne teme);
+- fontovi, veličine, zaobljenja i razmaci, plus podrazumevani izgled za `Button` (40 px, tamni tekst na maslinastoj), `Input`, `Table`, `Badge`...
+
+Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex. Kad Mantine stil nije dovoljan, koristi se CSS modul (npr. `AppLayout.module.css`), ali i tamo samo sa tokenima.
+
+**`i18n.ts`**: učitava oba prevoda i bira jezik: pre prijave iz browsera (`localStorage`), a posle prijave iz `User.Language` (to radi `useCurrentUser`). `setLanguage()` menja jezik i pamti izbor. Pri promeni jezika ažurira se i `<html lang>`, što je bitno za čitače ekrana.
+
+**`lib/format.ts`**: brojevi i datumi isključivo preko `Intl`:
+- `formatNumber()`: `1.284.350` i `12,5` na srpskom, `1,284,350` i `12.5` na engleskom;
+- `formatSignedQuantity()`: `+24` i `−2`, sa pravim znakom minus (`−`, ne crtica);
+- `formatMoney()`, `formatLongDate()` („četvrtak, 1. oktobar”);
+- `parseDecimal()`: unos korisnika prihvata i `12,5` i `12.5`. Kad postoje oba separatora, poslednji je decimalni (`1.284,5`).
+
+**`auth/useCurrentUser.ts`**: jedan izvor istine o tome ko je prijavljen: poziva `GET /api/auth/me` preko generisanog hooka. Odgovor 401 znači da korisnik nije prijavljen (`isAnonymous`), i taj upit se ne ponavlja. Isti poziv izdaje i antiforgery token.
+
+**`auth/RouteGuards.tsx`**:
+- `RequireAuth`: deo aplikacije za prijavljene. Dok se proverava prikazuje loader, a neprijavljenog šalje na `/login` i pamti gde je hteo da ide.
+- `PublicOnly`: prijavljenog korisnika sa `/login` i `/register` šalje u aplikaciju.
+
+**`router.tsx`**: rute su ugnežđene: guard → layout → stranica. Tako svaka nova stranica za prijavljene automatski dobija zaštitu i bočnu navigaciju, samo se doda u listu.
+
+**`layout/AppLayout.tsx`**: okvir po maketi: bočna navigacija od 232 px, logo, stavke, firma i korisnik dole, dugme za odjavu. Na telefonu se navigacija sklapa iza dugmeta „meni”. U `navItems` su samo ekrani koji postoje.
+
+**`pages/`**: forme drže stanje u `useState`, šalju ga generisanim hookom (`useLogin`, `useRegister`) i greške prikazuju preko `fieldErrorMessages` i `formErrorMessage`. Validaciju radi API, a frontend je samo prikazuje, kako traži pravilo „sva poslovna logika je u API-ju”. Posle uspešne prijave invalidira se upit `me`: tako se učita korisnik i novi antiforgery token, pa se ide dalje.
+
+**Frontend testovi** (`*.test.ts(x)`, Vitest + React Testing Library):
+- `locales.test.ts`: oba jezika imaju isti skup ključeva i nijedan prevod nije prazan;
+- `format.test.ts`: formatiranje i unos brojeva;
+- `errors.test.ts`: prevođenje kodova i parametara;
+- `LoginPage.test.tsx`, `RegisterPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
+- `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju.
+
+Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pokrenut backend, i renderuju sa pravim providerima (`renderRoutes`).
 
 ### Testovi
 
@@ -257,5 +339,5 @@ Redosled koji važi za svaku funkcionalnost (npr. artikle):
 3. **Application**: servis sa metodama slučajeva korišćenja, a greške kao `AppError` sa kodom.
 4. **Web**: DTO zahtevi i odgovori sa validacijom preko kodova, zatim tanak kontroler sa `[ProducesResponseType]` za svaki odgovor. Liste uvek imaju paginaciju, pretragu i filtriranje na serveru.
 5. **Integracioni testovi**: srećan put, greške i izolacija firmi (firma A ne vidi podatke firme B).
-6. **Frontend**: regenerisati Orval klijent, napraviti ekran i dodati prevode u oba JSON fajla (`sr-Latn` i `en`).
+6. **Frontend**: pokrenuti API i `npm run api` (regeneriše klijent), dodati stranicu u `router.tsx` i stavku u `navItems`, prevode u oba JSON fajla (`sr-Latn` i `en`), a za forme i formatiranje testove. Pre rada na UI-ju pročitati DESIGN.md i uporediti ekran sa maketom.
 7. Pokrenuti `dotnet test` i frontend testove, pa commitovati.

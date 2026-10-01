@@ -101,7 +101,9 @@ docker compose up -d --wait                                # Postgres (localhost
 dotnet run --project src/Zalihe.Web --launch-profile http  # API na http://localhost:5131
 cd src/web && npm run dev                                  # React na http://localhost:5173, /api ide na backend
 dotnet test                                                # svi .NET testovi
+cd src/web && npm test                                     # frontend testovi (Vitest)
 cd src/web && npm run build && npm run lint                # frontend build i lint
+cd src/web && npm run api                                  # osveži openapi.json iz pokrenutog API-ja i regeneriši klijent
 
 # migracije
 dotnet ef migrations add NazivPromene -p src/Zalihe.Infrastructure -s src/Zalihe.Web -o Persistence/Migrations

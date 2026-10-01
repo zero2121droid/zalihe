@@ -12,6 +12,10 @@ describe('formatNumber', () => {
     expect(formatNumber(12.5, 'en')).toBe('12.5')
   })
 
+  it('formatNumber_Negative_UsesTrueMinusSign', () => {
+    expect(formatNumber(-2.5, 'sr-Latn')).toBe('\u22122,5')
+  })
+
   it('formatNumber_MoreThanThreeDecimals_RoundsToQuantityPrecision', () => {
     expect(formatNumber(1.23456, 'sr-Latn')).toBe('1,235')
   })

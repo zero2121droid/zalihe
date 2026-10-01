@@ -1,29 +1,16 @@
-import {
-  ActionIcon,
-  Badge,
-  Box,
-  Button,
-  Center,
-  Group,
-  Loader,
-  Stack,
-  Switch,
-  Table,
-  Text,
-  TextInput,
-  Title,
-  UnstyledButton,
-} from '@mantine/core'
+import { ActionIcon, Anchor, Badge, Box, Button, Center, Group, Loader, Stack, Switch, Table, Text, TextInput, Title, UnstyledButton } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { IconChevronLeft, IconChevronRight, IconSearch } from '@tabler/icons-react'
 import { keepPreviousData } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { formErrorMessage } from '../../api/errors'
 import { useListItems } from '../../api/generated/items/items'
 import type { ItemDto } from '../../api/generated/model'
-import { formatNumber } from '../../lib/format'
+import { useGetStockSummary } from '../../api/generated/stock/stock'
+import { StockQuantity, StockStatusLabel } from '../../components/stock'
+import { formatMoney, formatNumber } from '../../lib/format'
 import { ItemModal } from './ItemModal'
 
 const PAGE_SIZE = 20
@@ -32,31 +19,57 @@ const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 // Mantine drops the border of disabled buttons; the mockup keeps it on both arrows.
 const pagerButtonStyle = { border: '1px solid var(--z-line)' }
 
+type StatusFilter = 'low' | 'outOfStock' | null
+
+interface ListState {
+  search: string
+  page: number
+  showInactive: boolean
+  status: StatusFilter
+}
+
+// Search, page and filters live in the URL, so back/forward and refresh keep them.
+function toParams({ search, page, showInactive, status }: ListState) {
+  return {
+    ...(search && { q: search }),
+    ...(page > 1 && { page: String(page) }),
+    ...(showInactive && { inactive: '1' }),
+    ...(status && { status }),
+  }
+}
+
 export function ItemsPage() {
   const { t, i18n } = useTranslation()
-  // null = closed, 'new' = create form, an item = edit form.
-  const [editing, setEditing] = useState<ItemDto | 'new' | null>(null)
-  // Search, page and the inactive filter live in the URL, so back/forward and refresh keep them.
+  const [creating, setCreating] = useState(false)
   const [params, setParams] = useSearchParams()
-  const search = params.get('q') ?? ''
-  const page = Math.max(1, Number(params.get('page')) || 1)
-  const showInactive = params.get('inactive') === '1'
+  const statusParam = params.get('status')
+  const state: ListState = {
+    search: params.get('q') ?? '',
+    page: Math.max(1, Number(params.get('page')) || 1),
+    showInactive: params.get('inactive') === '1',
+    status: statusParam === 'low' || statusParam === 'outOfStock' ? statusParam : null,
+  }
+  const update = (changes: Partial<ListState>, replace = false) =>
+    setParams(toParams({ ...state, page: 1, ...changes }), { replace })
 
-  const [searchInput, setSearchInput] = useState(search)
+  const [searchInput, setSearchInput] = useState(state.search)
   const [debouncedSearch] = useDebouncedValue(searchInput, 300)
   useEffect(() => {
-    if (debouncedSearch.trim() === search) return
-    setParams(buildParams(debouncedSearch.trim(), 1, showInactive), { replace: true })
-  }, [debouncedSearch, search, showInactive, setParams])
+    // Reacts only to the typed text; the other filters change the URL directly.
+    if (debouncedSearch.trim() !== state.search) update({ search: debouncedSearch.trim() }, true)
+  }, [debouncedSearch]) // oxlint-disable-line react-hooks/exhaustive-deps
 
   const items = useListItems(
-    { search: search || undefined, includeInactive: showInactive || undefined, page, pageSize: PAGE_SIZE },
+    {
+      search: state.search || undefined,
+      includeInactive: state.showInactive || undefined,
+      status: state.status ?? undefined,
+      page: state.page,
+      pageSize: PAGE_SIZE,
+    },
     { query: { placeholderData: keepPreviousData } },
   )
-
-  function goToPage(next: number) {
-    setParams(buildParams(search, next, showInactive))
-  }
+  const summary = useGetStockSummary()
 
   const data = items.data
   const totalPages = data ? Math.max(1, Math.ceil(data.totalCount / PAGE_SIZE)) : 1
@@ -68,16 +81,16 @@ export function ItemsPage() {
           <Title order={1} lts="-0.01em">
             {t('items.title')}
           </Title>
-          {data && !search && (
+          {data && !state.search && !state.status && (
             <Text ff="monospace" c="dimmed">
               {formatNumber(data.totalCount, i18n.language)}
             </Text>
           )}
         </Group>
-        <Button onClick={() => setEditing('new')}>{t('items.new')}</Button>
+        <Button onClick={() => setCreating(true)}>{t('items.new')}</Button>
       </Group>
 
-      <Group gap="lg" wrap="wrap">
+      <Group gap="md" wrap="wrap">
         <TextInput
           flex="1 1 320px"
           type="search"
@@ -87,10 +100,23 @@ export function ItemsPage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.currentTarget.value)}
         />
+        <Group gap={6} role="group" aria-label={t('items.filters.label')}>
+          <FilterPill active={state.status === null} onClick={() => update({ status: null })}>
+            {t('items.filters.all')}
+          </FilterPill>
+          <FilterPill active={state.status === 'low'} onClick={() => update({ status: 'low' })}>
+            {t('items.filters.low')}{' '}
+            <PillCount color="var(--z-status-low)" value={summary.data?.belowMinimum} />
+          </FilterPill>
+          <FilterPill active={state.status === 'outOfStock'} onClick={() => update({ status: 'outOfStock' })}>
+            {t('items.filters.outOfStock')}{' '}
+            <PillCount color="var(--z-status-out)" value={summary.data?.outOfStock} />
+          </FilterPill>
+        </Group>
         <Switch
           label={t('items.showInactive')}
-          checked={showInactive}
-          onChange={(e) => setParams(buildParams(search, 1, e.currentTarget.checked))}
+          checked={state.showInactive}
+          onChange={(e) => update({ showInactive: e.currentTarget.checked })}
         />
       </Group>
 
@@ -104,17 +130,17 @@ export function ItemsPage() {
             {formErrorMessage(t, items.error)}
           </Text>
         ) : data!.totalCount === 0 ? (
-          <EmptyState search={search} onAdd={() => setEditing('new')} />
+          <EmptyState search={state.search} filtered={state.status !== null} onAdd={() => setCreating(true)} />
         ) : (
           <>
-            <Table.ScrollContainer minWidth={560}>
-              <ItemsTable items={data!.items} onOpen={setEditing} />
+            <Table.ScrollContainer minWidth={900}>
+              <ItemsTable items={data!.items} />
             </Table.ScrollContainer>
             <Group justify="space-between" px="lg" py="sm">
               <Text fz="sm" c="dimmed">
                 {t('items.range', {
-                  from: (page - 1) * PAGE_SIZE + 1,
-                  to: Math.min(page * PAGE_SIZE, data!.totalCount),
+                  from: (state.page - 1) * PAGE_SIZE + 1,
+                  to: Math.min(state.page * PAGE_SIZE, data!.totalCount),
                   total: data!.totalCount,
                 })}
               </Text>
@@ -124,8 +150,8 @@ export function ItemsPage() {
                   size={32}
                   style={pagerButtonStyle}
                   aria-label={t('common.previousPage')}
-                  disabled={page <= 1}
-                  onClick={() => goToPage(page - 1)}
+                  disabled={state.page <= 1}
+                  onClick={() => update({ page: state.page - 1 })}
                 >
                   <IconChevronLeft size={14} stroke={2} />
                 </ActionIcon>
@@ -134,8 +160,8 @@ export function ItemsPage() {
                   size={32}
                   style={pagerButtonStyle}
                   aria-label={t('common.nextPage')}
-                  disabled={page >= totalPages}
-                  onClick={() => goToPage(page + 1)}
+                  disabled={state.page >= totalPages}
+                  onClick={() => update({ page: state.page + 1 })}
                 >
                   <IconChevronRight size={14} stroke={2} />
                 </ActionIcon>
@@ -145,53 +171,82 @@ export function ItemsPage() {
         )}
       </Box>
 
-      <ItemModal
-        key={editing === 'new' ? 'new' : (editing?.id ?? 'closed')}
-        opened={editing !== null}
-        onClose={() => setEditing(null)}
-        item={editing === 'new' ? null : editing}
-      />
+      {creating && <ItemModal opened onClose={() => setCreating(false)} />}
     </Stack>
   )
 }
 
-function buildParams(search: string, page: number, showInactive: boolean) {
-  return {
-    ...(search && { q: search }),
-    ...(page > 1 && { page: String(page) }),
-    ...(showInactive && { inactive: '1' }),
-  }
+/** Filter pill from the mockup: 32 px high, 16 px radius, accent border when selected. */
+function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <UnstyledButton
+      onClick={onClick}
+      aria-pressed={active}
+      className="z-focus"
+      h={32}
+      px={12}
+      fz="sm"
+      c={active ? 'var(--z-text)' : 'var(--z-text-2)'}
+      bg={active ? 'var(--z-selected)' : 'transparent'}
+      style={{
+        border: `1px solid ${active ? 'var(--z-accent)' : 'var(--z-line)'}`,
+        borderRadius: 'var(--mantine-radius-lg)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+      }}
+    >
+      {children}
+    </UnstyledButton>
+  )
 }
 
-function ItemsTable({ items, onOpen }: { items: ItemDto[]; onOpen: (item: ItemDto) => void }) {
+function PillCount({ color, value }: { color: string; value: number | undefined }) {
+  const { i18n } = useTranslation()
+  if (value === undefined) return null
+  return (
+    <Text component="span" ff="monospace" fz="sm" c={color}>
+      {formatNumber(value, i18n.language)}
+    </Text>
+  )
+}
+
+function ItemsTable({ items }: { items: ItemDto[] }) {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
+  const number = { ff: 'monospace', fz: 'sm', style: { fontVariantNumeric: 'tabular-nums' } } as const
+
   return (
     <Table>
       <Table.Thead>
         <Table.Tr>
           <Table.Th>{t('items.columns.item')}</Table.Th>
           <Table.Th>{t('items.columns.sku')}</Table.Th>
+          <Table.Th ta="right">{t('items.columns.stock')}</Table.Th>
           <Table.Th ta="right">{t('items.columns.minStock')}</Table.Th>
+          <Table.Th>{t('items.columns.status')}</Table.Th>
+          <Table.Th ta="right">{t('items.columns.sold30Days')}</Table.Th>
+          <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
         {items.map((item) => (
-          // The whole row opens the item for mouse users; the name is the real button for keyboards.
-          <Table.Tr key={item.id} onClick={() => onOpen(item)} style={{ cursor: 'pointer' }}>
+          // The whole row opens the item for mouse users; the name is the real link for keyboards.
+          <Table.Tr key={item.id} onClick={() => void navigate(`/items/${item.id}`)} style={{ cursor: 'pointer' }}>
             <Table.Td>
               <Group gap="xs" wrap="nowrap">
-                <UnstyledButton
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onOpen(item)
-                  }}
-                  aria-label={t('items.edit', { name: item.name })}
-                  className="z-focus"
+                <Anchor
+                  component={Link}
+                  to={`/items/${item.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={t('items.open', { name: item.name })}
+                  fw={500}
+                  c={item.isActive ? 'var(--z-text)' : 'dimmed'}
+                  truncate
+                  maw={420}
                 >
-                  <Text fw={500} truncate maw={420} c={item.isActive ? undefined : 'dimmed'}>
-                    {item.name}
-                  </Text>
-                </UnstyledButton>
+                  {item.name}
+                </Anchor>
                 {!item.isActive && (
                   <Badge size="sm" color="gray" c="dimmed">
                     {t('items.inactive')}
@@ -210,11 +265,22 @@ function ItemsTable({ items, onOpen }: { items: ItemDto[]; onOpen: (item: ItemDt
               </Text>
             </Table.Td>
             <Table.Td ta="right">
-              <Text component="span" ff="monospace" fz="sm" c="dimmed" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {formatNumber(item.minStock, i18n.language)}{' '}
-                <Text component="span" fz={11}>
-                  {t(`items.units.${item.unit}`)}
-                </Text>
+              <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} />
+            </Table.Td>
+            <Table.Td ta="right">
+              <Text {...number} c="dimmed">
+                {formatNumber(item.minStock, i18n.language)}
+              </Text>
+            </Table.Td>
+            <Table.Td>
+              <StockStatusLabel status={item.status} />
+            </Table.Td>
+            <Table.Td ta="right">
+              <Text {...number}>{formatNumber(item.sold30Days, i18n.language)}</Text>
+            </Table.Td>
+            <Table.Td ta="right">
+              <Text {...number} c="var(--z-text-2)">
+                {item.stockValue === null ? '' : formatMoney(item.stockValue, i18n.language)}
               </Text>
             </Table.Td>
           </Table.Tr>
@@ -224,12 +290,12 @@ function ItemsTable({ items, onOpen }: { items: ItemDto[]; onOpen: (item: ItemDt
   )
 }
 
-function EmptyState({ search, onAdd }: { search: string; onAdd: () => void }) {
+function EmptyState({ search, filtered, onAdd }: { search: string; filtered: boolean; onAdd: () => void }) {
   const { t } = useTranslation()
-  if (search) {
+  if (search || filtered) {
     return (
       <Text p="lg" c="dimmed">
-        {t('items.noResults', { search })}
+        {search ? t('items.noResults', { search }) : t('items.noFilterResults')}
       </Text>
     )
   }

@@ -64,7 +64,8 @@ export function AppLayout() {
                 key={to}
                 component={RouterNavLink}
                 to={to}
-                end
+                // Home matches only itself; other items stay active on their sub-pages (/items/123).
+                end={to === '/'}
                 onClick={close}
                 className={classes.navLink}
                 label={t(labelKey)}

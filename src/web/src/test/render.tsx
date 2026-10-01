@@ -37,3 +37,24 @@ export function mockFetch(...responses: Array<{ status: number; body?: unknown }
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
+
+type MockResponse = { status: number; body?: unknown }
+
+/**
+ * Replaces fetch with a fake API that answers by URL instead of call order: the first entry whose
+ * key is a prefix of "METHOD /path?query" wins, e.g. { 'GET /api/items?': ..., 'POST /api/items': ... }.
+ */
+export function mockApi(routes: Record<string, MockResponse | ((init?: RequestInit) => MockResponse)>) {
+  const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
+    const request = `${(init?.method ?? 'GET').toUpperCase()} ${String(input)}`
+    const match = Object.entries(routes).find(([key]) => request.startsWith(key))
+    if (!match) throw new Error(`No mock for ${request}`)
+    const { status, body } = typeof match[1] === 'function' ? match[1](init) : match[1]
+    return new Response(body === undefined ? null : JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': status >= 400 ? 'application/problem+json' : 'application/json' },
+    })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}

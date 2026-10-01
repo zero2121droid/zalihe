@@ -6,24 +6,34 @@
 const MINUS_SIGN = '−'
 
 export function formatNumber(value: number, language: string, maximumFractionDigits = 3): string {
-  return new Intl.NumberFormat(language, { maximumFractionDigits }).format(value)
+  return withTrueMinus(new Intl.NumberFormat(language, { maximumFractionDigits }), value)
 }
 
-/** Stock movement quantity with an explicit sign: "+24", "−2" (true minus sign, not a hyphen). */
-export function formatSignedQuantity(value: number, language: string): string {
-  return new Intl.NumberFormat(language, { maximumFractionDigits: 3, signDisplay: 'exceptZero' })
+/** Intl uses a hyphen for negatives; DESIGN.md asks for the real minus sign everywhere. */
+function withTrueMinus(format: Intl.NumberFormat, value: number): string {
+  return format
     .formatToParts(value)
     .map((part) => (part.type === 'minusSign' ? MINUS_SIGN : part.value))
     .join('')
 }
 
+/** Stock movement quantity with an explicit sign: "+24", "−2" (true minus sign, not a hyphen). */
+export function formatSignedQuantity(value: number, language: string): string {
+  return withTrueMinus(new Intl.NumberFormat(language, { maximumFractionDigits: 3, signDisplay: 'exceptZero' }), value)
+}
+
 export function formatMoney(value: number, language: string): string {
-  return new Intl.NumberFormat(language, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value)
+  return withTrueMinus(new Intl.NumberFormat(language, { minimumFractionDigits: 0, maximumFractionDigits: 2 }), value)
 }
 
 /** "četvrtak, 1. oktobar" / "Thursday, October 1". */
 export function formatLongDate(date: Date, language: string): string {
   return new Intl.DateTimeFormat(language, { weekday: 'long', day: 'numeric', month: 'long' }).format(date)
+}
+
+/** "1. 10. 2026. 14:32" / "Oct 1, 2026, 2:32 PM", in the user's time zone. */
+export function formatDateTime(value: string | Date, language: string): string {
+  return new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 
 /**

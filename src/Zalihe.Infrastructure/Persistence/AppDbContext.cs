@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Items;
+using Zalihe.Domain.Stock;
 using Zalihe.Domain.Tenants;
 using Zalihe.Domain.Users;
 using Zalihe.Infrastructure.Identity;
@@ -15,6 +16,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Item> Items => Set<Item>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<StockLevel> StockLevels => Set<StockLevel>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -59,6 +62,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             item.HasIndex(i => new { i.TenantId, i.Name });
         });
 
+        builder.Entity<StockMovement>(movement =>
+        {
+            movement.Property(m => m.Type).HasConversion<string>().HasMaxLength(16);
+            movement.Property(m => m.Source).HasConversion<string>().HasMaxLength(16);
+            movement.Property(m => m.Quantity).HasPrecision(18, 3);
+            movement.Property(m => m.Note).HasMaxLength(StockMovement.NoteMaxLength);
+            movement.Property(m => m.ExternalRef).HasMaxLength(StockMovement.ExternalRefMaxLength);
+            movement.HasOne<Item>().WithMany().HasForeignKey(m => m.ItemId).OnDelete(DeleteBehavior.Restrict);
+            movement.HasOne<Tenant>().WithMany().HasForeignKey(m => m.TenantId).OnDelete(DeleteBehavior.Restrict);
+            movement.HasOne<User>().WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Restrict);
+            // History per item (newest first) and "sold in the last 30 days".
+            movement.HasIndex(m => new { m.ItemId, m.OccurredAt });
+            movement.HasIndex(m => new { m.TenantId, m.Type, m.OccurredAt });
+        });
+
+        builder.Entity<StockLevel>(level =>
+        {
+            level.HasKey(l => l.ItemId);
+            level.Property(l => l.Quantity).HasPrecision(18, 3);
+            // Maps to PostgreSQL's xmin system column: a concurrent update fails instead of being lost.
+            level.Property(l => l.RowVersion).IsRowVersion();
+            level.HasOne<Item>().WithOne().HasForeignKey<StockLevel>(l => l.ItemId).OnDelete(DeleteBehavior.Restrict);
+            level.HasOne<Tenant>().WithMany().HasForeignKey(l => l.TenantId).OnDelete(DeleteBehavior.Restrict);
+            level.HasIndex(l => l.TenantId);
+        });
+
         ApplyTenantFilters(builder);
     }
 
@@ -77,6 +106,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
 
     private void ApplyTenantFilter<T>(ModelBuilder builder) where T : class, ITenantOwned =>
         builder.Entity<T>().HasQueryFilter(e => e.TenantId == CurrentTenantId);
+
+    public Task<StockLevel?> LockStockLevelAsync(Guid itemId, CancellationToken ct) =>
+        // FOR UPDATE makes other transactions wait for this row. xmin (the row version) is a system
+        // column, so SELECT * leaves it out and it is listed explicitly. The tenant filter still applies,
+        // because EF composes the global query filter around this SQL.
+        StockLevels
+            .FromSql($"""SELECT *, xmin FROM "StockLevels" WHERE "ItemId" = {itemId} FOR UPDATE""")
+            .SingleOrDefaultAsync(ct);
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {

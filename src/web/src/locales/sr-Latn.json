@@ -21,7 +21,8 @@
     "theme": {
       "toLight": "Uključi svetlu temu",
       "toDark": "Uključi tamnu temu"
-    }
+    },
+    "back": "Nazad"
   },
   "auth": {
     "login": {
@@ -71,7 +72,8 @@
       "not_negative": "Vrednost ne može biti negativna.",
       "too_many_decimals": "Najviše {{max}} decimale.",
       "out_of_range": "Vrednost je van dozvoljenog opsega.",
-      "number": "Unesi broj, npr. 12,5."
+      "number": "Unesi broj, npr. 12,5.",
+      "positive": "Količina mora biti veća od nule."
     },
     "auth": {
       "unauthenticated": "Prijavi se da bi nastavio.",
@@ -84,6 +86,9 @@
     },
     "item": {
       "sku_duplicate": "Artikal sa ovom šifrom već postoji."
+    },
+    "stock": {
+      "no_change": "Prebrojano stanje je isto kao trenutno, nema šta da se koriguje."
     }
   },
   "items": {
@@ -94,7 +99,11 @@
     "columns": {
       "item": "Artikal",
       "sku": "Šifra",
-      "minStock": "Min."
+      "minStock": "Min.",
+      "stock": "Stanje",
+      "status": "Status",
+      "sold30Days": "Prodaja 30d",
+      "value": "Vrednost"
     },
     "range": "{{from}}–{{to}} od {{total}}",
     "empty": {
@@ -132,6 +141,79 @@
     },
     "edit": "Izmeni artikal {{name}}",
     "showInactive": "Prikaži neaktivne",
-    "inactive": "Neaktivan"
+    "inactive": "Neaktivan",
+    "filters": {
+      "label": "Filter po stanju",
+      "all": "Svi",
+      "low": "Ispod minimuma",
+      "outOfStock": "Nema na stanju"
+    },
+    "open": "Otvori artikal {{name}}",
+    "detail": {
+      "notFound": "Artikal ne postoji ili ne pripada tvojoj firmi.",
+      "edit": "Izmeni",
+      "minStock": "Minimalna zaliha",
+      "sold30Days": "Prodaja 30 dana",
+      "value": "Vrednost po nabavnoj ceni",
+      "noPrice": "nema nabavne cene"
+    },
+    "noFilterResults": "Nijedan artikal nije u ovom stanju."
+  },
+  "stock": {
+    "status": {
+      "inStock": "Na stanju",
+      "low": "Ispod minimuma",
+      "outOfStock": "Nema na stanju"
+    },
+    "actions": {
+      "receipt": "Prijem",
+      "sale": "Prodaja",
+      "return": "Povrat",
+      "count": "Korekcija"
+    },
+    "types": {
+      "receipt": "Prijem",
+      "sale": "Prodaja",
+      "adjustment": "Korekcija",
+      "return": "Povrat"
+    },
+    "sources": {
+      "manual": "Ručno",
+      "csv": "CSV uvoz",
+      "wooCommerce": "WooCommerce"
+    },
+    "form": {
+      "titles": {
+        "receipt": "Prijem robe",
+        "sale": "Prodaja",
+        "return": "Povrat",
+        "count": "Korekcija stanja"
+      },
+      "quantity": {
+        "receipt": "Primljena količina",
+        "sale": "Prodata količina",
+        "return": "Vraćena količina",
+        "count": "Prebrojano stanje"
+      },
+      "countHint": "Upiši koliko stvarno ima. Razliku u odnosu na trenutno stanje aplikacija upisuje kao korekciju.",
+      "current": "Trenutno stanje",
+      "after": "Posle unosa",
+      "difference": "Razlika",
+      "negativeWarning": "Stanje će otići u minus. Dozvoljeno je, ali proveri da li je količina tačna.",
+      "note": "Napomena",
+      "noteRequired": "Razlog (popis, otpis, oštećenje…)",
+      "submit": "Zabeleži"
+    },
+    "history": {
+      "title": "Istorija kretanja",
+      "empty": "Još nema kretanja za ovaj artikal.",
+      "columns": {
+        "when": "Vreme",
+        "type": "Vrsta",
+        "quantity": "Količina",
+        "note": "Napomena",
+        "user": "Uneo"
+      }
+    }
   }
 }

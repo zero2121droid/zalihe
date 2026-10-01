@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „izmena i deaktivacija artikala” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „kretanja zaliha” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -66,6 +66,28 @@ SaveChanges: provera da novi podatak pripada trenutnoj firmi
 
 Test `TenantFilterTests` pada čim neko doda entitet sa kolonom `TenantId` koji nema filter, a `ItemsTests` proverava da firma B ne vidi i ne može da otvori artikal firme A.
 
+### Zalihe: kretanja i stanje
+
+Najvažnije pravilo projekta: **stanje se nikad ne menja direktno, a uvek je jednako zbiru kretanja.**
+
+```
+POST /api/items/{id}/movements  (prijem, prodaja, povrat, korekcija na prebrojano)
+  │
+  ▼  StockService.RecordAsync
+BEGIN TRANSACTION
+  SELECT stanje artikla ... FOR UPDATE      ← drugo kretanje za isti artikal čeka ovde
+  StockMovement.Receipt/Sale/Return/AdjustmentToCount   (pravila predznaka u domenu)
+  StockLevel.Apply(kretanje)                (stanje += količina)
+  SaveChanges                               (kretanje i stanje zajedno)
+COMMIT
+```
+
+- **Kretanje se samo dodaje.** `StockMovement` nema metode za izmenu, a API nema endpoint za izmenu ni brisanje. Greška se ispravlja korekcijom.
+- **Predznak čuva domen:** prijem i povrat su `+`, prodaja je `−` (korisnik upisuje pozitivnu količinu), a korekcija je razlika između prebrojanog i trenutnog stanja, koju računa API, ne korisnik.
+- **Istovremeni unosi:** red sa stanjem se zaključava (`LockStockLevelAsync`, `SELECT … FOR UPDATE`), pa se kretanja za isti artikal izvršavaju jedno za drugim. `RowVersion` (Postgres `xmin`) je dodatna zaštita. Test `Record_TenConcurrentReceipts_NoneIsLost` to proverava.
+- **Stanje sme u minus**, jer porudžbine sa sajta stižu bez obzira na stanje. Forma za ručnu prodaju samo upozori.
+- **Status** (`StockStatusRules`): ≤ 0 je „Nema na stanju”, ≤ minimuma je „Ispod minimuma”, ostalo „Na stanju”. Isti uslovi se koriste kao SQL filter u listi.
+
 ## 3. Folder struktura
 
 ```
@@ -122,6 +144,12 @@ zalihe/
 
 **`Items/Unit.cs`**: jedinica mere kao `enum` (kom, kg, g, l, ml, m, pak). Fiksna lista omogućava da se količine u izveštajima sabiraju. U API-ju putuje kao kod (`"kom"`), a frontend ga prevodi (`items.units.kom`, na engleskom „pcs”).
 
+**`Stock/StockMovement.cs`**: jedno kretanje zaliha. Fabričke metode `Receipt`, `Sale`, `Return`, `Adjustment` i `AdjustmentToCount` jedine prave kretanje i čuvaju predznak i broj decimala. `AdjustmentToCount` vraća `null` kad je prebrojano isto kao trenutno, jer nema šta da se upiše.
+
+**`Stock/StockLevel.cs`**: trenutno stanje artikla, keš zbira kretanja. Menja se samo kroz `Apply(kretanje)`. `RowVersion` je token za istovremene izmene. Novi artikal dobija stanje 0 u istom čuvanju.
+
+**`Stock/StockStatus.cs`**: status zaliha i `StockStatusRules.For(količina, minimum)`.
+
 **`Users/Languages.cs`**: podržani jezici (`sr-Latn`, `en`), podrazumevani jezik i `IsSupported()` za proveru. Ovo je domensko pravilo, pa je ovde, a ne u Web-u.
 
 ### Zalihe.Application
@@ -143,6 +171,12 @@ zalihe/
 - `ListAsync()` podrazumevano izostavlja neaktivne; `IncludeInactive` ih uključuje.
 - `ToDto`: izraz koji EF prevodi u SQL, pa se iz baze čitaju samo potrebne kolone.
 
+**`Common/ICurrentUser.cs`**: `ICurrentUser` (ko je uneo kretanje; Web ga čita iz cookie-ja) i `IUserDirectory` (imena korisnika za istoriju).
+
+**`Stock/StockService.cs`**: `RecordAsync()` (transakcija, zaključavanje, kretanje i stanje zajedno; za korekciju je napomena obavezna), `GetHistoryAsync()` (najnovije prvo, sa imenom korisnika) i `GetSummaryAsync()` (koliko aktivnih artikala je ispod minimuma ili bez zaliha).
+
+**Izmene u `ItemService`**: lista i jedan artikal sada dolaze sa stanjem, statusom, vrednošću (stanje × nabavna cena) i prodajom u poslednjih 30 dana, u jednom upitu. Lista ima i filter po statusu.
+
 ### Zalihe.Infrastructure
 
 **`Identity/User.cs`**: korisnik. Nasleđuje `IdentityUser<Guid>`, pa dobija email, hash lozinke, zaključavanje i ostalo što Identity nudi, i dodaje `TenantId` (kojoj firmi pripada) i `Language`. `<Guid>` znači da je ključ GUID, a ne string.
@@ -152,6 +186,10 @@ zalihe/
 - `DbSet<Tenant> Tenants`: tabela firmi.
 - `OnModelCreating`: opisuje šemu: dužine kolona, strani ključ korisnik → firma i indeks na `TenantId`. `OnDelete(Restrict)` sprečava brisanje firme koja ima korisnike.
 - Ovde dolaze **global query filteri** za `TenantId`, sa prvim entitetom koji sadrži podatke firme.
+
+**`Identity/UserDirectory.cs`**: imena korisnika za istoriju kretanja. Korisnici nemaju global query filter, pa je ovo jedino mesto koje ih izričito ograničava na trenutnu firmu.
+
+**Kretanja u `AppDbContext.cs`**: tabele `StockMovements` (indeksi za istoriju po artiklu i prodaju po periodu) i `StockLevels` (ključ je `ItemId`, `RowVersion` mapiran na `xmin`), plus `LockStockLevelAsync()` sa `SELECT *, xmin … FOR UPDATE`. Migracija `AddStockMovements` postojećim artiklima dodaje stanje 0.
 
 **`Tenancy/TenantContext.cs`**: implementacija `ITenantContext`, jedna po zahtevu (scoped). `Set()` odbija da promeni već postavljenu firmu.
 
@@ -251,6 +289,10 @@ Primer odgovora sa greškom:
 
 **JSON podešavanja u `Program.cs`**: enumi putuju kao kodovi (`"kom"`), a brojevi moraju biti JSON brojevi (`NumberHandling.Strict`). Bez toga bi OpenAPI opisivao brojeve kao „broj ili tekst”, pa bi TypeScript tipovi bili `number | string`. Ista podešavanja važe i za generisanje OpenAPI dokumenta (`ConfigureHttpJsonOptions`).
 
+**`Stock/StockController.cs`**: `POST /api/items/{id}/movements`, `GET /api/items/{id}/movements` i `GET /api/stock/summary`. Namerno nema endpointa za izmenu ili brisanje kretanja.
+
+**`Auth/HttpCurrentUser.cs`**: `ICurrentUser` iz claima prijavljenog korisnika.
+
 **`Controllers/HealthController.cs`**: `GET /api/health`. Brza provera da API radi, a kasnije i za monitoring u produkciji.
 
 **`appsettings.Development.json`**: connection string za lokalni Docker Postgres. Učitava se samo u Development okruženju.
@@ -345,6 +387,12 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`pages/items/ItemsPage.tsx`**: ekran „Artikli” po maketi: naslov sa brojem artikala, pretraga, tabela (artikal sa kategorijom, šifra, minimalna zaliha sa jedinicom mere) i paginacija „1–20 od N”. Pretraga i strana su u adresi (`/items?q=etiop&page=2`), pa ih osvežavanje i dugme „nazad” čuvaju. Pretraga se šalje 300 ms posle poslednjeg slova (`useDebouncedValue`), a `keepPreviousData` drži staru listu dok stiže nova, pa tabela ne treperi. Klik na red otvara izmenu; za tastaturu je naziv artikla pravo dugme. Prekidač „Prikaži neaktivne” (`?inactive=1`) uključuje neaktivne artikle, koji imaju oznaku „Neaktivan” (tekst, ne samo boja). Kolone Stanje, Status, Prodaja 30d i Vrednost dolaze sa kretanjima zaliha.
 
+**`pages/items/ItemDetailPage.tsx`**: stranica artikla (`/items/{id}`): traka sa stanjem, minimumom, prodajom za 30 dana i vrednošću, dugmad Izmeni / Prijem / Prodaja / Povrat / Korekcija i istorija kretanja sa paginacijom. Klik na artikal u listi vodi ovde.
+
+**`pages/items/MovementModal.tsx`**: unos kretanja. Ispod količine prikazuje stanje posle unosa ili razliku kod korekcije, i upozorenje kad stanje ide u minus. To je samo prikaz: stvarnu promenu računa API.
+
+**`components/stock.tsx`**: `StockStatusLabel` (tačka + tekst, nikad samo boja), `StockQuantity` (broj sa jedinicom, obojen za niske zalihe) i `MovementQuantity` (`+24` / `−2`).
+
 **`pages/items/ItemModal.tsx`**: jedna forma za dodavanje i izmenu. Bez `item` pravi novi artikal, a sa `item` popuni polja (decimale u formatu jezika, npr. `12,5`, preko `formatDecimalInput()`), šalje `PUT` i nudi „Deaktiviraj” ili „Aktiviraj”. Roditelj joj daje `key` po artiklu, pa forma pri svakom otvaranju kreće od podataka tog artikla. Jedinice mere dolaze iz generisane konstante `Unit`, dakle iz istog izvora kao na backendu. Kategorija nudi predloge iz `GET /api/items/categories`. Posle uspešnog čuvanja invalidiraju se lista i kategorije, pa se novi artikal odmah vidi.
 
 **Frontend testovi** (`*.test.ts(x)`, Vitest + React Testing Library):
@@ -353,10 +401,11 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `errors.test.ts`: prevođenje kodova i parametara;
 - `LoginPage.test.tsx`, `RegisterPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
 - `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju;
+- `MovementModal.test.tsx`, `ItemDetailPage.test.tsx`: unos kretanja (decimale, upozorenje za minus, razlika kod korekcije, greške), prikaz stanja i istorije;
 - `ThemeToggle.test.tsx`: tamna tema na početku, klik prebacuje na svetlu i pamti izbor;
 - `ItemsPage.test.tsx`, `ItemModal.test.tsx`: izmena (popunjena polja, `PUT`), deaktivacija, oznaka i filter neaktivnih, redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
 
-Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pokrenut backend, i renderuju sa pravim providerima (`renderRoutes`).
+Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema adresi, kad ekran šalje više zahteva odjednom; oba su u `test/render.tsx`), pa ne zahtevaju pokrenut backend, i renderuju sa pravim providerima (`renderRoutes`).
 
 ### Testovi
 
@@ -384,6 +433,10 @@ Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pok
 **`Zalihe.IntegrationTests/Items/ItemUpdateTests.cs`**: izmena (sopstvena šifra je dozvoljena, tuđa nije), deaktivacija i aktivacija, filter neaktivnih, i izolacija: firma B ne može da izmeni ni deaktivira artikal firme A.
 
 **`Zalihe.IntegrationTests/Items/ItemContractsTests.cs`**: test koji reprodukuje grešku sa `[Range]` i srpskim podešavanjima. Atribut čita direktno, jer test server ne prenosi jezička podešavanja u obradu zahteva, pa bi test preko HTTP-a prolazio i sa greškom.
+
+**`Zalihe.Domain.Tests/Stock/`**: predznaci kretanja, korekcija na prebrojano, stanje kao zbir kretanja i pravila statusa.
+
+**`Zalihe.IntegrationTests/Stock/StockTests.cs`**: prijem, prodaja u minus, korekcija, greške, 10 istovremenih prijema, stanje jednako zbiru kretanja u bazi, istorija, filter po statusu, prodaja 30 dana i vrednost, i izolacija: firma B ne može da upiše kretanje ni vidi istoriju artikla firme A.
 
 **`Zalihe.IntegrationTests/Tenancy/TenantFilterTests.cs`**: svaki entitet sa kolonom `TenantId` mora da implementira `ITenantOwned` i da ima filter, a upit bez postavljene firme mora da baci izuzetak.
 

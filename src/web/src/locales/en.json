@@ -21,7 +21,8 @@
     "theme": {
       "toLight": "Switch to light theme",
       "toDark": "Switch to dark theme"
-    }
+    },
+    "back": "Back"
   },
   "auth": {
     "login": {
@@ -71,7 +72,8 @@
       "not_negative": "The value can't be negative.",
       "too_many_decimals": "At most {{max}} decimal places.",
       "out_of_range": "The value is out of the allowed range.",
-      "number": "Enter a number, e.g. 12.5."
+      "number": "Enter a number, e.g. 12.5.",
+      "positive": "The quantity must be greater than zero."
     },
     "auth": {
       "unauthenticated": "Sign in to continue.",
@@ -84,6 +86,9 @@
     },
     "item": {
       "sku_duplicate": "An item with this SKU already exists."
+    },
+    "stock": {
+      "no_change": "The counted stock equals the current stock; there is nothing to correct."
     }
   },
   "items": {
@@ -94,7 +99,11 @@
     "columns": {
       "item": "Item",
       "sku": "SKU",
-      "minStock": "Min."
+      "minStock": "Min.",
+      "stock": "Stock",
+      "status": "Status",
+      "sold30Days": "Sold 30d",
+      "value": "Value"
     },
     "range": "{{from}}–{{to}} of {{total}}",
     "empty": {
@@ -132,6 +141,79 @@
     },
     "edit": "Edit item {{name}}",
     "showInactive": "Show inactive",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "filters": {
+      "label": "Filter by stock",
+      "all": "All",
+      "low": "Below minimum",
+      "outOfStock": "Out of stock"
+    },
+    "open": "Open item {{name}}",
+    "detail": {
+      "notFound": "This item doesn't exist or doesn't belong to your company.",
+      "edit": "Edit",
+      "minStock": "Minimum stock",
+      "sold30Days": "Sold in 30 days",
+      "value": "Value at purchase price",
+      "noPrice": "no purchase price"
+    },
+    "noFilterResults": "No items match this filter."
+  },
+  "stock": {
+    "status": {
+      "inStock": "In stock",
+      "low": "Below minimum",
+      "outOfStock": "Out of stock"
+    },
+    "actions": {
+      "receipt": "Receive",
+      "sale": "Sale",
+      "return": "Return",
+      "count": "Correct"
+    },
+    "types": {
+      "receipt": "Receipt",
+      "sale": "Sale",
+      "adjustment": "Correction",
+      "return": "Return"
+    },
+    "sources": {
+      "manual": "Manual",
+      "csv": "CSV import",
+      "wooCommerce": "WooCommerce"
+    },
+    "form": {
+      "titles": {
+        "receipt": "Receive goods",
+        "sale": "Sale",
+        "return": "Return",
+        "count": "Stock correction"
+      },
+      "quantity": {
+        "receipt": "Quantity received",
+        "sale": "Quantity sold",
+        "return": "Quantity returned",
+        "count": "Counted stock"
+      },
+      "countHint": "Enter how much there really is. The difference from the current stock is recorded as a correction.",
+      "current": "Current stock",
+      "after": "After this entry",
+      "difference": "Difference",
+      "negativeWarning": "Stock will go below zero. That's allowed, but check that the quantity is right.",
+      "note": "Note",
+      "noteRequired": "Reason (count, write-off, damage…)",
+      "submit": "Record"
+    },
+    "history": {
+      "title": "Movement history",
+      "empty": "No movements for this item yet.",
+      "columns": {
+        "when": "Time",
+        "type": "Type",
+        "quantity": "Quantity",
+        "note": "Note",
+        "user": "Entered by"
+      }
+    }
   }
 }

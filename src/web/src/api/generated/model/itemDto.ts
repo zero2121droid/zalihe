@@ -4,6 +4,7 @@
  * Zalihe.Web | v1
  * OpenAPI spec version: 1.0.0
  */
+import type { StockStatus } from './stockStatus';
 import type { Unit } from './unit';
 
 export interface ItemDto {
@@ -23,4 +24,9 @@ export interface ItemDto {
   salePrice: number | null;
   minStock: number;
   isActive: boolean;
+  stock: number;
+  status: StockStatus;
+  /** @nullable */
+  stockValue: number | null;
+  sold30Days: number;
 }

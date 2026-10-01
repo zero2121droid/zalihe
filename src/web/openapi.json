@@ -10,6 +10,228 @@
     }
   ],
   "paths": {
+    "/api/items/{itemId}/movements": {
+      "post": {
+        "tags": [
+          "Stock"
+        ],
+        "operationId": "RecordStockMovement",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMovementRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMovementRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordMovementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordMovementResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordMovementResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordMovementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Stock"
+        ],
+        "operationId": "ListStockMovements",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfStockMovementDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfStockMovementDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfStockMovementDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock/summary": {
+      "get": {
+        "tags": [
+          "Stock"
+        ],
+        "operationId": "GetStockSummary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSummaryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSummaryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/items": {
       "get": {
         "tags": [
@@ -37,6 +259,13 @@
             "schema": {
               "type": "boolean",
               "default": false
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/StockStatus"
             }
           },
           {
@@ -790,7 +1019,11 @@
           "purchasePrice",
           "salePrice",
           "minStock",
-          "isActive"
+          "isActive",
+          "stock",
+          "status",
+          "stockValue",
+          "sold30Days"
         ],
         "type": "object",
         "properties": {
@@ -845,6 +1078,24 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "stock": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StockStatus"
+          },
+          "stockValue": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "sold30Days": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -930,6 +1181,15 @@
           }
         }
       },
+      "ManualMovementKind": {
+        "enum": [
+          "receipt",
+          "sale",
+          "return",
+          "count",
+          null
+        ]
+      },
       "PagedResultOfItemDto": {
         "required": [
           "items",
@@ -943,6 +1203,35 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ItemDto"
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfStockMovementDto": {
+        "required": [
+          "items",
+          "totalCount",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockMovementDto"
             }
           },
           "totalCount": {
@@ -995,6 +1284,54 @@
           }
         }
       },
+      "RecordMovementRequest": {
+        "required": [
+          "kind",
+          "quantity"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ManualMovementKind"
+              }
+            ]
+          },
+          "quantity": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RecordMovementResponse": {
+        "required": [
+          "movement",
+          "stock"
+        ],
+        "type": "object",
+        "properties": {
+          "movement": {
+            "$ref": "#/components/schemas/StockMovementDto"
+          },
+          "stock": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "RegisterRequest": {
         "required": [
           "companyName",
@@ -1025,6 +1362,96 @@
           }
         }
       },
+      "StockMovementDto": {
+        "required": [
+          "id",
+          "type",
+          "quantity",
+          "occurredAt",
+          "source",
+          "externalRef",
+          "note",
+          "userName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/StockMovementType"
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "$ref": "#/components/schemas/StockMovementSource"
+          },
+          "externalRef": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "StockMovementSource": {
+        "enum": [
+          "manual",
+          "csv",
+          "wooCommerce"
+        ]
+      },
+      "StockMovementType": {
+        "enum": [
+          "receipt",
+          "sale",
+          "adjustment",
+          "return"
+        ]
+      },
+      "StockStatus": {
+        "enum": [
+          "inStock",
+          "low",
+          "outOfStock"
+        ]
+      },
+      "StockSummaryDto": {
+        "required": [
+          "belowMinimum",
+          "outOfStock"
+        ],
+        "type": "object",
+        "properties": {
+          "belowMinimum": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outOfStock": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "Unit": {
         "enum": [
           "kom",
@@ -1039,6 +1466,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Stock"
+    },
     {
       "name": "Items"
     },

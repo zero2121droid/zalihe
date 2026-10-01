@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Zalihe.Application.Common;
 using Zalihe.Application.Items;
+using Zalihe.Application.Stock;
 using Zalihe.Infrastructure.Identity;
 using Zalihe.Infrastructure.Persistence;
 using Zalihe.Infrastructure.Tenancy;
@@ -23,6 +24,8 @@ public static class DependencyInjection
 
         services.AddScoped<AccountService>();
         services.AddScoped<ItemService>();
+        services.AddScoped<StockService>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
 
         return services;
     }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Items;
+using Zalihe.Domain.Stock;
 
 namespace Zalihe.Application.Items;
 
@@ -15,12 +16,17 @@ public record ItemDto(
     decimal? PurchasePrice,
     decimal? SalePrice,
     decimal MinStock,
-    bool IsActive);
+    bool IsActive,
+    decimal Stock,
+    StockStatus Status,
+    decimal? StockValue, // stock (when positive) times purchase price; null without a purchase price
+    decimal Sold30Days); // quantity sold in the last 30 days
 
 public record ItemListQuery(
     string? Search,
     string? Category,
     bool IncludeInactive = false,
+    StockStatus? Status = null,
     int Page = 1,
     int PageSize = Paging.DefaultPageSize);
 
@@ -73,20 +79,33 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
             items = items.Where(i => i.Category == category);
         }
 
-        var totalCount = await items.CountAsync(ct);
-        var page = await items
-            .OrderBy(i => i.Name)
-            .ThenBy(i => i.Sku)
+        var rows = WithStock(items);
+
+        // Same conditions as StockStatusRules.For, expressed for SQL.
+        rows = query.Status switch
+        {
+            StockStatus.OutOfStock => rows.Where(r => r.Stock <= 0),
+            StockStatus.Low => rows.Where(r => r.Stock > 0 && r.Stock <= r.Item.MinStock),
+            StockStatus.InStock => rows.Where(r => r.Stock > r.Item.MinStock),
+            _ => rows,
+        };
+
+        var totalCount = await rows.CountAsync(ct);
+        var page = await rows
+            .OrderBy(r => r.Item.Name)
+            .ThenBy(r => r.Item.Sku)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
-            .Select(ToDto)
             .ToListAsync(ct);
 
-        return new PagedResult<ItemDto>(page, totalCount, query.Page, query.PageSize);
+        return new PagedResult<ItemDto>(page.Select(ToDto).ToList(), totalCount, query.Page, query.PageSize);
     }
 
-    public Task<ItemDto?> GetAsync(Guid id, CancellationToken ct) =>
-        db.Items.AsNoTracking().Where(i => i.Id == id).Select(ToDto).SingleOrDefaultAsync(ct);
+    public async Task<ItemDto?> GetAsync(Guid id, CancellationToken ct)
+    {
+        var row = await WithStock(db.Items.AsNoTracking().Where(i => i.Id == id)).SingleOrDefaultAsync(ct);
+        return row is null ? null : ToDto(row);
+    }
 
     /// <summary>Distinct categories in use, for suggestions in the item form.</summary>
     public async Task<IReadOnlyList<string>> GetCategoriesAsync(CancellationToken ct) =>
@@ -119,9 +138,10 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
             command.SalePrice);
 
         db.Items.Add(item);
+        db.StockLevels.Add(new StockLevel(item, item.CreatedAt));
         await db.SaveChangesAsync(ct);
 
-        return new SaveItemResult(MapToDto(item), []);
+        return await ResultFor(item.Id, ct);
     }
 
     /// <summary>Changes an item of the current company; another company's item is "not found".</summary>
@@ -151,7 +171,7 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
             command.SalePrice);
         await db.SaveChangesAsync(ct);
 
-        return new SaveItemResult(MapToDto(item), []);
+        return await ResultFor(item.Id, ct);
     }
 
     /// <summary>Deactivates or activates an item. Returns false when the item doesn't exist.</summary>
@@ -198,9 +218,39 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, TimeProvider t
         }
     }
 
-    private static readonly System.Linq.Expressions.Expression<Func<Item, ItemDto>> ToDto = i => new ItemDto(
-        i.Id, i.Name, i.Sku, i.Barcode, i.Unit, i.Category, i.GroupName,
-        i.PurchasePrice, i.SalePrice, i.MinStock, i.IsActive);
+    private async Task<SaveItemResult> ResultFor(Guid itemId, CancellationToken ct) =>
+        new((await GetAsync(itemId, ct))!, []);
 
-    private static readonly Func<Item, ItemDto> MapToDto = ToDto.Compile();
+    private sealed class ItemWithStock
+    {
+        public required Item Item { get; init; }
+        public decimal Stock { get; init; }
+        public decimal Sold30Days { get; init; }
+    }
+
+    /// <summary>Joins each item with its stock and its sales of the last 30 days, in one query.</summary>
+    private IQueryable<ItemWithStock> WithStock(IQueryable<Item> items)
+    {
+        var since = timeProvider.GetUtcNow().AddDays(-30);
+        return
+            from item in items
+            join level in db.StockLevels on item.Id equals level.ItemId
+            select new ItemWithStock
+            {
+                Item = item,
+                Stock = level.Quantity,
+                Sold30Days = -db.StockMovements
+                    .Where(m => m.ItemId == item.Id && m.Type == StockMovementType.Sale && m.OccurredAt >= since)
+                    .Sum(m => m.Quantity),
+            };
+    }
+
+    private static ItemDto ToDto(ItemWithStock row)
+    {
+        var i = row.Item;
+        var value = i.PurchasePrice is { } price ? decimal.Round(Math.Max(row.Stock, 0) * price, Item.MoneyDecimals) : (decimal?)null;
+        return new ItemDto(
+            i.Id, i.Name, i.Sku, i.Barcode, i.Unit, i.Category, i.GroupName, i.PurchasePrice, i.SalePrice,
+            i.MinStock, i.IsActive, row.Stock, StockStatusRules.For(row.Stock, i.MinStock), value, row.Sold30Days);
+    }
 }

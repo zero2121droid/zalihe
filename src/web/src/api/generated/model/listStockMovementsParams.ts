@@ -4,13 +4,8 @@
  * Zalihe.Web | v1
  * OpenAPI spec version: 1.0.0
  */
-import type { StockStatus } from './stockStatus';
 
-export type ListItemsParams = {
-search?: string;
-category?: string;
-includeInactive?: boolean;
-status?: StockStatus;
+export type ListStockMovementsParams = {
 /**
  * @minimum 1
  * @maximum 2147483647

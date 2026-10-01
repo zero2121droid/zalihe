@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zalihe.Application.Common;
 using Zalihe.Application.Items;
+using Zalihe.Domain.Stock;
 using Zalihe.Web.Errors;
 
 namespace Zalihe.Web.Items;
@@ -15,7 +16,8 @@ public class ItemsController(ItemService itemService) : ControllerBase
 {
     /// <summary>
     /// Items of the current company, paged, searchable by name, SKU or barcode.
-    /// Deactivated items are left out unless <paramref name="includeInactive"/> is set.
+    /// Deactivated items are left out unless <paramref name="includeInactive"/> is set;
+    /// <paramref name="status"/> keeps only items in that stock status.
     /// </summary>
     [HttpGet(Name = "ListItems")]
     [ProducesResponseType<PagedResult<ItemDto>>(StatusCodes.Status200OK)]
@@ -24,10 +26,11 @@ public class ItemsController(ItemService itemService) : ControllerBase
         [FromQuery] string? search,
         [FromQuery] string? category,
         [FromQuery] bool includeInactive = false,
+        [FromQuery] StockStatus? status = null,
         [FromQuery, Range(1, int.MaxValue, ErrorMessage = "validation.out_of_range")] int page = 1,
         [FromQuery, Range(1, Paging.MaxPageSize, ErrorMessage = "validation.out_of_range")] int pageSize = Paging.DefaultPageSize,
         CancellationToken ct = default) =>
-        itemService.ListAsync(new ItemListQuery(search, category, includeInactive, page, pageSize), ct);
+        itemService.ListAsync(new ItemListQuery(search, category, includeInactive, status, page, pageSize), ct);
 
     [HttpGet("{id:guid}", Name = "GetItem")]
     [ProducesResponseType<ItemDto>(StatusCodes.Status200OK)]

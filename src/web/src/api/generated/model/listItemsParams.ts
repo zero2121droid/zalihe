@@ -8,6 +8,7 @@
 export type ListItemsParams = {
 search?: string;
 category?: string;
+includeInactive?: boolean;
 /**
  * @minimum 1
  * @maximum 2147483647

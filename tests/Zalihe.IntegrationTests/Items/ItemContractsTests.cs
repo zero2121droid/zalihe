@@ -12,13 +12,13 @@ public class ItemContractsTests
     // On "sr-Latn" (comma as decimal separator) parsing threw, so every item create returned 500.
     // Attributes are read fresh via reflection, so no cached conversion hides the problem.
     [Theory]
-    [InlineData(nameof(CreateItemRequest.PurchasePrice))]
-    [InlineData(nameof(CreateItemRequest.SalePrice))]
-    [InlineData(nameof(CreateItemRequest.MinStock))]
+    [InlineData(nameof(ItemRequest.PurchasePrice))]
+    [InlineData(nameof(ItemRequest.SalePrice))]
+    [InlineData(nameof(ItemRequest.MinStock))]
     public void RangeAttribute_SerbianCulture_ValidatesWithoutThrowing(string parameterName)
     {
         // Arrange
-        var parameter = typeof(CreateItemRequest).GetConstructors().Single().GetParameters()
+        var parameter = typeof(ItemRequest).GetConstructors().Single().GetParameters()
             .Single(p => p.Name == parameterName);
         var range = parameter.GetCustomAttribute<RangeAttribute>()!;
         var original = CultureInfo.CurrentCulture;

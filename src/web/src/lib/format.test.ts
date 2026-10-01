@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatLongDate, formatMoney, formatNumber, formatSignedQuantity, parseDecimal, readDecimal } from './format'
+import { formatLongDate, formatMoney, formatNumber, formatDecimalInput, formatSignedQuantity, parseDecimal, readDecimal } from './format'
 
 describe('formatNumber', () => {
   it('formatNumber_SerbianLatin_UsesDotForThousandsAndCommaForDecimals', () => {
@@ -75,5 +75,19 @@ describe('readDecimal', () => {
 
   it('readDecimal_NotANumber_ReturnsInvalid', () => {
     expect(readDecimal('dvanaest')).toBe('invalid')
+  })
+})
+
+describe('formatDecimalInput', () => {
+  it('formatDecimalInput_SerbianLatin_UsesCommaWithoutGrouping', () => {
+    expect(formatDecimalInput(1284.5, 'sr-Latn')).toBe('1284,5')
+  })
+
+  it('formatDecimalInput_Null_ReturnsEmpty', () => {
+    expect(formatDecimalInput(null, 'sr-Latn')).toBe('')
+  })
+
+  it('formatDecimalInput_ReadBack_GivesSameNumber', () => {
+    expect(readDecimal(formatDecimalInput(12.125, 'sr-Latn'))).toBe(12.125)
   })
 })

@@ -6,7 +6,7 @@
  */
 import type { Unit } from './unit';
 
-export interface CreateItemRequest {
+export interface ItemRequest {
   name: string;
   sku: string;
   unit: null | Unit;

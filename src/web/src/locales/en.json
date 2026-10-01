@@ -115,7 +115,11 @@
       "groupNameHint": "For variations of the same product, e.g. “Basic T-shirt”.",
       "purchasePrice": "Purchase price",
       "salePrice": "Sale price",
-      "submit": "Save item"
+      "submit": "Save item",
+      "editTitle": "Edit item",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "inactiveNote": "This item is inactive: it is hidden from the list and not offered when entering data. Its history is kept."
     },
     "units": {
       "kom": "pcs",
@@ -125,6 +129,9 @@
       "ml": "ml",
       "m": "m",
       "pak": "pack"
-    }
+    },
+    "edit": "Edit item {{name}}",
+    "showInactive": "Show inactive",
+    "inactive": "Inactive"
   }
 }

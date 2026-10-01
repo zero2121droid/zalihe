@@ -27,6 +27,15 @@ export function formatLongDate(date: Date, language: string): string {
 }
 
 /**
+ * A stored number shown in an input field for editing: decimal separator of the language,
+ * no thousands separators (so "1284,5", not "1.284,5"), and empty for null.
+ */
+export function formatDecimalInput(value: number | null | undefined, language: string, maximumFractionDigits = 3): string {
+  if (value === null || value === undefined) return ''
+  return new Intl.NumberFormat(language, { maximumFractionDigits, useGrouping: false }).format(value)
+}
+
+/**
  * Parses a decimal typed by the user. Accepts both "12,5" and "12.5"; when both separators
  * appear, the last one is the decimal separator ("1.284,5" or "1,284.5").
  * Returns null for anything that isn't a number.

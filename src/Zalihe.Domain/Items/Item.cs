@@ -44,22 +44,58 @@ public class Item : ITenantOwned
         decimal? salePrice = null)
     {
         if (tenantId == Guid.Empty) throw new ArgumentException("Tenant is required.", nameof(tenantId));
-        if (!Enum.IsDefined(unit)) throw new ArgumentOutOfRangeException(nameof(unit));
 
         Id = Guid.CreateVersion7();
         TenantId = tenantId;
-        Name = Required(name, NameMaxLength, nameof(name));
-        Sku = Required(sku, SkuMaxLength, nameof(sku));
-        Barcode = Optional(barcode, BarcodeMaxLength, nameof(barcode));
-        Unit = unit;
-        Category = Optional(category, CategoryMaxLength, nameof(category));
-        GroupName = Optional(groupName, GroupNameMaxLength, nameof(groupName));
-        PurchasePrice = Money(purchasePrice, nameof(purchasePrice));
-        SalePrice = Money(salePrice, nameof(salePrice));
-        MinStock = Quantity(minStock, nameof(minStock));
         IsActive = true;
         CreatedAt = createdAt;
+        Name = null!;
+        Sku = null!;
+        Update(name, sku, unit, minStock, barcode, category, groupName, purchasePrice, salePrice);
     }
+
+    /// <summary>Changes the item's data. The same rules apply as when creating it.</summary>
+    public void Update(
+        string name,
+        string sku,
+        Unit unit,
+        decimal minStock,
+        string? barcode = null,
+        string? category = null,
+        string? groupName = null,
+        decimal? purchasePrice = null,
+        decimal? salePrice = null)
+    {
+        if (!Enum.IsDefined(unit)) throw new ArgumentOutOfRangeException(nameof(unit));
+
+        // Validate everything first, so a rejected update leaves the item unchanged.
+        var newName = Required(name, NameMaxLength, nameof(name));
+        var newSku = Required(sku, SkuMaxLength, nameof(sku));
+        var newBarcode = Optional(barcode, BarcodeMaxLength, nameof(barcode));
+        var newCategory = Optional(category, CategoryMaxLength, nameof(category));
+        var newGroupName = Optional(groupName, GroupNameMaxLength, nameof(groupName));
+        var newPurchasePrice = Money(purchasePrice, nameof(purchasePrice));
+        var newSalePrice = Money(salePrice, nameof(salePrice));
+        var newMinStock = Quantity(minStock, nameof(minStock));
+
+        Name = newName;
+        Sku = newSku;
+        Barcode = newBarcode;
+        Unit = unit;
+        Category = newCategory;
+        GroupName = newGroupName;
+        PurchasePrice = newPurchasePrice;
+        SalePrice = newSalePrice;
+        MinStock = newMinStock;
+    }
+
+    /// <summary>
+    /// Hides the item from lists and pickers. Items are never deleted, because their stock
+    /// history must stay; a deactivated item can be activated again.
+    /// </summary>
+    public void Deactivate() => IsActive = false;
+
+    public void Activate() => IsActive = true;
 
     // For EF Core.
     private Item()

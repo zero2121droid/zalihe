@@ -3,9 +3,10 @@ using Zalihe.Domain.Items;
 
 namespace Zalihe.Web.Items;
 
+/// <summary>Item data for both creating and updating an item.</summary>
 // Range limits are parsed in the invariant culture; with the server culture ("sr-Latn" uses a
 // decimal comma) parsing "9999999999999999.99" throws. See ItemContractsTests.
-public record CreateItemRequest(
+public record ItemRequest(
     [Required(ErrorMessage = "validation.required")]
     [MaxLength(Item.NameMaxLength, ErrorMessage = "validation.max_length")]
     string Name,

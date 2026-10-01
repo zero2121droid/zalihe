@@ -1,5 +1,20 @@
-import { ActionIcon, Box, Button, Center, Group, Loader, Stack, Table, Text, TextInput, Title } from '@mantine/core'
-import { useDebouncedValue, useDisclosure } from '@mantine/hooks'
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Center,
+  Group,
+  Loader,
+  Stack,
+  Switch,
+  Table,
+  Text,
+  TextInput,
+  Title,
+  UnstyledButton,
+} from '@mantine/core'
+import { useDebouncedValue } from '@mantine/hooks'
 import { IconChevronLeft, IconChevronRight, IconSearch } from '@tabler/icons-react'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -9,7 +24,7 @@ import { formErrorMessage } from '../../api/errors'
 import { useListItems } from '../../api/generated/items/items'
 import type { ItemDto } from '../../api/generated/model'
 import { formatNumber } from '../../lib/format'
-import { NewItemModal } from './NewItemModal'
+import { ItemModal } from './ItemModal'
 
 const PAGE_SIZE = 20
 
@@ -19,26 +34,28 @@ const pagerButtonStyle = { border: '1px solid var(--z-line)' }
 
 export function ItemsPage() {
   const { t, i18n } = useTranslation()
-  const [modalOpened, modal] = useDisclosure()
-  // Search and page live in the URL, so back/forward and refresh keep the list where it was.
+  // null = closed, 'new' = create form, an item = edit form.
+  const [editing, setEditing] = useState<ItemDto | 'new' | null>(null)
+  // Search, page and the inactive filter live in the URL, so back/forward and refresh keep them.
   const [params, setParams] = useSearchParams()
   const search = params.get('q') ?? ''
   const page = Math.max(1, Number(params.get('page')) || 1)
+  const showInactive = params.get('inactive') === '1'
 
   const [searchInput, setSearchInput] = useState(search)
   const [debouncedSearch] = useDebouncedValue(searchInput, 300)
   useEffect(() => {
     if (debouncedSearch.trim() === search) return
-    setParams(debouncedSearch.trim() ? { q: debouncedSearch.trim() } : {}, { replace: true })
-  }, [debouncedSearch, search, setParams])
+    setParams(buildParams(debouncedSearch.trim(), 1, showInactive), { replace: true })
+  }, [debouncedSearch, search, showInactive, setParams])
 
   const items = useListItems(
-    { search: search || undefined, page, pageSize: PAGE_SIZE },
+    { search: search || undefined, includeInactive: showInactive || undefined, page, pageSize: PAGE_SIZE },
     { query: { placeholderData: keepPreviousData } },
   )
 
   function goToPage(next: number) {
-    setParams({ ...(search && { q: search }), ...(next > 1 && { page: String(next) }) })
+    setParams(buildParams(search, next, showInactive))
   }
 
   const data = items.data
@@ -57,17 +74,25 @@ export function ItemsPage() {
             </Text>
           )}
         </Group>
-        <Button onClick={modal.open}>{t('items.new')}</Button>
+        <Button onClick={() => setEditing('new')}>{t('items.new')}</Button>
       </Group>
 
-      <TextInput
-        type="search"
-        aria-label={t('items.search')}
-        placeholder={t('items.searchPlaceholder')}
-        leftSection={<IconSearch size={16} stroke={1.8} />}
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.currentTarget.value)}
-      />
+      <Group gap="lg" wrap="wrap">
+        <TextInput
+          flex="1 1 320px"
+          type="search"
+          aria-label={t('items.search')}
+          placeholder={t('items.searchPlaceholder')}
+          leftSection={<IconSearch size={16} stroke={1.8} />}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.currentTarget.value)}
+        />
+        <Switch
+          label={t('items.showInactive')}
+          checked={showInactive}
+          onChange={(e) => setParams(buildParams(search, 1, e.currentTarget.checked))}
+        />
+      </Group>
 
       <Box component="section" bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
         {items.isPending ? (
@@ -79,11 +104,11 @@ export function ItemsPage() {
             {formErrorMessage(t, items.error)}
           </Text>
         ) : data!.totalCount === 0 ? (
-          <EmptyState search={search} onAdd={modal.open} />
+          <EmptyState search={search} onAdd={() => setEditing('new')} />
         ) : (
           <>
             <Table.ScrollContainer minWidth={560}>
-              <ItemsTable items={data!.items} />
+              <ItemsTable items={data!.items} onOpen={setEditing} />
             </Table.ScrollContainer>
             <Group justify="space-between" px="lg" py="sm">
               <Text fz="sm" c="dimmed">
@@ -120,12 +145,25 @@ export function ItemsPage() {
         )}
       </Box>
 
-      <NewItemModal opened={modalOpened} onClose={modal.close} />
+      <ItemModal
+        key={editing === 'new' ? 'new' : (editing?.id ?? 'closed')}
+        opened={editing !== null}
+        onClose={() => setEditing(null)}
+        item={editing === 'new' ? null : editing}
+      />
     </Stack>
   )
 }
 
-function ItemsTable({ items }: { items: ItemDto[] }) {
+function buildParams(search: string, page: number, showInactive: boolean) {
+  return {
+    ...(search && { q: search }),
+    ...(page > 1 && { page: String(page) }),
+    ...(showInactive && { inactive: '1' }),
+  }
+}
+
+function ItemsTable({ items, onOpen }: { items: ItemDto[]; onOpen: (item: ItemDto) => void }) {
   const { t, i18n } = useTranslation()
   return (
     <Table>
@@ -138,11 +176,28 @@ function ItemsTable({ items }: { items: ItemDto[] }) {
       </Table.Thead>
       <Table.Tbody>
         {items.map((item) => (
-          <Table.Tr key={item.id}>
+          // The whole row opens the item for mouse users; the name is the real button for keyboards.
+          <Table.Tr key={item.id} onClick={() => onOpen(item)} style={{ cursor: 'pointer' }}>
             <Table.Td>
-              <Text fw={500} truncate maw={420}>
-                {item.name}
-              </Text>
+              <Group gap="xs" wrap="nowrap">
+                <UnstyledButton
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onOpen(item)
+                  }}
+                  aria-label={t('items.edit', { name: item.name })}
+                  className="z-focus"
+                >
+                  <Text fw={500} truncate maw={420} c={item.isActive ? undefined : 'dimmed'}>
+                    {item.name}
+                  </Text>
+                </UnstyledButton>
+                {!item.isActive && (
+                  <Badge size="sm" color="gray" c="dimmed">
+                    {t('items.inactive')}
+                  </Badge>
+                )}
+              </Group>
               {item.category && (
                 <Text fz="xs" c="dimmed">
                   {item.category}

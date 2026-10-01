@@ -95,6 +95,52 @@ public class ItemTests
         Should.Throw<ArgumentException>(() => new Item(Guid.Empty, "Kafa", "KF-1", Unit.Kom, 0, Now));
     }
 
+    [Fact]
+    public void Update_ValidData_ChangesFields()
+    {
+        // Arrange
+        var item = Create();
+
+        // Act
+        item.Update(" Kafa Brazil 1 kg ", "KF-BRA-1000", Unit.Kg, 2.5m, category: "Kafa", purchasePrice: 1800);
+
+        // Assert
+        item.Name.ShouldBe("Kafa Brazil 1 kg");
+        item.Sku.ShouldBe("KF-BRA-1000");
+        item.Unit.ShouldBe(Unit.Kg);
+        item.MinStock.ShouldBe(2.5m);
+        item.Category.ShouldBe("Kafa");
+        item.PurchasePrice.ShouldBe(1800);
+        item.Barcode.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Update_InvalidValue_LeavesItemUnchanged()
+    {
+        // Arrange
+        var item = Create(name: "Kafa", sku: "KF-1");
+
+        // Act
+        Should.Throw<ArgumentOutOfRangeException>(() => item.Update("Novi naziv", "KF-2", Unit.Kom, minStock: -1));
+
+        // Assert
+        item.Name.ShouldBe("Kafa");
+        item.Sku.ShouldBe("KF-1");
+    }
+
+    [Fact]
+    public void Deactivate_ThenActivate_TogglesIsActive()
+    {
+        // Arrange
+        var item = Create();
+
+        // Act & Assert
+        item.Deactivate();
+        item.IsActive.ShouldBeFalse();
+        item.Activate();
+        item.IsActive.ShouldBeTrue();
+    }
+
     [Theory]
     [InlineData(12.5, 3, true)]
     [InlineData(12.125, 3, true)]

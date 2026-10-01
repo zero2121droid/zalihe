@@ -115,7 +115,11 @@
       "groupNameHint": "Za varijacije istog proizvoda, npr. „Majica basic”.",
       "purchasePrice": "Nabavna cena",
       "salePrice": "Prodajna cena",
-      "submit": "Sačuvaj artikal"
+      "submit": "Sačuvaj artikal",
+      "editTitle": "Izmena artikla",
+      "deactivate": "Deaktiviraj",
+      "activate": "Aktiviraj",
+      "inactiveNote": "Artikal je neaktivan: ne prikazuje se u listi i ne nudi se pri unosu. Istorija mu ostaje sačuvana."
     },
     "units": {
       "kom": "kom",
@@ -125,6 +129,9 @@
       "ml": "ml",
       "m": "m",
       "pak": "pak"
-    }
+    },
+    "edit": "Izmeni artikal {{name}}",
+    "showInactive": "Prikaži neaktivne",
+    "inactive": "Neaktivan"
   }
 }

@@ -72,4 +72,45 @@ describe('ItemsPage', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenLastCalledWith('/api/items?search=etiop&page=1&pageSize=20', expect.anything()))
     expect(await screen.findByText('Nema artikala za „etiop”.')).toBeInTheDocument()
   })
+
+  it('Render_InactiveItem_ShowsInactiveLabel', async () => {
+    // Arrange
+    mockFetch({ status: 200, body: { items: [item({ isActive: false })], totalCount: 1, page: 1, pageSize: 20 } })
+
+    // Act
+    await renderRoutes(routes, '/items?inactive=1')
+
+    // Assert
+    expect(await screen.findByText('Neaktivan')).toBeInTheDocument()
+  })
+
+  it('ShowInactive_Toggled_RequestsInactiveItems', async () => {
+    // Arrange
+    const list = { status: 200, body: { items: [item({})], totalCount: 1, page: 1, pageSize: 20 } }
+    const fetchMock = mockFetch(list, list)
+    const { router } = await renderRoutes(routes, '/items')
+    await screen.findByText('Kafa Etiopija 250 g')
+
+    // Act
+    await userEvent.click(screen.getByRole('switch', { name: 'Prikaži neaktivne' }))
+
+    // Assert
+    await waitFor(() => expect(router.state.location.search).toBe('?inactive=1'))
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenLastCalledWith('/api/items?includeInactive=true&page=1&pageSize=20', expect.anything()),
+    )
+  })
+
+  it('ItemName_Clicked_OpensEditForm', async () => {
+    // Arrange
+    mockFetch({ status: 200, body: { items: [item({})], totalCount: 1, page: 1, pageSize: 20 } }, { status: 200, body: [] })
+    await renderRoutes(routes, '/items')
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Izmeni artikal Kafa Etiopija 250 g' }))
+
+    // Assert
+    expect(await screen.findByText('Izmena artikla')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^Šifra/)).toHaveValue('KF-ETI-250')
+  })
 })

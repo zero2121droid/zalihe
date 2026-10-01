@@ -52,7 +52,30 @@
     "title": "Home",
     "empty": {
       "title": "No items yet",
-      "description": "Once you add items, you'll see stock value, what to reorder and the latest movements here."
+      "description": "Once you add items, you'll see stock value, what to reorder and the latest movements here.",
+      "actions": "Add items one by one or import them from a CSV file."
+    },
+    "figures": {
+      "stockValue": "Stock value",
+      "stockValueHint": "at purchase price",
+      "activeItems": "Active items",
+      "activeItemsHint": "for sale and in stock",
+      "belowMinimum": "Below minimum",
+      "belowMinimumHint": "to reorder",
+      "outOfStock": "Out of stock",
+      "outOfStockHint": "reorder urgently"
+    },
+    "reorder": {
+      "title": "To reorder",
+      "all": "All items below minimum",
+      "min": "min. {{value}} {{unit}}",
+      "none": "All items are above their minimum."
+    },
+    "recent": {
+      "title": "Latest movements",
+      "all": "All items",
+      "none": "No movements yet.",
+      "yesterday": "yesterday"
     }
   },
   "errors": {

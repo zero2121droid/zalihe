@@ -981,6 +981,46 @@
         }
       }
     },
+    "/api/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "GetDashboard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -1284,6 +1324,47 @@
           },
           "tenantName": {
             "type": "string"
+          }
+        }
+      },
+      "DashboardDto": {
+        "required": [
+          "stockValue",
+          "activeItems",
+          "belowMinimum",
+          "outOfStock",
+          "reorder",
+          "recentMovements"
+        ],
+        "type": "object",
+        "properties": {
+          "stockValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "activeItems": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "belowMinimum": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outOfStock": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reorder": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReorderItemDto"
+            }
+          },
+          "recentMovements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentMovementDto"
+            }
           }
         }
       },
@@ -1844,6 +1925,59 @@
           }
         }
       },
+      "RecentMovementDto": {
+        "required": [
+          "id",
+          "itemId",
+          "itemName",
+          "type",
+          "quantity",
+          "occurredAt",
+          "source",
+          "externalRef",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/StockMovementType"
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "$ref": "#/components/schemas/StockMovementSource"
+          },
+          "externalRef": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "RecordMovementRequest": {
         "required": [
           "kind",
@@ -1919,6 +2053,44 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ReorderItemDto": {
+        "required": [
+          "itemId",
+          "name",
+          "sku",
+          "unit",
+          "stock",
+          "minStock",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          },
+          "stock": {
+            "type": "number",
+            "format": "double"
+          },
+          "minStock": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StockStatus"
           }
         }
       },
@@ -2034,6 +2206,9 @@
     },
     {
       "name": "Imports"
+    },
+    {
+      "name": "Dashboard"
     },
     {
       "name": "Health"

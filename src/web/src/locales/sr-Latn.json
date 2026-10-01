@@ -52,7 +52,30 @@
     "title": "Početna",
     "empty": {
       "title": "Još nema artikala",
-      "description": "Kad dodaš artikle, ovde ćeš videti vrednost zaliha, šta treba naručiti i poslednja kretanja."
+      "description": "Kad dodaš artikle, ovde ćeš videti vrednost zaliha, šta treba naručiti i poslednja kretanja.",
+      "actions": "Dodaj artikle jedan po jedan ili ih uvezi iz CSV fajla."
+    },
+    "figures": {
+      "stockValue": "Vrednost zaliha",
+      "stockValueHint": "po nabavnoj ceni",
+      "activeItems": "Aktivnih artikala",
+      "activeItemsHint": "u prodaji i na lageru",
+      "belowMinimum": "Ispod minimuma",
+      "belowMinimumHint": "treba naručiti",
+      "outOfStock": "Nema na stanju",
+      "outOfStockHint": "hitno naručiti"
+    },
+    "reorder": {
+      "title": "Treba naručiti",
+      "all": "Svi artikli ispod minimuma",
+      "min": "min. {{value}} {{unit}}",
+      "none": "Svi artikli su iznad minimuma."
+    },
+    "recent": {
+      "title": "Poslednja kretanja",
+      "all": "Svi artikli",
+      "none": "Još nema kretanja.",
+      "yesterday": "juče"
     }
   },
   "errors": {

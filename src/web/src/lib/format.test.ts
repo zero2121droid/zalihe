@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatLongDate, formatMoney, formatNumber, formatDecimalInput, formatSignedQuantity, parseDecimal, readDecimal } from './format'
+import { formatLongDate, formatMoney, formatNumber, formatDecimalInput, formatRecentTime, formatSignedQuantity, parseDecimal, readDecimal } from './format'
 
 describe('formatNumber', () => {
   it('formatNumber_SerbianLatin_UsesDotForThousandsAndCommaForDecimals', () => {
@@ -93,5 +93,21 @@ describe('formatDecimalInput', () => {
 
   it('formatDecimalInput_ReadBack_GivesSameNumber', () => {
     expect(readDecimal(formatDecimalInput(12.125, 'sr-Latn'))).toBe(12.125)
+  })
+})
+
+describe('formatRecentTime', () => {
+  const now = new Date(2026, 9, 1, 16, 0)
+
+  it('formatRecentTime_Today_ShowsTime', () => {
+    expect(formatRecentTime(new Date(2026, 9, 1, 14, 32), 'sr-Latn', 'juče', now)).toBe('14:32')
+  })
+
+  it('formatRecentTime_Yesterday_ShowsYesterdayWord', () => {
+    expect(formatRecentTime(new Date(2026, 8, 30, 23, 59), 'sr-Latn', 'juče', now)).toBe('juče')
+  })
+
+  it('formatRecentTime_Older_ShowsDate', () => {
+    expect(formatRecentTime(new Date(2026, 8, 28, 9, 0), 'sr-Latn', 'juče', now)).toBe('28. 9.')
   })
 })

@@ -37,6 +37,19 @@ export function formatDateTime(value: string | Date, language: string): string {
 }
 
 /**
+ * Compact time for lists of recent events: "14:32" today, `yesterday` (already translated)
+ * for yesterday, otherwise the date ("28. 9.").
+ */
+export function formatRecentTime(value: string | Date, language: string, yesterday: string, now = new Date()): string {
+  const date = new Date(value)
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const days = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000)
+  if (days === 0) return new Intl.DateTimeFormat(language, { hour: '2-digit', minute: '2-digit' }).format(date)
+  if (days === 1) return yesterday
+  return new Intl.DateTimeFormat(language, { day: 'numeric', month: 'numeric' }).format(date)
+}
+
+/**
  * A stored number shown in an input field for editing: decimal separator of the language,
  * no thousands separators (so "1284,5", not "1.284,5"), and empty for null.
  */

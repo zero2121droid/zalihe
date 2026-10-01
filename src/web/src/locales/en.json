@@ -17,7 +17,11 @@
     "cancel": "Cancel",
     "currency": "RSD",
     "previousPage": "Previous page",
-    "nextPage": "Next page"
+    "nextPage": "Next page",
+    "theme": {
+      "toLight": "Switch to light theme",
+      "toDark": "Switch to dark theme"
+    }
   },
   "auth": {
     "login": {

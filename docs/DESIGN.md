@@ -6,36 +6,42 @@ Reference: makete ekrana Početna, Artikli i Prodaja van sajta (telefon). Kad se
 
 **Miran i precizan, kao dobar alat.** Aplikacija se koristi svaki dan, brzo i bez razmišljanja. Ništa ne viče, osim onoga što stvarno traži pažnju (artikal ispod minimuma ili bez zaliha). Brojevi su glavni sadržaj i najvidljiviji element na ekranu.
 
-## Boje (tamna tema, podrazumevana)
+## Boje
 
-| Token | Hex | Upotreba |
-|---|---|---|
-| `bg` | `#11130E` | pozadina stranice |
-| `sidebar` | `#141710` | bočna navigacija |
-| `surface` | `#191C15` | sekcije, tabele, polja za unos |
-| `surface-2` | `#20241B` | aktivna stavka navigacije, dugmad za količinu |
-| `selected` | `#252B1C` | izabrani filter ili opcija |
-| `line` | `#2C3125` | okviri sekcija |
-| `line-soft` | `#23271E` | linije između redova |
-| `line-strong` | `#3A4030` | okvir sekundarnog dugmeta i istaknute kartice |
-| `text` | `#E4E7DC` | glavni tekst |
-| `text-2` | `#C4C9B8` | sekundarni tekst u tabelama |
-| `muted` | `#9BA18F` | opisi, oznake, jedinice mere |
-| `accent` | `#B4C17E` | primarno dugme (tamni tekst na njemu), linkovi, logo |
-| `accent-hover` | `#CBD69A` | hover za linkove i primarno dugme |
+Dve teme: **tamna** (podrazumevana) i **svetla**. Korisnik bira temu prekidačem u bočnoj navigaciji ili na stranici za prijavu, a izbor se pamti na uređaju (u browseru), ne na nalogu. Boje se definišu isključivo kao tokeni (CSS varijable i Mantine tema), nikad kao hex vrednosti u komponentama.
+
+| Token | Tamna | Svetla | Upotreba |
+|---|---|---|---|
+| `bg` | `#11130E` | `#F5F5EF` | pozadina stranice |
+| `sidebar` | `#141710` | `#EDEEE6` | bočna navigacija |
+| `surface` | `#191C15` | `#FFFFFF` | sekcije, tabele, polja za unos, modal |
+| `surface-2` | `#20241B` | `#E9EBE1` | aktivna stavka navigacije, dugmad za količinu |
+| `selected` | `#252B1C` | `#E1E7CF` | izabrani filter ili opcija |
+| `line` | `#2C3125` | `#D9DCCE` | okviri sekcija |
+| `line-soft` | `#23271E` | `#E7E9DF` | linije između redova |
+| `line-strong` | `#3A4030` | `#BFC4B0` | okvir sekundarnog dugmeta i istaknute kartice |
+| `text` | `#E4E7DC` | `#1B1E16` | glavni tekst |
+| `text-2` | `#C4C9B8` | `#3B4033` | sekundarni tekst u tabelama |
+| `muted` | `#9BA18F` | `#5C6250` | opisi, oznake, jedinice mere |
+| `accent` | `#B4C17E` | `#B4C17E` | primarno dugme (tamni tekst na njemu), logo |
+| `accent-hover` | `#CBD69A` | `#A3B16A` | hover za primarno dugme |
+| `accent-text` | `#B4C17E` | `#55621E` | linkovi, ikona aktivne stavke, fokus okvir |
+| `on-accent` | `#11130E` | `#11130E` | tekst na primarnom dugmetu |
+
+`accent-text` postoji zato što svetla maslinasta nije čitljiva kao tekst na beloj pozadini (kontrast 1,9). U tamnoj temi je isti kao `accent`. Hover za linkove: u tamnoj temi `accent-hover`, u svetloj `text`.
 
 **Status zaliha** (uvek boja + tekst, nikad samo boja):
 
-| Status | Hex | Upotreba |
-|---|---|---|
-| Na stanju | `#9DB06A` | tačka statusa; broj ostaje `text` |
-| Ispod minimuma | `#E0A84A` | broj, tačka i oznaka |
-| Nema na stanju | `#E8806A` | broj, tačka i oznaka |
-| Prijem i povrat | `#B4C17E` | `+` količine u kretanjima |
+| Status | Tamna | Svetla | Upotreba |
+|---|---|---|---|
+| Na stanju | `#9DB06A` | `#4C6A1C` | tačka statusa; broj ostaje `text` |
+| Ispod minimuma | `#E0A84A` | `#94600A` | broj, tačka i oznaka |
+| Nema na stanju | `#E8806A` | `#B03A22` | broj, tačka i oznaka |
+| Prijem i povrat | `#B4C17E` | `#55621E` | `+` količine u kretanjima |
 
-Primarno dugme ima svetlu maslinastu pozadinu i tamni tekst (`#11130E`), ne beli tekst na tamnoj zelenoj.
+Statusne boje svetle teme su tamnije od tamne teme jer se koriste kao tekst; sve imaju kontrast najmanje 5:1 na `surface`.
 
-Svetla tema nije deo v1. Boje se ipak definišu kao tokeni (CSS varijable i Mantine tema), nikad kao hex vrednosti u komponentama, da bi se svetla tema kasnije dodala bez prepravki.
+Primarno dugme u obe teme ima svetlu maslinastu pozadinu i tamni tekst (`on-accent`), ne beli tekst na tamnoj zelenoj.
 
 ## Tipografija
 
@@ -89,10 +95,10 @@ Linijske ikone, debljina 1.8, 16 px u navigaciji i 18-20 px na telefonu. Bibliot
 
 ## Pristupačnost
 
-- Kontrast teksta najmanje 4.5:1. `muted` (`#9BA18F`) se koristi samo na `bg` i `surface`.
+- Kontrast teksta najmanje 4.5:1 u obe teme. `muted` se koristi samo na `bg`, `sidebar` i `surface`.
 - Pravi `<button>`, `<a>`, `<input>` sa `<label>`, nikad `onClick` na `div`.
-- Vidljiv fokus: okvir `accent` boje od 2 px.
+- Vidljiv fokus: okvir `accent-text` boje od 2 px.
 
 ## Mantine
 
-Tema se podešava jednom, u `web/src/theme.ts`: boje iz tabele iznad kao paleta, fontovi, zaobljenja, i podrazumevani stilovi za `Button`, `TextInput`, `Table` i `Badge`. Komponente koriste temu i ne zadaju sopstvene boje.
+Tema se podešava jednom, u `web/src/theme.ts`: boje iz tabele iznad kao tokeni za obe teme, fontovi, zaobljenja, i podrazumevani stilovi za `Button`, `TextInput`, `Table` i `Badge`. Komponente koriste temu i ne zadaju sopstvene boje.

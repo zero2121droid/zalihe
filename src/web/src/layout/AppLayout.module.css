@@ -27,7 +27,7 @@
 }
 
 .navLink[aria-current='page'] .navIcon {
-  color: var(--z-accent);
+  color: var(--z-accent-text);
 }
 
 .account {

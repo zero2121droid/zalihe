@@ -17,7 +17,11 @@
     "cancel": "Otkaži",
     "currency": "RSD",
     "previousPage": "Prethodna strana",
-    "nextPage": "Sledeća strana"
+    "nextPage": "Sledeća strana",
+    "theme": {
+      "toLight": "Uključi svetlu temu",
+      "toDark": "Uključi tamnu temu"
+    }
   },
   "auth": {
     "login": {

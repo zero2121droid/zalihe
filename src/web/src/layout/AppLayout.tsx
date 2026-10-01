@@ -8,6 +8,7 @@ import { NavLink as RouterNavLink, Outlet, useNavigate } from 'react-router'
 import { useLogout } from '../api/generated/auth/auth'
 import { useCurrentUser } from '../auth/useCurrentUser'
 import { Logo } from '../components/Logo'
+import { ThemeToggle } from '../components/ThemeToggle'
 import classes from './AppLayout.module.css'
 
 interface NavItem {
@@ -79,15 +80,18 @@ export function AppLayout() {
                 {user?.name}
               </Text>
             </Stack>
-            <ActionIcon
-              size={36}
-              aria-label={t('common.logout')}
-              title={t('common.logout')}
-              loading={logout.isPending}
-              onClick={() => logout.mutate()}
-            >
-              <IconLogout size={16} stroke={1.8} />
-            </ActionIcon>
+            <Group gap={2} wrap="nowrap">
+              <ThemeToggle />
+              <ActionIcon
+                size={36}
+                aria-label={t('common.logout')}
+                title={t('common.logout')}
+                loading={logout.isPending}
+                onClick={() => logout.mutate()}
+              >
+                <IconLogout size={16} stroke={1.8} />
+              </ActionIcon>
+            </Group>
           </Group>
         </Stack>
       </AppShell.Navbar>

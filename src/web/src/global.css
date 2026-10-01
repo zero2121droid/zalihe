@@ -1,0 +1,11 @@
+/* The few global styles Mantine's theme object can't express. Tokens only, no hex values. */
+
+/* Visible focus in both themes (DESIGN.md: 2 px accent-text outline). Used via theme.focusClassName. */
+.z-focus:focus-visible {
+  outline: 2px solid var(--z-accent-text);
+  outline-offset: 2px;
+}
+
+.mantine-Anchor-root:hover {
+  color: var(--z-link-hover);
+}

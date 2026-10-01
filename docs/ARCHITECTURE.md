@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „artikli: lista i dodavanje, izolacija firmi” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „svetla tema” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -306,12 +306,16 @@ src/web/
 - `fieldErrorMessages()`: poruke po polju (`{ email: "Nalog sa ovom email adresom već postoji." }`), sa parametrima (`{{min}}`). Forma ih samo prosledi u `error` prop polja.
 
 **`theme.ts`**: jedino mesto sa hex vrednostima boja:
-- tokeni iz DESIGN.md kao CSS promenljive (`--z-bg`, `--z-surface`, `--z-accent`, `--z-status-low`...), u bloku `dark` u `cssVariablesResolver`. Svetla tema se kasnije dodaje popunjavanjem bloka `light`;
-- Mantine-ove promenljive (`--mantine-color-body`, `--mantine-color-dimmed`...) usmerene na te tokene, pa i ugrađene komponente izgledaju po dizajnu;
+- dva seta tokena iz DESIGN.md, `dark` i `light`, istog oblika (`Tokens`). `schemeVariables()` od njih pravi CSS promenljive (`--z-bg`, `--z-surface`, `--z-accent-text`, `--z-status-low`...), a `cssVariablesResolver` ih postavlja za svaku temu;
+- Mantine-ove promenljive (`--mantine-color-body`, `--mantine-color-dimmed`, `--mantine-color-disabled`...) usmerene su na te tokene, pa i ugrađene komponente prate temu umesto Mantine-ove hladne sive;
 - paleta `olive` (primarna boja oko akcenta) i `dark` (Mantine iz nje izvodi podrazumevane boje tamne teme);
-- fontovi, veličine, zaobljenja i razmaci, plus podrazumevani izgled za `Button` (40 px, tamni tekst na maslinastoj), `Input`, `Table`, `Badge`...
+- fontovi, veličine, zaobljenja i razmaci, plus podrazumevani izgled za `Button` (40 px, tekst `on-accent` na maslinastoj), `Input`, `Modal`, `SegmentedControl`, `Table`, `Badge`...
 
-Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex. Kad Mantine stil nije dovoljan, koristi se CSS modul (npr. `AppLayout.module.css`), ali i tamo samo sa tokenima.
+Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex. Kad Mantine stil nije dovoljan, koristi se CSS modul (npr. `AppLayout.module.css`), ali i tamo samo sa tokenima. Za tekst u akcent boji uvek se koristi `--z-accent-text`, a ne `--z-accent`, jer svetla maslinasta nije čitljiva na beloj pozadini.
+
+**`colorScheme.ts` i `components/ThemeToggle.tsx`**: izbor teme. Tamna je podrazumevana, a izbor se čuva u browseru (`localStorage`, ključ `zalihe.colorScheme`), ne na nalogu, pa telefon i računar mogu imati različite teme. Prekidač stoji u bočnoj navigaciji i na stranici za prijavu. `index.html` ima mali skript koji pročita isti ključ pre nego što se React učita, da stranica ne bi bljesnula pogrešnom temom.
+
+**`global.css`**: ono malo stilova koje Mantine tema ne može da izrazi: vidljiv fokus (`.z-focus`, okvir od 2 px u `accent-text` boji, preko `theme.focusClassName`) i hover za linkove.
 
 **`i18n.ts`**: učitava oba prevoda i bira jezik: pre prijave iz browsera (`localStorage`), a posle prijave iz `User.Language` (to radi `useCurrentUser`). `setLanguage()` menja jezik i pamti izbor. Pri promeni jezika ažurira se i `<html lang>`, što je bitno za čitače ekrana.
 
@@ -345,6 +349,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `errors.test.ts`: prevođenje kodova i parametara;
 - `LoginPage.test.tsx`, `RegisterPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
 - `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju;
+- `ThemeToggle.test.tsx`: tamna tema na početku, klik prebacuje na svetlu i pamti izbor;
 - `ItemsPage.test.tsx`, `NewItemModal.test.tsx`: redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
 
 Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pokrenut backend, i renderuju sa pravim providerima (`renderRoutes`).

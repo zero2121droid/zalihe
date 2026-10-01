@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „dnevnik izmena artikla” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „CSV uvoz artikala” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -179,6 +179,12 @@ zalihe/
 
 **`Items/ItemHistoryService.cs`**: istorija artikla: kretanja i izmene zajedno, najnovije prvo, sa filterom (`all`, `stock`, `changes`). Spajanje i paginacija rade se u bazi (`UNION ALL` samo nad ID-jevima i vremenom), a zatim se učitaju redovi te strane.
 
+**`Imports/CsvFile.cs`** (`CsvParser`): čita CSV onako kako ga snimaju tabele u Srbiji i regionu: UTF-8 ili Windows-1250 (srpski Excel), sa `;`, `,` ili tabom (prepoznaje se iz prvog reda), sa navodnicima i prelomima reda u ćeliji. Brojevi redova odgovaraju Excel-u (zaglavlje je red 1). `UsesDecimalComma`: fajl sa `;` koristi decimalni zarez.
+
+**`Imports/ItemImportRules.cs`**: čista pravila uvoza, bez baze: `SuggestMapping()` (prepoznaje kolone po nazivima, na srpskom i engleskom, bez obzira na kvačice), `ParseUnit()` („kom.”, „komada”, „pcs” → kom), `ParseDecimal()` i `ReadRow()` (red → podaci artikla ili greške po polju). **Brojevi:** nedvosmisleni oblici rade uvek („12,5”, „1.284,50”); jedini dvosmisleni oblik, jedan separator i tačno tri cifre („2.000”), prati konvenciju fajla, pa je u srpskom fajlu „2.000” dve hiljade.
+
+**`Imports/ItemImportService.cs`**: tri koraka sa istim fajlom: `Analyze()` (kolone, primer redova, predlog mapiranja), `PreviewAsync()` (spremno, greške, preskočeno, uz razlog po redu) i `ImportAsync()` (ponovi istu proveru, pa upiše sve u jednom `SaveChanges`). Redovi sa greškom i redovi čija šifra već postoji se preskaču; postojeći artikli se nikad ne menjaju. Početno stanje je korekcija sa izvorom `Csv` i napomenom „Početno stanje”. Najviše 5000 redova; Excel fajl (`.xlsx`) se prepozna po prvim bajtovima i dobija jasnu poruku.
+
 **Izmene u `ItemService`**: pri pravljenju, izmeni, deaktivaciji i aktivaciji upisuje i zapis u dnevnik izmena, u istoj transakciji (ponovna deaktivacija već neaktivnog artikla ne pravi zapis). lista i jedan artikal sada dolaze sa stanjem, statusom, vrednošću (stanje × nabavna cena) i prodajom u poslednjih 30 dana, u jednom upitu. Lista ima i filter po statusu.
 
 ### Zalihe.Infrastructure
@@ -295,6 +301,8 @@ Primer odgovora sa greškom:
 
 **JSON podešavanja u `Program.cs`**: enumi putuju kao kodovi (`"kom"`), a brojevi moraju biti JSON brojevi (`NumberHandling.Strict`). Bez toga bi OpenAPI opisivao brojeve kao „broj ili tekst”, pa bi TypeScript tipovi bili `number | string`. Ista podešavanja važe i za generisanje OpenAPI dokumenta (`ConfigureHttpJsonOptions`).
 
+**`Imports/ImportsController.cs`**: `POST /api/imports/items/analyze`, `/preview` i `/api/imports/items`, sve kao `multipart/form-data` (fajl + broj kolone za svako polje, `ItemImportForm`). Fajl se šalje u svakom koraku, pa server ne čuva stanje između koraka. Najveći fajl je 5 MB.
+
 **`Stock/StockController.cs`**: `POST /api/items/{id}/movements` i `GET /api/stock/summary`. Istorija je u `GET /api/items/{id}/history` (`ItemsController`), zajedno sa izmenama artikla. Namerno nema endpointa za izmenu ili brisanje kretanja.
 
 **`Auth/HttpCurrentUser.cs`**: `ICurrentUser` iz claima prijavljenog korisnika.
@@ -381,7 +389,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `RequireAuth`: deo aplikacije za prijavljene. Dok se proverava prikazuje loader, a neprijavljenog šalje na `/login` i pamti gde je hteo da ide.
 - `PublicOnly`: prijavljenog korisnika sa `/login` i `/register` šalje u aplikaciju.
 
-**`router.tsx`**: rute su ugnežđene: guard → layout → stranica. Tako svaka nova stranica za prijavljene automatski dobija zaštitu i bočnu navigaciju, samo se doda u listu. Ruta može da nosi i širinu sadržaja: `handle: { width: 'wide' }` za ekrane sa tabelama (do 1920 px), a bez toga važi `normal` (do 1180 px).
+**`router.tsx`**: rute su ugnežđene: guard → layout → stranica. Tako svaka nova stranica za prijavljene automatski dobija zaštitu i bočnu navigaciju, samo se doda u listu. Ruta može da nosi i širinu sadržaja: `handle: { width: 'wide' }` za ekrane sa tabelama i pregledima, sada sve stranice aplikacije (do 1920 px), a bez toga važi `normal` (do 1180 px), predviđeno za stranice sa tekstom i formama.
 
 **`layout/pageWidth.ts`**: `usePageWidth()` čita širinu iz najdublje rute, a `AppLayout` je primeni kao `data-width` na glavni sadržaj. Raspored je fluidan do te granice, a veličina teksta se ne menja sa širinom ekrana (DESIGN.md).
 
@@ -392,6 +400,8 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 **`components/DecimalInput.tsx`**: polje za decimale. Čuva tačno ono što je korisnik otkucao (`12,5` ili `12.5`), a tek pri slanju ga `readDecimal()` iz `lib/format.ts` pretvara u broj. Ako unos nije broj, forma prikaže „Unesi broj” i ne šalje zahtev. To je jedina provera na frontendu, jer se tiče formata unosa, a ne poslovnih pravila.
 
 **`pages/items/ItemsPage.tsx`**: ekran „Artikli” po maketi: naslov sa brojem artikala, pretraga, tabela (artikal sa kategorijom, šifra, minimalna zaliha sa jedinicom mere) i paginacija „1–20 od N”. Pretraga i strana su u adresi (`/items?q=etiop&page=2`), pa ih osvežavanje i dugme „nazad” čuvaju. Pretraga se šalje 300 ms posle poslednjeg slova (`useDebouncedValue`), a `keepPreviousData` drži staru listu dok stiže nova, pa tabela ne treperi. Klik na red otvara izmenu; za tastaturu je naziv artikla pravo dugme. Prekidač „Prikaži neaktivne” (`?inactive=1`) uključuje neaktivne artikle, koji imaju oznaku „Neaktivan” (tekst, ne samo boja). Kolone Stanje, Status, Prodaja 30d i Vrednost dolaze sa kretanjima zaliha.
+
+**`pages/items/ImportPage.tsx`**: uvoz u tri koraka (`Stepper`): fajl (uz uputstvo i primer fajla napravljen u browseru), kolone (predlog iz API-ja je unapred izabran, uz pregled prvih redova) i pregled (spremno, greške, preskočeno, problemi po redu i dugme „Uvezi N artikala”, sa ispravnom srpskom množinom).
 
 **`pages/items/ItemDetailPage.tsx`**: stranica artikla (`/items/{id}`): traka sa stanjem, minimumom, prodajom za 30 dana i vrednošću, dugmad Izmeni / Prijem / Prodaja / Povrat / Korekcija i istorija (kretanja i izmene artikla, sa filterima Sve / Količina / Izmene artikla). `formatChangeValue()` prikazuje zabeležene vrednosti u formatu jezika, sa jedinicom i valutom. Klik na artikal u listi vodi ovde.
 
@@ -408,6 +418,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `LoginPage.test.tsx`, `RegisterPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
 - `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju;
 - `MovementModal.test.tsx`, `ItemDetailPage.test.tsx`: unos kretanja (decimale, upozorenje za minus, razlika kod korekcije, greške), prikaz stanja i istorije;
+- `ImportPage.test.tsx`: ceo tok uvoza (predložene kolone, poslata polja, prevedeni problemi, uvoz), Excel fajl, onemogućena provera bez obaveznih kolona;
 - `ThemeToggle.test.tsx`: tamna tema na početku, klik prebacuje na svetlu i pamti izbor;
 - `ItemsPage.test.tsx`, `ItemModal.test.tsx`: izmena (popunjena polja, `PUT`), deaktivacija, oznaka i filter neaktivnih, redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
 
@@ -445,6 +456,10 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 **`Zalihe.IntegrationTests/Stock/StockTests.cs`**: prijem, prodaja u minus, korekcija, greške, 10 istovremenih prijema, stanje jednako zbiru kretanja u bazi, istorija, filter po statusu, prodaja 30 dana i vrednost, i izolacija: firma B ne može da upiše kretanje ni vidi istoriju artikla firme A.
 
 **`Zalihe.IntegrationTests/Items/ItemHistoryTests.cs`**: zapis „napravljen” sa korisnikom, izmena sa starim i novim vrednostima, nema zapisa kad se ništa ne promeni, deaktivacija i aktivacija, spajanje i filteri istorije, izolacija firmi.
+
+**`Zalihe.Application.Tests/Imports/`**: prvi testovi u ovom projektu, bez baze: čitanje CSV-a (`;`, zarez, Windows-1250, BOM, navodnici, prazni redovi), prepoznavanje kolona, jedinice, brojevi (uključujući „2.000” u oba formata) i provera reda.
+
+**`Zalihe.IntegrationTests/Imports/ItemImportTests.cs`**: analiza, pregled, uvoz sa početnim stanjem, preskakanje postojećih šifri, Windows-1250 fajl, loši fajlovi, antiforgery i izolacija: šifra druge firme se ne računa kao postojeća.
 
 **`Zalihe.IntegrationTests/Tenancy/TenantFilterTests.cs`**: svaki entitet sa kolonom `TenantId` mora da implementira `ITenantOwned` i da ima filter, a upit bez postavljene firme mora da baci izuzetak.
 

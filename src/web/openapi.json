@@ -700,6 +700,287 @@
         }
       }
     },
+    "/api/imports/items/analyze": {
+      "post": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "AnalyzeItemImport",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "File": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportAnalysisDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportAnalysisDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportAnalysisDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/imports/items/preview": {
+      "post": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "PreviewItemImport",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "NameColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "SkuColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "BarcodeColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "UnitColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "CategoryColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "GroupNameColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "PurchasePriceColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "SalePriceColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "MinStockColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "InitialStockColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "DefaultUnit": {
+                    "$ref": "#/components/schemas/Unit"
+                  },
+                  "File": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreviewDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreviewDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/imports/items": {
+      "post": {
+        "tags": [
+          "Imports"
+        ],
+        "operationId": "ImportItems",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "NameColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "SkuColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "BarcodeColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "UnitColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "CategoryColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "GroupNameColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "PurchasePriceColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "SalePriceColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "MinStockColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "InitialStockColumn": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "DefaultUnit": {
+                    "$ref": "#/components/schemas/Unit"
+                  },
+                  "File": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -1014,6 +1295,171 @@
         "properties": {
           "status": {
             "type": "string"
+          }
+        }
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
+      },
+      "ImportAnalysisDto": {
+        "required": [
+          "columns",
+          "sampleRows",
+          "suggestedMapping",
+          "rowCount"
+        ],
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sampleRows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "suggestedMapping": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "rowCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ImportIssueDto": {
+        "required": [
+          "rowNumber",
+          "sku",
+          "name",
+          "skipped",
+          "errors"
+        ],
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sku": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "skipped": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppError"
+            }
+          }
+        }
+      },
+      "ImportPreviewDto": {
+        "required": [
+          "readyCount",
+          "errorCount",
+          "skippedCount",
+          "issues",
+          "sample"
+        ],
+        "type": "object",
+        "properties": {
+          "readyCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skippedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportIssueDto"
+            }
+          },
+          "sample": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportPreviewItemDto"
+            }
+          }
+        }
+      },
+      "ImportPreviewItemDto": {
+        "required": [
+          "rowNumber",
+          "name",
+          "sku",
+          "unit",
+          "initialStock"
+        ],
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          },
+          "initialStock": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ImportResultDto": {
+        "required": [
+          "importedCount",
+          "errorCount",
+          "skippedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "importedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skippedCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1585,6 +2031,9 @@
     },
     {
       "name": "Items"
+    },
+    {
+      "name": "Imports"
     },
     {
       "name": "Health"

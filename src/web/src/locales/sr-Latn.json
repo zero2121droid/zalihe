@@ -89,6 +89,17 @@
     },
     "stock": {
       "no_change": "Prebrojano stanje je isto kao trenutno, nema šta da se koriguje."
+    },
+    "import": {
+      "unit_unknown": "Nepoznata jedinica mere „{{value}}”.",
+      "sku_exists": "Artikal sa ovom šifrom već postoji, red je preskočen.",
+      "sku_duplicate_in_file": "Ista šifra je već u redu {{row}}.",
+      "file_empty": "Fajl je prazan ili nema red sa nazivima kolona.",
+      "too_many_rows": "Fajl ima više od {{max}} redova. Podeli ga na manje fajlove.",
+      "mapping_invalid": "Izaberi kolone bar za naziv i šifru.",
+      "excel_not_supported": "Excel fajlovi još nisu podržani. U Excelu izaberi Sačuvaj kao → CSV.",
+      "file_too_large": "Fajl je veći od {{maxMb}} MB.",
+      "not_a_number": "Nije broj: „{{value}}”."
     }
   },
   "items": {
@@ -163,6 +174,58 @@
       "updated": "Artikal izmenjen",
       "deactivated": "Artikal deaktiviran",
       "activated": "Artikal aktiviran"
+    },
+    "importCsv": "Uvezi CSV",
+    "import": {
+      "title": "Uvoz artikala iz CSV fajla",
+      "steps": {
+        "file": "Fajl",
+        "columns": "Kolone",
+        "preview": "Pregled"
+      },
+      "file": {
+        "label": "CSV fajl",
+        "placeholder": "Izaberi fajl…",
+        "help": "Iz Excela: Datoteka → Sačuvaj kao → CSV (razdvojeno tačka-zarezom). Prvi red mora da sadrži nazive kolona.",
+        "recognized": "Kolone kao što su Naziv, Šifra, JM, Nabavna cena, Min. zaliha i Stanje biće prepoznate same.",
+        "sample": "Preuzmi primer fajla",
+        "analyzing": "Čitam fajl…"
+      },
+      "columns": {
+        "intro": "Za svako polje izaberi kolonu iz fajla. Predlog je popunjen prema nazivima kolona.",
+        "field": "Polje",
+        "column": "Kolona u fajlu",
+        "skip": "Ne uvozi",
+        "defaultUnit": "Jedinica mere kad je u fajlu nema",
+        "rows": "Fajl ima {{count}} redova. Prvi redovi:",
+        "check": "Proveri"
+      },
+      "fields": {
+        "initialStock": "Početno stanje"
+      },
+      "preview": {
+        "ready": "Spremno za uvoz",
+        "errors": "Sa greškom",
+        "skipped": "Već postoji",
+        "issuesTitle": "Redovi koji neće biti uvezeni",
+        "row": "Red",
+        "problem": "Problem",
+        "skippedNote": "Artikli koji već postoje se ne menjaju i ne dobijaju stanje.",
+        "sampleTitle": "Prvi artikli za uvoz",
+        "submit_one": "Uvezi {{count}} artikal",
+        "submit_few": "Uvezi {{count}} artikla",
+        "submit_other": "Uvezi {{count}} artikala",
+        "nothing": "Nema ispravnih redova za uvoz."
+      },
+      "done": {
+        "title_one": "Uvezen je {{count}} artikal",
+        "title_few": "Uvezena su {{count}} artikla",
+        "title_other": "Uvezeno je {{count}} artikala",
+        "skipped": "Preskočeno redova: {{count}}.",
+        "toItems": "Idi na artikle",
+        "again": "Novi uvoz"
+      },
+      "back": "Nazad"
     }
   },
   "stock": {

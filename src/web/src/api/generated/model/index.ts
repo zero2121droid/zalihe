@@ -5,12 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './analyzeItemImportBody';
 export * from './apiProblemDetails';
 export * from './appError';
 export * from './appErrorParams';
 export * from './currentUserResponse';
 export * from './getItemHistoryParams';
 export * from './healthResponse';
+export * from './iFormFile';
+export * from './importAnalysisDto';
+export * from './importAnalysisDtoSuggestedMapping';
+export * from './importIssueDto';
+export * from './importItemsBody';
+export * from './importPreviewDto';
+export * from './importPreviewItemDto';
+export * from './importResultDto';
 export * from './itemChangeDto';
 export * from './itemChangeKind';
 export * from './itemDto';
@@ -23,6 +32,7 @@ export * from './loginRequest';
 export * from './manualMovementKind';
 export * from './pagedResultOfItemDto';
 export * from './pagedResultOfItemHistoryEntryDto';
+export * from './previewItemImportBody';
 export * from './problemDetails';
 export * from './recordMovementRequest';
 export * from './recordMovementResponse';

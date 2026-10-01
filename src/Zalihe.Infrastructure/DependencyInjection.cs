@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Zalihe.Application.Common;
+using Zalihe.Application.Imports;
 using Zalihe.Application.Items;
 using Zalihe.Application.Stock;
 using Zalihe.Infrastructure.Identity;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ItemService>();
         services.AddScoped<ItemHistoryService>();
         services.AddScoped<StockService>();
+        services.AddScoped<ItemImportService>();
         services.AddScoped<IUserDirectory, UserDirectory>();
 
         return services;

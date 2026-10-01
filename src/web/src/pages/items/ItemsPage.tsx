@@ -88,7 +88,12 @@ export function ItemsPage() {
             </Text>
           )}
         </Group>
-        <Button onClick={() => setCreating(true)}>{t('items.new')}</Button>
+        <Group gap="sm">
+          <Button variant="default" component={Link} to="/items/import">
+            {t('items.importCsv')}
+          </Button>
+          <Button onClick={() => setCreating(true)}>{t('items.new')}</Button>
+        </Group>
       </Group>
 
       <Group gap="md" wrap="wrap">

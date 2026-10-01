@@ -89,6 +89,17 @@
     },
     "stock": {
       "no_change": "The counted stock equals the current stock; there is nothing to correct."
+    },
+    "import": {
+      "unit_unknown": "Unknown unit “{{value}}”.",
+      "sku_exists": "An item with this SKU already exists; the row was skipped.",
+      "sku_duplicate_in_file": "The same SKU is already in row {{row}}.",
+      "file_empty": "The file is empty or has no row with column names.",
+      "too_many_rows": "The file has more than {{max}} rows. Split it into smaller files.",
+      "mapping_invalid": "Choose columns at least for name and SKU.",
+      "excel_not_supported": "Excel files aren't supported yet. In Excel, choose Save As → CSV.",
+      "file_too_large": "The file is larger than {{maxMb}} MB.",
+      "not_a_number": "Not a number: “{{value}}”."
     }
   },
   "items": {
@@ -163,6 +174,58 @@
       "updated": "Item edited",
       "deactivated": "Item deactivated",
       "activated": "Item activated"
+    },
+    "importCsv": "Import CSV",
+    "import": {
+      "title": "Import items from a CSV file",
+      "steps": {
+        "file": "File",
+        "columns": "Columns",
+        "preview": "Preview"
+      },
+      "file": {
+        "label": "CSV file",
+        "placeholder": "Choose a file…",
+        "help": "From Excel: File → Save As → CSV. The first row must contain column names.",
+        "recognized": "Columns such as Name, SKU, Unit, Purchase price, Min stock and Quantity are recognized automatically.",
+        "sample": "Download a sample file",
+        "analyzing": "Reading the file…"
+      },
+      "columns": {
+        "intro": "Choose a column from the file for each field. The suggestion is based on the column names.",
+        "field": "Field",
+        "column": "Column in the file",
+        "skip": "Don't import",
+        "defaultUnit": "Unit when the file has none",
+        "rows": "The file has {{count}} rows. First rows:",
+        "check": "Check"
+      },
+      "fields": {
+        "initialStock": "Opening stock"
+      },
+      "preview": {
+        "ready": "Ready to import",
+        "errors": "With errors",
+        "skipped": "Already exist",
+        "issuesTitle": "Rows that won't be imported",
+        "row": "Row",
+        "problem": "Problem",
+        "skippedNote": "Items that already exist are not changed and get no stock.",
+        "sampleTitle": "First items to import",
+        "submit_one": "Import {{count}} item",
+        "submit_few": "Import {{count}} items",
+        "submit_other": "Import {{count}} items",
+        "nothing": "There are no valid rows to import."
+      },
+      "done": {
+        "title_one": "{{count}} item imported",
+        "title_few": "{{count}} items imported",
+        "title_other": "{{count}} items imported",
+        "skipped": "Rows skipped: {{count}}.",
+        "toItems": "Go to items",
+        "again": "New import"
+      },
+      "back": "Back"
     }
   },
   "stock": {

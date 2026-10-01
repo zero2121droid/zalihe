@@ -27,7 +27,12 @@ tests/
   Zalihe.IntegrationTests/
 docs/
   SPEC.md
+  DESIGN.md
+  ARCHITECTURE.md
+  mockups/
 ```
+
+`docs/ARCHITECTURE.md` objašnjava slojeve, fajlove i redosled dodavanja funkcionalnosti. Dopunjuje se kad se struktura promeni.
 
 ## Konvencije
 
@@ -74,6 +79,12 @@ Posle v1 planirana je React Native (Expo) aplikacija koja koristi isti API. Zato
 - Svaka ispravljena greška dobija test koji je reprodukuje.
 - Pre završetka zadatka pokrenuti `dotnet test` i frontend testove. Zadatak nije gotov dok testovi ne prolaze.
 
+## Dizajn
+
+- Pre svakog rada na UI-ju pročitaj `docs/DESIGN.md`. Boje, fontovi, razmaci i zabrane iz njega su obavezni.
+- Boje i fontovi idu isključivo preko Mantine teme (`web/src/theme.ts`), nikad hex vrednosti u komponentama.
+- Makete su u `docs/mockups/`: PNG slike za izgled i HTML izvor za tačne boje, razmake i veličine. HTML je samo referenca, ne kopira se u projekat; ekrani se prave kao React komponente sa Mantine-om.
+
 ## Pravila rada
 
 - Radi u malim koracima: jedna funkcionalnost po zadatku, od baze do ekrana.
@@ -91,8 +102,10 @@ dotnet run --project src/Zalihe.Web --launch-profile http  # API na http://local
 cd src/web && npm run dev                                  # React na http://localhost:5173, /api ide na backend
 dotnet test                                                # svi .NET testovi
 cd src/web && npm run build && npm run lint                # frontend build i lint
+
+# migracije
+dotnet ef migrations add NazivPromene -p src/Zalihe.Infrastructure -s src/Zalihe.Web -o Persistence/Migrations
+dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 ```
 
 Postgres iz Dockera je na portu 5433, jer je 5432 zauzet lokalno instaliranim PostgreSQL-om.
-
-<!-- Popuniti kad se postavi projekat: build, test, pokretanje, migracije, generisanje API klijenta -->

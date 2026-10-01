@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8">
+<title>Zalihe — Prodaja van sajta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#11130E}
+a{color:#B4C17E}a:hover{color:#CBD69A}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #11130E; color: #E4E7DC; font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.45; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 8px; padding: 20px 16px 12px">
+<button type="button" aria-label="Nazad" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; color: #E4E7DC; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<h1 style="margin: 0; font-size: 19px; font-weight: 600">Prodaja van sajta</h1>
+</header>
+
+<div style="display: flex; flex-direction: column; gap: 18px; padding: 4px 20px 0; flex: 1">
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9BA18F">Gde je prodato</span>
+<div role="group" aria-label="Mesto prodaje" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<button type="button" aria-pressed="true" style="height: 44px; border-radius: 4px; border: 1px solid #B4C17E; background: #252B1C; color: #E4E7DC; font: inherit; font-size: 13px; font-weight: 500">Radnja</button>
+<button type="button" aria-pressed="false" style="height: 44px; border-radius: 4px; border: 1px solid #2C3125; background: transparent; color: #C4C9B8; font: inherit; font-size: 13px">Instagram</button>
+<button type="button" aria-pressed="false" style="height: 44px; border-radius: 4px; border: 1px solid #2C3125; background: transparent; color: #C4C9B8; font: inherit; font-size: 13px">Veleprod.</button>
+<button type="button" aria-pressed="false" style="height: 44px; border-radius: 4px; border: 1px solid #2C3125; background: transparent; color: #C4C9B8; font: inherit; font-size: 13px">Drugo</button>
+</div>
+</div>
+
+<label style="display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 12px; border: 1px solid #2C3125; border-radius: 4px; background: #191C15">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9BA18F" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Pronađi artikal</span>
+<input type="search" value="etiop" style="flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: #E4E7DC; font: inherit">
+<button type="button" aria-label="Skeniraj barkod" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; color: #B4C17E; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 7V4h3"></path><path d="M18 4h3v3"></path><path d="M21 17v3h-3"></path><path d="M6 20H3v-3"></path><path d="M7 8v8"></path><path d="M10 8v8"></path><path d="M13 8v8"></path><path d="M17 8v8"></path></svg></button>
+</label>
+
+<div style="display: flex; flex-direction: column; gap: 16px; padding: 18px; border: 1px solid #3A4030; border-radius: 6px; background: #191C15">
+<div style="display: flex; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600">Kafa Etiopija Yirgacheffe 250 g</span>
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #9BA18F">KF-ETI-250</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 20px; font-weight: 500; color: #E0A84A">4</span>
+<span style="font-size: 11px; color: #9BA18F">na stanju</span>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<button type="button" aria-label="Smanji količinu" style="width: 56px; height: 56px; border-radius: 4px; border: 1px solid #3A4030; background: #20241B; color: #E4E7DC; font-size: 26px; cursor: pointer">−</button>
+<div style="display: flex; flex-direction: column; align-items: center">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 48px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums">2</span>
+<span style="font-size: 12px; color: #9BA18F; margin-top: 6px">kom</span>
+</div>
+<button type="button" aria-label="Povećaj količinu" style="width: 56px; height: 56px; border-radius: 4px; border: 1px solid #3A4030; background: #20241B; color: #E4E7DC; font-size: 26px; cursor: pointer">+</button>
+</div>
+
+<div style="display: flex; justify-content: space-between; font-size: 13px; color: #9BA18F; border-top: 1px solid #2C3125; padding-top: 12px">
+<span>Posle prodaje</span>
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; color: #E0A84A">2 kom · ispod minimuma (10)</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9BA18F">Danas van sajta</span>
+<div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #23271E; font-size: 14px">
+<span>Ručni mlin za kafu <span style="color: #9BA18F">· Radnja</span></span>
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace">−1</span>
+</div>
+<div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #23271E; font-size: 14px">
+<span>Filter papir V60 <span style="color: #9BA18F">· Instagram</span></span>
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace">−3</span>
+</div>
+</div>
+
+</div>
+
+<div style="padding: 16px 20px 28px">
+<button type="button" style="width: 100%; height: 56px; border: 0; border-radius: 4px; background: {{accent}}; color: #11130E; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Zabeleži prodaju · −2 kom</button>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#B4C17E","options":["#B4C17E","#9DB06A","#C9B77A","#8FB0A0"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#B4C17E' };
+  }
+}
+</script>
+</body>
+</html>

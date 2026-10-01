@@ -75,7 +75,11 @@ Jedinica mere stoji uz broj, manjom veličinom i `muted` bojom: **31** kom.
 - Sekcije se odvajaju **okvirom od 1 px**, bez senki.
 - Pregled (KPI) je jedna traka podeljena linijama, ne niz zasebnih kartica.
 - Razmaci po skali od 4 px: 4, 8, 12, 16, 20, 24, 28, 36.
-- Bočna navigacija 232 px, sadržaj najviše 1180 px širine.
+- Bočna navigacija 232 px. Raspored je fluidan: sadržaj koristi raspoloživu širinu do granice koja zavisi od vrste stranice, i uvek je poravnat uz navigaciju (levo).
+  - ekrani sa tabelama (Artikli, Kretanja, Izveštaji): najviše 1920 px
+  - ostali ekrani (Početna, podešavanja): najviše 1180 px
+  - modali: centrirani na ekranu, 760 px, a na ekranima širim od 1920 px 880 px; na telefonu cela širina, a viši sadržaj se pomera unutar modala. Forma u modalu ima najviše dve kolone, jer se razvučena polja teško popunjavaju
+- Veličina teksta i elemenata ne zavisi od širine ekrana. Uvećanje je posao sistema i browsera (zum), da se ne bi sabralo sa njim.
 - Visina dugmadi 40 px na računaru, minimum 44 px na telefonu, 56 px za glavnu akciju na telefonu.
 
 ## Ikone

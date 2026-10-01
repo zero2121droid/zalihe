@@ -10,6 +10,7 @@ import { useCurrentUser } from '../auth/useCurrentUser'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import classes from './AppLayout.module.css'
+import { usePageWidth } from './pageWidth'
 
 interface NavItem {
   to: string
@@ -27,6 +28,7 @@ export function AppLayout() {
   const { t } = useTranslation()
   const [opened, { toggle, close }] = useDisclosure()
   const { user } = useCurrentUser()
+  const pageWidth = usePageWidth()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const logout = useLogout({
@@ -97,7 +99,7 @@ export function AppLayout() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Box className={classes.main}>
+        <Box className={classes.main} data-width={pageWidth}>
           <Outlet />
         </Box>
       </AppShell.Main>

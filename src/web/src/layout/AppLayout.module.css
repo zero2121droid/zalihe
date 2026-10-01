@@ -40,6 +40,11 @@
   max-width: 1180px;
 }
 
+/* Table screens use more of a wide monitor (see pageWidth.ts). */
+.main[data-width='wide'] {
+  max-width: 1920px;
+}
+
 @media (max-width: 48em) {
   .main {
     padding: 20px 16px 32px;

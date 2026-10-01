@@ -219,7 +219,7 @@ export const theme = createTheme({
       },
     }),
     Modal: Modal.extend({
-      defaultProps: { radius: 'md', shadow: 'none' },
+      defaultProps: { radius: 'md', shadow: 'none', size: 'var(--z-modal-width)', padding: 'lg', centered: true },
       styles: {
         content: { backgroundColor: 'var(--z-surface)', border: '1px solid var(--z-line)' },
         header: { backgroundColor: 'var(--z-surface)' },

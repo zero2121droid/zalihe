@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „svetla tema” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „izmena i deaktivacija artikala” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -118,7 +118,7 @@ zalihe/
 
 **`Tenants/ITenantOwned.cs`**: oznaka „ovo su podaci firme”. Ima samo `TenantId`. Svaki entitet koji ga implementira automatski dobija global query filter.
 
-**`Items/Item.cs`**: artikal. Konstruktor čuva pravila: naziv i šifra su obavezni i skraćuju se, prazni neobavezni tekstovi postaju `null`, minimalna zaliha i cene ne mogu biti negativne. Količina može imati najviše 3 decimale, a novac 2 (`HasAtMostDecimals()`), što odgovara kolonama `decimal(18,3)` i `decimal(18,2)`. Svaka WooCommerce varijacija je poseban artikal, a `GroupName` služi samo za grupisanje u prikazu.
+**`Items/Item.cs`**: artikal. Konstruktor i `Update()` čuvaju ista pravila (`Update()` prvo proveri sve vrednosti, pa tek onda menja, da odbijena izmena ne ostavi artikal napola izmenjen): naziv i šifra su obavezni i skraćuju se, prazni neobavezni tekstovi postaju `null`, minimalna zaliha i cene ne mogu biti negativne. Količina može imati najviše 3 decimale, a novac 2 (`HasAtMostDecimals()`), što odgovara kolonama `decimal(18,3)` i `decimal(18,2)`. Svaka WooCommerce varijacija je poseban artikal, a `GroupName` služi samo za grupisanje u prikazu. Artikal se **nikad ne briše**, jer mu istorija kretanja mora ostati: `Deactivate()` ga sklanja iz liste i izbora, a `Activate()` vraća.
 
 **`Items/Unit.cs`**: jedinica mere kao `enum` (kom, kg, g, l, ml, m, pak). Fiksna lista omogućava da se količine u izveštajima sabiraju. U API-ju putuje kao kod (`"kom"`), a frontend ga prevodi (`items.units.kom`, na engleskom „pcs”).
 
@@ -138,7 +138,9 @@ zalihe/
 - `ListAsync()`: pretraga po nazivu, šifri ili barkodu (bez obzira na velika i mala slova), filter po kategoriji, sortiranje po nazivu, paginacija. Nijedan upit ne pominje `TenantId`, to radi filter.
 - `GetAsync()`: jedan artikal ili `null` (artikal druge firme za ovaj servis „ne postoji”).
 - `GetCategoriesAsync()`: kategorije koje firma već koristi, za predloge u formi.
-- `CreateAsync()`: proverava decimale (greška `validation.too_many_decimals` sa `{max}`) i jedinstvenost šifre (`item.sku_duplicate`), pa pravi artikal za trenutnu firmu.
+- `CreateAsync()` i `UpdateAsync()`: isti `SaveItemCommand` i ista provera (`ValidateAsync`): decimale (`validation.too_many_decimals` sa `{max}`) i jedinstvenost šifre (`item.sku_duplicate`; pri izmeni se sam artikal ne računa). Neaktivni artikli i dalje „zauzimaju” svoju šifru.
+- `UpdateAsync()` i `SetActiveAsync()` za artikal druge firme vraćaju „ne postoji”, jer ga global query filter i ne pronalazi.
+- `ListAsync()` podrazumevano izostavlja neaktivne; `IncludeInactive` ih uključuje.
 - `ToDto`: izraz koji EF prevodi u SQL, pa se iz baze čitaju samo potrebne kolone.
 
 ### Zalihe.Infrastructure
@@ -243,9 +245,9 @@ Primer odgovora sa greškom:
 
 **`Tenancy/TenantMiddleware.cs`**: posle autentifikacije čita claim `tenant_id` i postavlja `TenantContext`. Za sesije napravljene pre nego što je claim postojao, firmu jednom čita iz baze.
 
-**`Items/ItemContracts.cs`**: `CreateItemRequest` sa validacijom preko kodova. Neobavezna polja imaju podrazumevanu vrednost `null`, pa ih OpenAPI (i TypeScript) ne traži. `[Range]` granice se čitaju sa `ParseLimitsInInvariantCulture = true`: bez toga, na računaru sa srpskim podešavanjima (decimalni zarez) parsiranje `"9999999999999999.99"` baca izuzetak i svako pravljenje artikla vraća 500. Tu grešku čuva test `ItemContractsTests`.
+**`Items/ItemContracts.cs`**: `ItemRequest` (isti za dodavanje i izmenu) sa validacijom preko kodova. Neobavezna polja imaju podrazumevanu vrednost `null`, pa ih OpenAPI (i TypeScript) ne traži. `[Range]` granice se čitaju sa `ParseLimitsInInvariantCulture = true`: bez toga, na računaru sa srpskim podešavanjima (decimalni zarez) parsiranje `"9999999999999999.99"` baca izuzetak i svako pravljenje artikla vraća 500. Tu grešku čuva test `ItemContractsTests`.
 
-**`Items/ItemsController.cs`**: `GET /api/items` (lista sa `search`, `category`, `page`, `pageSize`), `GET /api/items/{id}`, `GET /api/items/categories` i `POST /api/items` (vraća `201 Created` sa adresom novog artikla). Ceo kontroler ima `[Authorize]`.
+**`Items/ItemsController.cs`**: `GET /api/items` (lista sa `search`, `category`, `includeInactive`, `page`, `pageSize`), `GET /api/items/{id}`, `GET /api/items/categories`, `POST /api/items` (vraća `201 Created`), `PUT /api/items/{id}`, `POST /api/items/{id}/deactivate` i `POST /api/items/{id}/activate`. Deaktivacija je zasebna akcija, a ne polje u izmeni, jer je to drugačija namera korisnika. Ceo kontroler ima `[Authorize]`.
 
 **JSON podešavanja u `Program.cs`**: enumi putuju kao kodovi (`"kom"`), a brojevi moraju biti JSON brojevi (`NumberHandling.Strict`). Bez toga bi OpenAPI opisivao brojeve kao „broj ili tekst”, pa bi TypeScript tipovi bili `number | string`. Ista podešavanja važe i za generisanje OpenAPI dokumenta (`ConfigureHttpJsonOptions`).
 
@@ -315,7 +317,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`colorScheme.ts` i `components/ThemeToggle.tsx`**: izbor teme. Tamna je podrazumevana, a izbor se čuva u browseru (`localStorage`, ključ `zalihe.colorScheme`), ne na nalogu, pa telefon i računar mogu imati različite teme. Prekidač stoji u bočnoj navigaciji i na stranici za prijavu. `index.html` ima mali skript koji pročita isti ključ pre nego što se React učita, da stranica ne bi bljesnula pogrešnom temom.
 
-**`global.css`**: ono malo stilova koje Mantine tema ne može da izrazi: vidljiv fokus (`.z-focus`, okvir od 2 px u `accent-text` boji, preko `theme.focusClassName`) i hover za linkove.
+**`global.css`**: ono malo stilova koje Mantine tema ne može da izrazi: vidljiv fokus (`.z-focus`, okvir od 2 px u `accent-text` boji, preko `theme.focusClassName`), hover za linkove i širina modala (`--z-modal-width`: 760 px, na ekranima širim od 1920 px 880 px), koju tema koristi kao podrazumevanu veličinu svakog modala.
 
 **`i18n.ts`**: učitava oba prevoda i bira jezik: pre prijave iz browsera (`localStorage`), a posle prijave iz `User.Language` (to radi `useCurrentUser`). `setLanguage()` menja jezik i pamti izbor. Pri promeni jezika ažurira se i `<html lang>`, što je bitno za čitače ekrana.
 
@@ -331,7 +333,9 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `RequireAuth`: deo aplikacije za prijavljene. Dok se proverava prikazuje loader, a neprijavljenog šalje na `/login` i pamti gde je hteo da ide.
 - `PublicOnly`: prijavljenog korisnika sa `/login` i `/register` šalje u aplikaciju.
 
-**`router.tsx`**: rute su ugnežđene: guard → layout → stranica. Tako svaka nova stranica za prijavljene automatski dobija zaštitu i bočnu navigaciju, samo se doda u listu.
+**`router.tsx`**: rute su ugnežđene: guard → layout → stranica. Tako svaka nova stranica za prijavljene automatski dobija zaštitu i bočnu navigaciju, samo se doda u listu. Ruta može da nosi i širinu sadržaja: `handle: { width: 'wide' }` za ekrane sa tabelama (do 1920 px), a bez toga važi `normal` (do 1180 px).
+
+**`layout/pageWidth.ts`**: `usePageWidth()` čita širinu iz najdublje rute, a `AppLayout` je primeni kao `data-width` na glavni sadržaj. Raspored je fluidan do te granice, a veličina teksta se ne menja sa širinom ekrana (DESIGN.md).
 
 **`layout/AppLayout.tsx`**: okvir po maketi: bočna navigacija od 232 px, logo, stavke, firma i korisnik dole, dugme za odjavu. Na telefonu se navigacija sklapa iza dugmeta „meni”. U `navItems` su samo ekrani koji postoje.
 
@@ -339,9 +343,9 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`components/DecimalInput.tsx`**: polje za decimale. Čuva tačno ono što je korisnik otkucao (`12,5` ili `12.5`), a tek pri slanju ga `readDecimal()` iz `lib/format.ts` pretvara u broj. Ako unos nije broj, forma prikaže „Unesi broj” i ne šalje zahtev. To je jedina provera na frontendu, jer se tiče formata unosa, a ne poslovnih pravila.
 
-**`pages/items/ItemsPage.tsx`**: ekran „Artikli” po maketi: naslov sa brojem artikala, pretraga, tabela (artikal sa kategorijom, šifra, minimalna zaliha sa jedinicom mere) i paginacija „1–20 od N”. Pretraga i strana su u adresi (`/items?q=etiop&page=2`), pa ih osvežavanje i dugme „nazad” čuvaju. Pretraga se šalje 300 ms posle poslednjeg slova (`useDebouncedValue`), a `keepPreviousData` drži staru listu dok stiže nova, pa tabela ne treperi. Kolone Stanje, Status, Prodaja 30d i Vrednost dolaze sa kretanjima zaliha.
+**`pages/items/ItemsPage.tsx`**: ekran „Artikli” po maketi: naslov sa brojem artikala, pretraga, tabela (artikal sa kategorijom, šifra, minimalna zaliha sa jedinicom mere) i paginacija „1–20 od N”. Pretraga i strana su u adresi (`/items?q=etiop&page=2`), pa ih osvežavanje i dugme „nazad” čuvaju. Pretraga se šalje 300 ms posle poslednjeg slova (`useDebouncedValue`), a `keepPreviousData` drži staru listu dok stiže nova, pa tabela ne treperi. Klik na red otvara izmenu; za tastaturu je naziv artikla pravo dugme. Prekidač „Prikaži neaktivne” (`?inactive=1`) uključuje neaktivne artikle, koji imaju oznaku „Neaktivan” (tekst, ne samo boja). Kolone Stanje, Status, Prodaja 30d i Vrednost dolaze sa kretanjima zaliha.
 
-**`pages/items/NewItemModal.tsx`**: forma „Novi artikal” u modalnom prozoru. Jedinice mere dolaze iz generisane konstante `Unit`, dakle iz istog izvora kao na backendu. Kategorija nudi predloge iz `GET /api/items/categories`. Posle uspešnog čuvanja invalidiraju se lista i kategorije, pa se novi artikal odmah vidi.
+**`pages/items/ItemModal.tsx`**: jedna forma za dodavanje i izmenu. Bez `item` pravi novi artikal, a sa `item` popuni polja (decimale u formatu jezika, npr. `12,5`, preko `formatDecimalInput()`), šalje `PUT` i nudi „Deaktiviraj” ili „Aktiviraj”. Roditelj joj daje `key` po artiklu, pa forma pri svakom otvaranju kreće od podataka tog artikla. Jedinice mere dolaze iz generisane konstante `Unit`, dakle iz istog izvora kao na backendu. Kategorija nudi predloge iz `GET /api/items/categories`. Posle uspešnog čuvanja invalidiraju se lista i kategorije, pa se novi artikal odmah vidi.
 
 **Frontend testovi** (`*.test.ts(x)`, Vitest + React Testing Library):
 - `locales.test.ts`: oba jezika imaju isti skup ključeva i nijedan prevod nije prazan;
@@ -350,7 +354,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `LoginPage.test.tsx`, `RegisterPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
 - `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju;
 - `ThemeToggle.test.tsx`: tamna tema na početku, klik prebacuje na svetlu i pamti izbor;
-- `ItemsPage.test.tsx`, `NewItemModal.test.tsx`: redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
+- `ItemsPage.test.tsx`, `ItemModal.test.tsx`: izmena (popunjena polja, `PUT`), deaktivacija, oznaka i filter neaktivnih, redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
 
 Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pokrenut backend, i renderuju sa pravim providerima (`renderRoutes`).
 
@@ -376,6 +380,8 @@ Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pok
 **`Zalihe.Domain.Tests/Items/ItemTests.cs`**: pravila artikla (skraćivanje teksta, obavezna polja, negativne vrednosti, broj decimala).
 
 **`Zalihe.IntegrationTests/Items/ItemsTests.cs`**: pravljenje, lista, pretraga, paginacija i greške, a pre svega **izolacija firmi**: ista šifra je dozvoljena u različitim firmama, lista, pretraga i kategorije vide samo svoju firmu, a tuđi artikal vraća 404. Pomoćna metoda `CreateSignedInClientAsync()` pravi prijavljenog klijenta koji šalje antiforgery header kao frontend.
+
+**`Zalihe.IntegrationTests/Items/ItemUpdateTests.cs`**: izmena (sopstvena šifra je dozvoljena, tuđa nije), deaktivacija i aktivacija, filter neaktivnih, i izolacija: firma B ne može da izmeni ni deaktivira artikal firme A.
 
 **`Zalihe.IntegrationTests/Items/ItemContractsTests.cs`**: test koji reprodukuje grešku sa `[Range]` i srpskim podešavanjima. Atribut čita direktno, jer test server ne prenosi jezička podešavanja u obradu zahteva, pa bi test preko HTTP-a prolazio i sa greškom.
 

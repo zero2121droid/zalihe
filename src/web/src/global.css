@@ -9,3 +9,14 @@
 .mantine-Anchor-root:hover {
   color: var(--z-link-hover);
 }
+
+/* Modal width grows with the screen (DESIGN.md "Oblik i raspored"); phones get the full width. */
+:root {
+  --z-modal-width: 760px;
+}
+
+@media (min-width: 120em) {
+  :root {
+    --z-modal-width: 880px;
+  }
+}

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { PublicOnly, RequireAuth } from './auth/RouteGuards'
 import { AppLayout } from './layout/AppLayout'
 import { AuthLayout } from './layout/AuthLayout'
+import type { RouteHandle } from './layout/pageWidth'
 import { HomePage } from './pages/HomePage'
 import { ItemsPage } from './pages/items/ItemsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -25,9 +26,10 @@ export const routes: RouteObject[] = [
     children: [
       {
         element: <AppLayout />,
+        // Content width per page: 'wide' for table screens, 'normal' (default) otherwise.
         children: [
           { path: '/', element: <HomePage /> },
-          { path: '/items', element: <ItemsPage /> },
+          { path: '/items', element: <ItemsPage />, handle: { width: 'wide' } satisfies RouteHandle },
         ],
       },
     ],

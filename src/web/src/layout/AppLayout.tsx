@@ -1,6 +1,6 @@
 import { ActionIcon, AppShell, Box, Burger, Group, NavLink, Stack, Text } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconHome, IconLogout } from '@tabler/icons-react'
+import { IconBox, IconHome, IconLogout } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -17,7 +17,10 @@ interface NavItem {
 }
 
 // Only screens that exist are listed; new ones are added as they are built.
-const navItems: NavItem[] = [{ to: '/', labelKey: 'common.nav.home', icon: IconHome }]
+const navItems: NavItem[] = [
+  { to: '/', labelKey: 'common.nav.home', icon: IconHome },
+  { to: '/items', labelKey: 'common.nav.items', icon: IconBox },
+]
 
 export function AppLayout() {
   const { t } = useTranslation()

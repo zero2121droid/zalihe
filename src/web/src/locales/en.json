@@ -10,9 +10,14 @@
     "nav": {
       "main": "Main navigation",
       "home": "Home",
-      "openMenu": "Open menu"
+      "openMenu": "Open menu",
+      "items": "Items"
     },
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "cancel": "Cancel",
+    "currency": "RSD",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "auth": {
     "login": {
@@ -58,7 +63,11 @@
       "email": "Enter a valid email address.",
       "max_length": "The value is too long.",
       "invalid": "Invalid value.",
-      "unsupported_language": "The selected language is not supported."
+      "unsupported_language": "The selected language is not supported.",
+      "not_negative": "The value can't be negative.",
+      "too_many_decimals": "At most {{max}} decimal places.",
+      "out_of_range": "The value is out of the allowed range.",
+      "number": "Enter a number, e.g. 12.5."
     },
     "auth": {
       "unauthenticated": "Sign in to continue.",
@@ -68,6 +77,50 @@
       "email_taken": "An account with this email already exists.",
       "password_too_short": "The password must have at least {{min}} characters.",
       "antiforgery_invalid": "Your session has expired. Refresh the page and try again."
+    },
+    "item": {
+      "sku_duplicate": "An item with this SKU already exists."
+    }
+  },
+  "items": {
+    "title": "Items",
+    "new": "New item",
+    "search": "Search items",
+    "searchPlaceholder": "Name, SKU or barcode",
+    "columns": {
+      "item": "Item",
+      "sku": "SKU",
+      "minStock": "Min."
+    },
+    "range": "{{from}}–{{to}} of {{total}}",
+    "empty": {
+      "title": "No items yet",
+      "description": "Add your first item to start tracking its stock."
+    },
+    "noResults": "No items match “{{search}}”.",
+    "form": {
+      "title": "New item",
+      "name": "Name",
+      "sku": "SKU",
+      "barcode": "Barcode",
+      "unit": "Unit",
+      "minStock": "Minimum stock",
+      "minStockHint": "When stock falls to this quantity, the item is flagged for reordering.",
+      "category": "Category",
+      "groupName": "Group",
+      "groupNameHint": "For variations of the same product, e.g. “Basic T-shirt”.",
+      "purchasePrice": "Purchase price",
+      "salePrice": "Sale price",
+      "submit": "Save item"
+    },
+    "units": {
+      "kom": "pcs",
+      "kg": "kg",
+      "g": "g",
+      "l": "l",
+      "ml": "ml",
+      "m": "m",
+      "pak": "pack"
     }
   }
 }

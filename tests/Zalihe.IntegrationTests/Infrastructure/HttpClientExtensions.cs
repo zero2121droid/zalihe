@@ -13,6 +13,18 @@ public static class HttpClientExtensions
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// A client signed in as the owner of a new company, sending the antiforgery header
+    /// on every request, like the frontend does.
+    /// </summary>
+    public static async Task<HttpClient> CreateSignedInClientAsync(this ZaliheApiFactory factory)
+    {
+        var client = factory.CreateClient();
+        await client.RegisterAsync(UniqueEmail());
+        client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await client.GetAntiforgeryTokenAsync());
+        return client;
+    }
+
     /// <summary>Calls "me" and returns the antiforgery token it issues in the XSRF-TOKEN cookie.</summary>
     public static async Task<string> GetAntiforgeryTokenAsync(this HttpClient client)
     {

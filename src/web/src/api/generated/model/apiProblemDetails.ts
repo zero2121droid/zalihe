@@ -11,11 +11,8 @@ export interface ApiProblemDetails {
   type?: string | null;
   /** @nullable */
   title?: string | null;
-  /**
-     * @nullable
-     * @pattern ^-?(?:0|[1-9]\d*)$
-     */
-  status?: number | string | null;
+  /** @nullable */
+  status?: number | null;
   /** @nullable */
   detail?: string | null;
   /** @nullable */

@@ -43,3 +43,9 @@ export function parseDecimal(input: string): number | null {
 
   return /^-?\d+(\.\d+)?$/.test(normalized) ? Number(normalized) : null
 }
+
+/** Reads a decimal field on submit: empty is `null`, text that isn't a number is `'invalid'`. */
+export function readDecimal(input: string): number | null | 'invalid' {
+  if (input.trim() === '') return null
+  return parseDecimal(input) ?? 'invalid'
+}

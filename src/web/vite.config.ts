@@ -8,7 +8,8 @@ export default defineConfig({
   server: {
     proxy: {
       // Backend runs outside Docker via the "http" launch profile of Zalihe.Web.
-      '/api': 'http://localhost:5131',
+      // API_URL points the proxy elsewhere, e.g. a second backend on another port.
+      '/api': process.env.API_URL ?? 'http://localhost:5131',
     },
   },
   test: {

@@ -7,6 +7,7 @@ import {
   createTheme,
   Input,
   type MantineColorsTuple,
+  Modal,
   NavLink,
   Table,
 } from '@mantine/core'
@@ -151,6 +152,14 @@ export const theme = createTheme({
       vars: () => ({ wrapper: { '--input-height': '40px', '--input-fz': '14px' } }),
       styles: {
         input: { backgroundColor: 'var(--z-surface)', borderColor: 'var(--z-line)' },
+      },
+    }),
+    Modal: Modal.extend({
+      defaultProps: { radius: 'md', shadow: 'none' },
+      styles: {
+        content: { backgroundColor: 'var(--z-surface)', border: '1px solid var(--z-line)' },
+        header: { backgroundColor: 'var(--z-surface)' },
+        title: { fontSize: '15px', fontWeight: 600 },
       },
     }),
     Anchor: Anchor.extend({

@@ -19,7 +19,8 @@ public static class IdentitySetup
                 options.Password.RequireUppercase = false;
                 options.Password.RequireNonAlphanumeric = false;
             })
-            .AddEntityFrameworkStores<AppDbContext>();
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>();
 
         services.ConfigureApplicationCookie(options =>
         {

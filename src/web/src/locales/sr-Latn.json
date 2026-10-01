@@ -10,9 +10,14 @@
     "nav": {
       "main": "Glavna navigacija",
       "home": "Početna",
-      "openMenu": "Otvori meni"
+      "openMenu": "Otvori meni",
+      "items": "Artikli"
     },
-    "logout": "Odjavi se"
+    "logout": "Odjavi se",
+    "cancel": "Otkaži",
+    "currency": "RSD",
+    "previousPage": "Prethodna strana",
+    "nextPage": "Sledeća strana"
   },
   "auth": {
     "login": {
@@ -58,7 +63,11 @@
       "email": "Unesi ispravnu email adresu.",
       "max_length": "Unos je predugačak.",
       "invalid": "Neispravna vrednost.",
-      "unsupported_language": "Izabrani jezik nije podržan."
+      "unsupported_language": "Izabrani jezik nije podržan.",
+      "not_negative": "Vrednost ne može biti negativna.",
+      "too_many_decimals": "Najviše {{max}} decimale.",
+      "out_of_range": "Vrednost je van dozvoljenog opsega.",
+      "number": "Unesi broj, npr. 12,5."
     },
     "auth": {
       "unauthenticated": "Prijavi se da bi nastavio.",
@@ -68,6 +77,50 @@
       "email_taken": "Nalog sa ovom email adresom već postoji.",
       "password_too_short": "Lozinka mora imati najmanje {{min}} znakova.",
       "antiforgery_invalid": "Sesija je istekla. Osveži stranicu i pokušaj ponovo."
+    },
+    "item": {
+      "sku_duplicate": "Artikal sa ovom šifrom već postoji."
+    }
+  },
+  "items": {
+    "title": "Artikli",
+    "new": "Novi artikal",
+    "search": "Pretraga artikala",
+    "searchPlaceholder": "Naziv, šifra ili barkod",
+    "columns": {
+      "item": "Artikal",
+      "sku": "Šifra",
+      "minStock": "Min."
+    },
+    "range": "{{from}}–{{to}} od {{total}}",
+    "empty": {
+      "title": "Još nema artikala",
+      "description": "Dodaj prvi artikal da bi pratio njegovo stanje."
+    },
+    "noResults": "Nema artikala za „{{search}}”.",
+    "form": {
+      "title": "Novi artikal",
+      "name": "Naziv",
+      "sku": "Šifra (SKU)",
+      "barcode": "Barkod",
+      "unit": "Jedinica mere",
+      "minStock": "Minimalna zaliha",
+      "minStockHint": "Kad stanje padne na ovu količinu, artikal se označava za naručivanje.",
+      "category": "Kategorija",
+      "groupName": "Grupa",
+      "groupNameHint": "Za varijacije istog proizvoda, npr. „Majica basic”.",
+      "purchasePrice": "Nabavna cena",
+      "salePrice": "Prodajna cena",
+      "submit": "Sačuvaj artikal"
+    },
+    "units": {
+      "kom": "kom",
+      "kg": "kg",
+      "g": "g",
+      "l": "l",
+      "ml": "ml",
+      "m": "m",
+      "pak": "pak"
     }
   }
 }

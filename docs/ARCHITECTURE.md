@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „frontend osnova i prijava” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „artikli: lista i dodavanje, izolacija firmi” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -41,6 +41,30 @@ Ovo je „Clean Architecture light”: slojevi postoje, ali nema MediatR-a, CQRS
 **Kompromis:** `AccountService` je u Infrastructure, a ne u Application. Radi sa `UserManager<User>` iz Identity biblioteke, a `User` nasleđuje `IdentityUser`, koji je infrastrukturni tip. Da je u Application, taj sloj bi zavisio od Identity-ja. Poslovni servisi (artikli, zalihe) idu u Application.
 
 ---
+
+### Izolacija firmi (multi-tenancy)
+
+Sve firme dele jednu bazu. Najvažnije pravilo projekta je da **firma A nikad ne vidi podatke firme B**. To ne zavisi od toga da li je neko u upitu setio da napiše `where TenantId = ...`, već je ugrađeno u četiri sloja zaštite:
+
+```
+prijava ──► cookie sa claimom "tenant_id"
+              │
+              ▼
+TenantMiddleware ──► TenantContext.Set(tenantId)          (jednom po zahtevu)
+              │
+              ▼
+AppDbContext: global query filter  "TenantId == trenutna firma"
+              │                    (EF ga dodaje u SVAKI upit za ITenantOwned entitete)
+              ▼
+SaveChanges: provera da novi podatak pripada trenutnoj firmi
+```
+
+1. **Claim u cookie-ju.** Pri prijavi `AppClaimsPrincipalFactory` upisuje `tenant_id` u cookie, pa se firma ne čita iz baze pri svakom zahtevu.
+2. **`TenantContext`** čuva firmu za trajanje zahteva. Kasnije će ga webhookovi i pozadinski poslovi postavljati eksplicitno.
+3. **Global query filter.** Svaki entitet koji implementira `ITenantOwned` automatski dobija filter, pa servis piše samo `db.Items.Where(i => i.Sku == sku)`, a SQL dobija i `AND "TenantId" = @tenant`.
+4. **Bez firme nema podataka.** Upit bez postavljene firme baca izuzetak, umesto da vrati sve ili ništa. A `SaveChanges` odbija da upiše podatak sa tuđim `TenantId`.
+
+Test `TenantFilterTests` pada čim neko doda entitet sa kolonom `TenantId` koji nema filter, a `ItemsTests` proverava da firma B ne vidi i ne može da otvori artikal firme A.
 
 ## 3. Folder struktura
 
@@ -92,11 +116,30 @@ zalihe/
 - `private Tenant()`: prazan konstruktor samo za EF Core, koji njime pravi objekat pre nego što popuni polja iz baze.
 - `NameMaxLength`: konstanta koju koriste i baza (dužina kolone) i validacija u API-ju, pa je broj 200 napisan samo na jednom mestu.
 
+**`Tenants/ITenantOwned.cs`**: oznaka „ovo su podaci firme”. Ima samo `TenantId`. Svaki entitet koji ga implementira automatski dobija global query filter.
+
+**`Items/Item.cs`**: artikal. Konstruktor čuva pravila: naziv i šifra su obavezni i skraćuju se, prazni neobavezni tekstovi postaju `null`, minimalna zaliha i cene ne mogu biti negativne. Količina može imati najviše 3 decimale, a novac 2 (`HasAtMostDecimals()`), što odgovara kolonama `decimal(18,3)` i `decimal(18,2)`. Svaka WooCommerce varijacija je poseban artikal, a `GroupName` služi samo za grupisanje u prikazu.
+
+**`Items/Unit.cs`**: jedinica mere kao `enum` (kom, kg, g, l, ml, m, pak). Fiksna lista omogućava da se količine u izveštajima sabiraju. U API-ju putuje kao kod (`"kom"`), a frontend ga prevodi (`items.units.kom`, na engleskom „pcs”).
+
 **`Users/Languages.cs`**: podržani jezici (`sr-Latn`, `en`), podrazumevani jezik i `IsSupported()` za proveru. Ovo je domensko pravilo, pa je ovde, a ne u Web-u.
 
 ### Zalihe.Application
 
 **`Common/AppError.cs`**: jedna greška koja ide klijentu: `Code` (npr. `auth.email_taken`), `Field` (koje polje forme) i `Params` (npr. `{min: 8}`). Na ovom tipu počiva cela i18n priča: API šalje kod, a frontend ga prevodi preko `errors.auth.email_taken` i ubacuje parametre u rečenicu „Lozinka mora imati najmanje {{min}} znakova”. Ista greška radi na oba jezika i u mobilnoj aplikaciji.
+
+**`Common/ITenantContext.cs`**: „za koju firmu radi ova operacija”. `TenantId` baca izuzetak ako firma nije postavljena.
+
+**`Common/IAppDbContext.cs`**: pristup podacima za servise. Implementira ga `AppDbContext`, pa Application ne zna za Postgres. Zbog `DbSet<T>` ovaj sloj referencira paket `Microsoft.EntityFrameworkCore` (isti koji koristi Infrastructure).
+
+**`Common/PagedResult.cs`**: jedna strana liste: `Items`, `TotalCount`, `Page`, `PageSize`. Svaka lista u API-ju se pagira na serveru (najviše 100 po strani).
+
+**`Items/ItemService.cs`**: slučajevi korišćenja za artikle:
+- `ListAsync()`: pretraga po nazivu, šifri ili barkodu (bez obzira na velika i mala slova), filter po kategoriji, sortiranje po nazivu, paginacija. Nijedan upit ne pominje `TenantId`, to radi filter.
+- `GetAsync()`: jedan artikal ili `null` (artikal druge firme za ovaj servis „ne postoji”).
+- `GetCategoriesAsync()`: kategorije koje firma već koristi, za predloge u formi.
+- `CreateAsync()`: proverava decimale (greška `validation.too_many_decimals` sa `{max}`) i jedinstvenost šifre (`item.sku_duplicate`), pa pravi artikal za trenutnu firmu.
+- `ToDto`: izraz koji EF prevodi u SQL, pa se iz baze čitaju samo potrebne kolone.
 
 ### Zalihe.Infrastructure
 
@@ -107,6 +150,16 @@ zalihe/
 - `DbSet<Tenant> Tenants`: tabela firmi.
 - `OnModelCreating`: opisuje šemu: dužine kolona, strani ključ korisnik → firma i indeks na `TenantId`. `OnDelete(Restrict)` sprečava brisanje firme koja ima korisnike.
 - Ovde dolaze **global query filteri** za `TenantId`, sa prvim entitetom koji sadrži podatke firme.
+
+**`Tenancy/TenantContext.cs`**: implementacija `ITenantContext`, jedna po zahtevu (scoped). `Set()` odbija da promeni već postavljenu firmu.
+
+**`Identity/AppClaims.cs`**: `AppClaimsPrincipalFactory` dodaje claim `tenant_id` u cookie pri prijavi.
+
+**Izmene u `AppDbContext.cs`** (artikli i izolacija firmi):
+- `Items` sa dužinama kolona, preciznošću decimala, jedinstvenim indeksom `(TenantId, Sku)` i indeksom `(TenantId, Name)` za sortiranje.
+- `Unit` se čuva kao tekst (`"kom"`), da bi baza bila čitljiva i u SQL alatu.
+- `ApplyTenantFilters()` prolazi kroz sve entitete i svakom koji implementira `ITenantOwned` dodaje `HasQueryFilter(e => e.TenantId == CurrentTenantId)`. EF `CurrentTenantId` čita pri svakom upitu, pa svaki zahtev vidi svoju firmu.
+- `EnsureNewDataBelongsToCurrentTenant()` je poslednja odbrana: pri `SaveChanges` proverava da nijedan novi podatak nema tuđi `TenantId`.
 
 **`Persistence/Migrations/`**: generisani fajlovi, ne pišu se ručno.
 - `..._Initial.cs`: `Up()` pravi tabele, a `Down()` ih briše.
@@ -188,6 +241,14 @@ Primer odgovora sa greškom:
 }
 ```
 
+**`Tenancy/TenantMiddleware.cs`**: posle autentifikacije čita claim `tenant_id` i postavlja `TenantContext`. Za sesije napravljene pre nego što je claim postojao, firmu jednom čita iz baze.
+
+**`Items/ItemContracts.cs`**: `CreateItemRequest` sa validacijom preko kodova. Neobavezna polja imaju podrazumevanu vrednost `null`, pa ih OpenAPI (i TypeScript) ne traži. `[Range]` granice se čitaju sa `ParseLimitsInInvariantCulture = true`: bez toga, na računaru sa srpskim podešavanjima (decimalni zarez) parsiranje `"9999999999999999.99"` baca izuzetak i svako pravljenje artikla vraća 500. Tu grešku čuva test `ItemContractsTests`.
+
+**`Items/ItemsController.cs`**: `GET /api/items` (lista sa `search`, `category`, `page`, `pageSize`), `GET /api/items/{id}`, `GET /api/items/categories` i `POST /api/items` (vraća `201 Created` sa adresom novog artikla). Ceo kontroler ima `[Authorize]`.
+
+**JSON podešavanja u `Program.cs`**: enumi putuju kao kodovi (`"kom"`), a brojevi moraju biti JSON brojevi (`NumberHandling.Strict`). Bez toga bi OpenAPI opisivao brojeve kao „broj ili tekst”, pa bi TypeScript tipovi bili `number | string`. Ista podešavanja važe i za generisanje OpenAPI dokumenta (`ConfigureHttpJsonOptions`).
+
 **`Controllers/HealthController.cs`**: `GET /api/health`. Brza provera da API radi, a kasnije i za monitoring u produkciji.
 
 **`appsettings.Development.json`**: connection string za lokalni Docker Postgres. Učitava se samo u Development okruženju.
@@ -232,7 +293,7 @@ src/web/
 
 `openapi.json` se commituje, pa se u git diff-u vidi svaka promena API-ja.
 
-**`vite.config.ts`**: **proxy** `/api` → `http://localhost:5131`. U razvoju browser priča samo sa Vite-om (5173), a Vite prosleđuje API pozive backendu. Browser zato vidi jednu adresu, cookie radi bez CORS podešavanja, a produkcija izgleda isto (ASP.NET servira i React i API sa iste adrese). Tu je i podešavanje Vitest-a (jsdom, `src/test/setup.ts`).
+**`vite.config.ts`**: **proxy** `/api` → `http://localhost:5131` (promenljiva `API_URL` ga preusmerava, npr. `API_URL=http://localhost:5199 npm run dev`). U razvoju browser priča samo sa Vite-om (5173), a Vite prosleđuje API pozive backendu. Browser zato vidi jednu adresu, cookie radi bez CORS podešavanja, a produkcija izgleda isto (ASP.NET servira i React i API sa iste adrese). Tu je i podešavanje Vitest-a (jsdom, `src/test/setup.ts`).
 
 **`api/http.ts`**: `customFetch()` je jedina funkcija kroz koju idu svi API pozivi (Orval je poziva iz generisanog koda):
 - šalje cookie (`credentials: 'same-origin'`);
@@ -272,12 +333,19 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`pages/`**: forme drže stanje u `useState`, šalju ga generisanim hookom (`useLogin`, `useRegister`) i greške prikazuju preko `fieldErrorMessages` i `formErrorMessage`. Validaciju radi API, a frontend je samo prikazuje, kako traži pravilo „sva poslovna logika je u API-ju”. Posle uspešne prijave invalidira se upit `me`: tako se učita korisnik i novi antiforgery token, pa se ide dalje.
 
+**`components/DecimalInput.tsx`**: polje za decimale. Čuva tačno ono što je korisnik otkucao (`12,5` ili `12.5`), a tek pri slanju ga `readDecimal()` iz `lib/format.ts` pretvara u broj. Ako unos nije broj, forma prikaže „Unesi broj” i ne šalje zahtev. To je jedina provera na frontendu, jer se tiče formata unosa, a ne poslovnih pravila.
+
+**`pages/items/ItemsPage.tsx`**: ekran „Artikli” po maketi: naslov sa brojem artikala, pretraga, tabela (artikal sa kategorijom, šifra, minimalna zaliha sa jedinicom mere) i paginacija „1–20 od N”. Pretraga i strana su u adresi (`/items?q=etiop&page=2`), pa ih osvežavanje i dugme „nazad” čuvaju. Pretraga se šalje 300 ms posle poslednjeg slova (`useDebouncedValue`), a `keepPreviousData` drži staru listu dok stiže nova, pa tabela ne treperi. Kolone Stanje, Status, Prodaja 30d i Vrednost dolaze sa kretanjima zaliha.
+
+**`pages/items/NewItemModal.tsx`**: forma „Novi artikal” u modalnom prozoru. Jedinice mere dolaze iz generisane konstante `Unit`, dakle iz istog izvora kao na backendu. Kategorija nudi predloge iz `GET /api/items/categories`. Posle uspešnog čuvanja invalidiraju se lista i kategorije, pa se novi artikal odmah vidi.
+
 **Frontend testovi** (`*.test.ts(x)`, Vitest + React Testing Library):
 - `locales.test.ts`: oba jezika imaju isti skup ključeva i nijedan prevod nije prazan;
 - `format.test.ts`: formatiranje i unos brojeva;
 - `errors.test.ts`: prevođenje kodova i parametara;
 - `LoginPage.test.tsx`, `RegisterPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
-- `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju.
+- `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju;
+- `ItemsPage.test.tsx`, `NewItemModal.test.tsx`: redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
 
 Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pokrenut backend, i renderuju sa pravim providerima (`renderRoutes`).
 
@@ -299,6 +367,14 @@ Testovi lažiraju `fetch` (`mockFetch` u `test/render.tsx`), pa ne zahtevaju pok
 **`Auth/AuthTests.cs`**: 11 testova koji pokrivaju registraciju (uspeh, podrazumevani jezik, zauzet email, kratka lozinka, prazna polja, nepodržan jezik), prijavu (uspeh, pogrešna lozinka), 401 umesto preusmeravanja i odjavu sa tokenom i bez njega. Svaki test prati **Arrange / Act / Assert** i naziv `Metoda_Situacija_OcekivaniRezultat`, pa se iz samog naziva vidi šta se pokvarilo kad test padne.
 
 ---
+
+**`Zalihe.Domain.Tests/Items/ItemTests.cs`**: pravila artikla (skraćivanje teksta, obavezna polja, negativne vrednosti, broj decimala).
+
+**`Zalihe.IntegrationTests/Items/ItemsTests.cs`**: pravljenje, lista, pretraga, paginacija i greške, a pre svega **izolacija firmi**: ista šifra je dozvoljena u različitim firmama, lista, pretraga i kategorije vide samo svoju firmu, a tuđi artikal vraća 404. Pomoćna metoda `CreateSignedInClientAsync()` pravi prijavljenog klijenta koji šalje antiforgery header kao frontend.
+
+**`Zalihe.IntegrationTests/Items/ItemContractsTests.cs`**: test koji reprodukuje grešku sa `[Range]` i srpskim podešavanjima. Atribut čita direktno, jer test server ne prenosi jezička podešavanja u obradu zahteva, pa bi test preko HTTP-a prolazio i sa greškom.
+
+**`Zalihe.IntegrationTests/Tenancy/TenantFilterTests.cs`**: svaki entitet sa kolonom `TenantId` mora da implementira `ITenantOwned` i da ima filter, a upit bez postavljene firme mora da baci izuzetak.
 
 ## 5. Jedan zahtev kroz ceo sistem: registracija
 
@@ -335,7 +411,7 @@ SignInManager.SignInAsync → Set-Cookie: zalihe.auth=...
 Redosled koji važi za svaku funkcionalnost (npr. artikle):
 
 1. **Domain**: entitet sa privatnim setterima i konstruktorom koji čuva pravila, plus unit testovi za ta pravila.
-2. **Infrastructure**: `DbSet` i konfiguracija u `AppDbContext` (za podatke firme i global query filter po `TenantId`), zatim `dotnet ef migrations add ...`. Posle migracije proveriti da filteri važe za nove entitete.
+2. **Infrastructure**: `DbSet` i konfiguracija u `AppDbContext`, zatim `dotnet ef migrations add ...`. Entitet sa podacima firme samo implementira `ITenantOwned`, a filter se dodaje sam. `TenantFilterTests` potvrđuje da je to urađeno. U `IAppDbContext` dodati `DbSet` koji servis koristi.
 3. **Application**: servis sa metodama slučajeva korišćenja, a greške kao `AppError` sa kodom.
 4. **Web**: DTO zahtevi i odgovori sa validacijom preko kodova, zatim tanak kontroler sa `[ProducesResponseType]` za svaki odgovor. Liste uvek imaju paginaciju, pretragu i filtriranje na serveru.
 5. **Integracioni testovi**: srećan put, greške i izolacija firmi (firma A ne vidi podatke firme B).

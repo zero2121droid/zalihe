@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatLongDate, formatMoney, formatNumber, formatSignedQuantity, parseDecimal } from './format'
+import { formatLongDate, formatMoney, formatNumber, formatSignedQuantity, parseDecimal, readDecimal } from './format'
 
 describe('formatNumber', () => {
   it('formatNumber_SerbianLatin_UsesDotForThousandsAndCommaForDecimals', () => {
@@ -61,5 +61,19 @@ describe('parseDecimal', () => {
 
   it.each(['', '   ', 'abc', '12,5kg', '1,2,3x'])('parseDecimal_InvalidInput_"%s"_ReturnsNull', (input) => {
     expect(parseDecimal(input)).toBeNull()
+  })
+})
+
+describe('readDecimal', () => {
+  it('readDecimal_EmptyInput_ReturnsNull', () => {
+    expect(readDecimal('  ')).toBeNull()
+  })
+
+  it('readDecimal_CommaDecimal_ReturnsNumber', () => {
+    expect(readDecimal('12,5')).toBe(12.5)
+  })
+
+  it('readDecimal_NotANumber_ReturnsInvalid', () => {
+    expect(readDecimal('dvanaest')).toBe('invalid')
   })
 })

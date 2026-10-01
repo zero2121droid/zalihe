@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Zalihe.Application.Common;
+using Zalihe.Application.Items;
 using Zalihe.Infrastructure.Identity;
 using Zalihe.Infrastructure.Persistence;
+using Zalihe.Infrastructure.Tenancy;
 
 namespace Zalihe.Infrastructure;
 
@@ -13,8 +16,13 @@ public static class DependencyInjection
         // Connection string is resolved lazily so tests can override configuration.
         services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseNpgsql(sp.GetRequiredService<IConfiguration>().GetConnectionString("Default")));
+        services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+        services.AddScoped<TenantContext>();
+        services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
 
         services.AddScoped<AccountService>();
+        services.AddScoped<ItemService>();
 
         return services;
     }

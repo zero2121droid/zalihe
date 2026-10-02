@@ -127,7 +127,12 @@ zalihe/
 **`docker-compose.yml`**: tri servisa za razvoj:
 - `postgres`: baza aplikacije. Port je `5433:5432` (host:kontejner), jer je 5432 zauzet lokalno instaliranim PostgreSQL-om. `healthcheck` omogućava da `docker compose up --wait` sačeka dok baza stvarno ne primi konekcije.
 - `mariadb` i `wordpress`: WordPress traži MySQL/MariaDB, i tu se instalira WooCommerce za testiranje integracije. `depends_on: condition: service_healthy` znači da WordPress ne kreće dok baza nije spremna.
+- `wpcli`: WP-CLI za podešavanje test prodavnice; ne pokreće se sa `up` (profil `tools`), nego `docker compose run --rm wpcli bash /scripts/setup.sh`.
 - `volumes`: imenovani volumeni čuvaju podatke kad se kontejneri ugase. `docker compose down` ih ne briše, `docker compose down -v` ih briše.
+
+**`docker/woocommerce/setup.sh`**: pravi lokalnu WooCommerce prodavnicu (SPEC 9): instalira WordPress i WooCommerce, podesi RSD i srpske separatore, doda test proizvode (šest prostih, među njima jedan bez zaliha i jedan koji ne postoji u aplikaciji, i majicu sa četiri varijacije veličina × boja) i pri svakom pokretanju napravi nov API ključ za Zalihe i ispiše ga. Može da se pokrene ponovo, jer proizvode ne duplira.
+
+**`docker/woocommerce/zalihe-local-https.php`**: samo za lokalni razvoj. WooCommerce prihvata API ključeve samo preko HTTPS-a, a test prodavnica je na `http://localhost:8080`, pa ovaj dodatak (mu-plugin) REST zahteve tretira kao HTTPS. Prave prodavnice su na HTTPS-u i ovo im ne treba.
 
 ### Zalihe.Domain
 

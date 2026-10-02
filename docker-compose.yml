@@ -36,7 +36,7 @@ services:
       retries: 10
 
   wordpress:
-    image: wordpress:6-php8.3-apache
+    image: wordpress:7-php8.3-apache
     depends_on:
       mariadb:
         condition: service_healthy
@@ -49,6 +49,25 @@ services:
       - "8080:80"
     volumes:
       - wordpress-data:/var/www/html
+
+  # WP-CLI for setting up the test shop; not started by "up":
+  #   docker compose run --rm wpcli bash /scripts/setup.sh
+  wpcli:
+    image: wordpress:cli-2-php8.3
+    profiles: ["tools"]
+    user: "33:33"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: mariadb
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+    volumes:
+      - wordpress-data:/var/www/html
+      - ./docker/woocommerce:/scripts:ro
 
 volumes:
   postgres-data:

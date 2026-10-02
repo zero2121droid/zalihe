@@ -105,6 +105,10 @@ cd src/web && npm test                                     # frontend testovi (V
 cd src/web && npm run build && npm run lint                # frontend build i lint
 cd src/web && npm run api                                  # osveži openapi.json iz pokrenutog API-ja i regeneriši klijent
 
+# WooCommerce test prodavnica (http://localhost:8080, admin / admin): instalira WordPress,
+# WooCommerce i test proizvode, i ispiše nov API ključ za Zalihe. Može da se pokrene ponovo.
+docker compose run --rm wpcli bash /scripts/setup.sh
+
 # migracije
 dotnet ef migrations add NazivPromene -p src/Zalihe.Infrastructure -s src/Zalihe.Web -o Persistence/Migrations
 dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web

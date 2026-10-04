@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Zalihe.Domain.Channels;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Stock;
 
@@ -15,6 +16,7 @@ public interface IAppDbContext
     DbSet<ItemChange> ItemChanges { get; }
     DbSet<StockMovement> StockMovements { get; }
     DbSet<StockLevel> StockLevels { get; }
+    DbSet<SalesChannel> SalesChannels { get; }
 
     /// <summary>For explicit transactions, e.g. around locking stock.</summary>
     DatabaseFacade Database { get; }

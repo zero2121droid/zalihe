@@ -11,7 +11,8 @@
       "main": "Glavna navigacija",
       "home": "Početna",
       "openMenu": "Otvori meni",
-      "items": "Artikli"
+      "items": "Artikli",
+      "channels": "Kanali prodaje"
     },
     "logout": "Odjavi se",
     "cancel": "Otkaži",
@@ -123,6 +124,15 @@
       "excel_not_supported": "Excel fajlovi još nisu podržani. U Excelu izaberi Sačuvaj kao → CSV.",
       "file_too_large": "Fajl je veći od {{maxMb}} MB.",
       "not_a_number": "Nije broj: „{{value}}”."
+    },
+    "channel": {
+      "url_invalid": "Unesi ispravnu adresu prodavnice, npr. mojaprodavnica.rs. Adresa mora biti https.",
+      "keys_invalid": "Ključevi nisu ispravni. Consumer key počinje sa ck_, a consumer secret sa cs_.",
+      "already_connected": "WooCommerce prodavnica je već povezana.",
+      "unreachable": "Prodavnica nije dostupna na ovoj adresi. Proveri adresu i da li sajt radi.",
+      "unauthorized": "Prodavnica je odbila ključeve. Proveri da li su tačno kopirani, da imaju dozvole „Čitanje/Pisanje” i da nisu opozvani.",
+      "not_woocommerce": "Na ovoj adresi nije pronađen WooCommerce. Proveri adresu i da li je WooCommerce uključen.",
+      "unexpected_response": "Prodavnica je odgovorila neočekivano. Najčešće sigurnosni dodatak (npr. Wordfence) ili keš blokira REST API."
     }
   },
   "items": {
@@ -313,6 +323,46 @@
         "changes": "Izmene artikla"
       },
       "emptyValue": "prazno"
+    }
+  },
+  "channels": {
+    "eyebrow": "Povezivanje",
+    "title": "Kanali prodaje",
+    "types": {
+      "wooCommerce": "WooCommerce"
+    },
+    "status": {
+      "connected": "Povezano",
+      "error": "Veza ne radi"
+    },
+    "form": {
+      "baseUrl": "Adresa prodavnice",
+      "baseUrlHint": "Adresa sajta, npr. mojaprodavnica.rs. Mora biti https.",
+      "consumerKey": "Consumer key",
+      "consumerSecret": "Consumer secret"
+    },
+    "connect": {
+      "title": "Poveži WooCommerce prodavnicu",
+      "intro": "Zalihe preko ključeva čitaju proizvode i porudžbine iz prodavnice i vraćaju stanje zaliha. Pre čuvanja proveravamo da li ključevi rade.",
+      "submit": "Poveži prodavnicu"
+    },
+    "help": {
+      "title": "Gde da nađem ključeve?",
+      "step1": "U WordPress administraciji otvori WooCommerce → Podešavanja → Napredno → REST API.",
+      "step2": "Klikni „Dodaj ključ”, upiši opis (npr. Zalihe), izaberi svog korisnika i dozvole „Čitanje/Pisanje”.",
+      "step3": "Klikni „Generiši API ključ” i ovde nalepi Consumer key i Consumer secret. Secret se u WooCommerce-u prikazuje samo jednom.",
+      "safety": "Ključevi se čuvaju šifrovani i posle povezivanja se više nigde ne prikazuju. Možeš ih opozvati u WooCommerce-u u svakom trenutku."
+    },
+    "card": {
+      "connectedSince": "Povezano {{date}}",
+      "checkedAt": "Provereno {{date}}",
+      "check": "Proveri vezu",
+      "replaceKeys": "Promeni ključeve"
+    },
+    "replace": {
+      "title": "Promeni ključeve",
+      "hint": "Napravi nove ključeve u WooCommerce-u (Podešavanja → Napredno → REST API, dozvole „Čitanje/Pisanje”). Čuvamo ih samo ako prodavnica prihvati nove ključeve.",
+      "submit": "Sačuvaj ključeve"
     }
   }
 }

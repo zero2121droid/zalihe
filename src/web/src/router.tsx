@@ -3,6 +3,7 @@ import { PublicOnly, RequireAuth } from './auth/RouteGuards'
 import { AppLayout } from './layout/AppLayout'
 import { AuthLayout } from './layout/AuthLayout'
 import type { RouteHandle } from './layout/pageWidth'
+import { ChannelsPage } from './pages/channels/ChannelsPage'
 import { HomePage } from './pages/HomePage'
 import { ImportPage } from './pages/items/ImportPage'
 import { ItemDetailPage } from './pages/items/ItemDetailPage'
@@ -34,6 +35,7 @@ export const routes: RouteObject[] = [
           { path: '/items', element: <ItemsPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/import', element: <ImportPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/:id', element: <ItemDetailPage />, handle: { width: 'wide' } satisfies RouteHandle },
+          { path: '/channels', element: <ChannelsPage />, handle: { width: 'wide' } satisfies RouteHandle },
         ],
       },
     ],

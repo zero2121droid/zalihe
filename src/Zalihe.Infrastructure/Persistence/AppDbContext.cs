@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
+using Zalihe.Domain.Channels;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Stock;
 using Zalihe.Domain.Tenants;
@@ -19,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ItemChange> ItemChanges => Set<ItemChange>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockLevel> StockLevels => Set<StockLevel>();
+    public DbSet<SalesChannel> SalesChannels => Set<SalesChannel>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -102,6 +104,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             level.HasOne<Item>().WithOne().HasForeignKey<StockLevel>(l => l.ItemId).OnDelete(DeleteBehavior.Restrict);
             level.HasOne<Tenant>().WithMany().HasForeignKey(l => l.TenantId).OnDelete(DeleteBehavior.Restrict);
             level.HasIndex(l => l.TenantId);
+        });
+
+        builder.Entity<SalesChannel>(channel =>
+        {
+            channel.Property(c => c.Type).HasConversion<string>().HasMaxLength(32);
+            channel.Property(c => c.Status).HasConversion<string>().HasMaxLength(16);
+            channel.Property(c => c.BaseUrl).HasMaxLength(SalesChannel.BaseUrlMaxLength);
+            channel.Property(c => c.LastErrorCode).HasMaxLength(64);
+            channel.HasOne<Tenant>().WithMany().HasForeignKey(c => c.TenantId).OnDelete(DeleteBehavior.Restrict);
+            // One shop of each type per company in v1.
+            channel.HasIndex(c => new { c.TenantId, c.Type }).IsUnique();
         });
 
         ApplyTenantFilters(builder);

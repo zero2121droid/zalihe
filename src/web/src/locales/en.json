@@ -11,7 +11,8 @@
       "main": "Main navigation",
       "home": "Home",
       "openMenu": "Open menu",
-      "items": "Items"
+      "items": "Items",
+      "channels": "Sales channels"
     },
     "logout": "Sign out",
     "cancel": "Cancel",
@@ -123,6 +124,15 @@
       "excel_not_supported": "Excel files aren't supported yet. In Excel, choose Save As → CSV.",
       "file_too_large": "The file is larger than {{maxMb}} MB.",
       "not_a_number": "Not a number: “{{value}}”."
+    },
+    "channel": {
+      "url_invalid": "Enter a valid shop address, e.g. myshop.com. The address must be https.",
+      "keys_invalid": "The keys are not valid. The consumer key starts with ck_ and the consumer secret with cs_.",
+      "already_connected": "A WooCommerce shop is already connected.",
+      "unreachable": "The shop can't be reached at this address. Check the address and that the site is up.",
+      "unauthorized": "The shop rejected the keys. Check that they were copied exactly, have “Read/Write” permissions and haven't been revoked.",
+      "not_woocommerce": "WooCommerce wasn't found at this address. Check the address and that WooCommerce is active.",
+      "unexpected_response": "The shop answered unexpectedly. Usually a security plugin (e.g. Wordfence) or a cache is blocking the REST API."
     }
   },
   "items": {
@@ -313,6 +323,46 @@
         "changes": "Item changes"
       },
       "emptyValue": "empty"
+    }
+  },
+  "channels": {
+    "eyebrow": "Connections",
+    "title": "Sales channels",
+    "types": {
+      "wooCommerce": "WooCommerce"
+    },
+    "status": {
+      "connected": "Connected",
+      "error": "Connection not working"
+    },
+    "form": {
+      "baseUrl": "Shop address",
+      "baseUrlHint": "Website address, e.g. myshop.com. Must be https.",
+      "consumerKey": "Consumer key",
+      "consumerSecret": "Consumer secret"
+    },
+    "connect": {
+      "title": "Connect a WooCommerce shop",
+      "intro": "With these keys Zalihe reads products and orders from the shop and sends back stock levels. We check that the keys work before saving them.",
+      "submit": "Connect shop"
+    },
+    "help": {
+      "title": "Where do I find the keys?",
+      "step1": "In WordPress admin, open WooCommerce → Settings → Advanced → REST API.",
+      "step2": "Click “Add key”, enter a description (e.g. Zalihe), choose your user and “Read/Write” permissions.",
+      "step3": "Click “Generate API key” and paste the Consumer key and Consumer secret here. WooCommerce shows the secret only once.",
+      "safety": "Keys are stored encrypted and are never shown again after connecting. You can revoke them in WooCommerce at any time."
+    },
+    "card": {
+      "connectedSince": "Connected {{date}}",
+      "checkedAt": "Checked {{date}}",
+      "check": "Check connection",
+      "replaceKeys": "Change keys"
+    },
+    "replace": {
+      "title": "Change keys",
+      "hint": "Create new keys in WooCommerce (Settings → Advanced → REST API, “Read/Write” permissions). We save them only if the shop accepts them.",
+      "submit": "Save keys"
     }
   }
 }

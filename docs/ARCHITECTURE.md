@@ -159,6 +159,8 @@ zalihe/
 
 **`Users/Languages.cs`**: podržani jezici (`sr-Latn`, `en`), podrazumevani jezik i `IsSupported()` za proveru. Ovo je domensko pravilo, pa je ovde, a ne u Web-u.
 
+**`Channels/SalesChannel.cs`**: povezana prodavnica (za sada samo WooCommerce, jedna po firmi). Ključevi i tajna za webhookove se čuvaju **samo šifrovani**; domen ih nikad ne vidi kao čist tekst. Status je `Connected` ili `Error`, uz kod poslednje greške (`LastErrorCode`, npr. `channel.unauthorized`). `NormalizeBaseUrl()` pretvara „zrno.rs/” u „https://zrno.rs”: dozvoljen je samo https, osim http-a na lokalnom računaru (test prodavnica), a adresa ne sme imati upit ni fragment.
+
 ### Zalihe.Application
 
 **`Common/AppError.cs`**: jedna greška koja ide klijentu: `Code` (npr. `auth.email_taken`), `Field` (koje polje forme) i `Params` (npr. `{min: 8}`). Na ovom tipu počiva cela i18n priča: API šalje kod, a frontend ga prevodi preko `errors.auth.email_taken` i ubacuje parametre u rečenicu „Lozinka mora imati najmanje {{min}} znakova”. Ista greška radi na oba jezika i u mobilnoj aplikaciji.
@@ -193,6 +195,16 @@ zalihe/
 **`Imports/ItemImportService.cs`**: tri koraka sa istim fajlom: `Analyze()` (kolone, primer redova, predlog mapiranja), `PreviewAsync()` (spremno, greške, preskočeno, uz razlog po redu) i `ImportAsync()` (ponovi istu proveru, pa upiše sve u jednom `SaveChanges`). Redovi sa greškom i redovi čija šifra već postoji se preskaču; postojeći artikli se nikad ne menjaju. Početno stanje je korekcija sa izvorom `Csv` i napomenom „Početno stanje”. Najviše 5000 redova; Excel fajl (`.xlsx`) se prepozna po prvim bajtovima i dobija jasnu poruku.
 
 **Izmene u `ItemService`**: pri pravljenju, izmeni, deaktivaciji i aktivaciji upisuje i zapis u dnevnik izmena, u istoj transakciji (ponovna deaktivacija već neaktivnog artikla ne pravi zapis). lista i jedan artikal sada dolaze sa stanjem, statusom, vrednošću (stanje × nabavna cena) i prodajom u poslednjih 30 dana, u jednom upitu. Lista ima i filter po statusu.
+
+**`Common/ICredentialProtector.cs`**: `Protect()` i `Unprotect()` za tajne. Application zna samo za interfejs, a šifrovanje radi Infrastructure.
+
+**`Channels/ISalesChannel.cs`**: ugovor sa prodavnicom (SPEC 5). Za sada ima samo `CheckConnectionAsync()`, a uvoz proizvoda, porudžbine i slanje stanja dolaze u sledećim koracima. `ISalesChannelFactory` pravi klijenta za adresu i ključeve kanala. Kad prodavnica odbije zahtev, klijent baca `SalesChannelException` sa kodom koji frontend prevodi (`channel.unreachable`, `channel.unauthorized`, `channel.not_woocommerce`, `channel.unexpected_response`).
+
+**`Channels/ChannelService.cs`**: povezivanje prodavnice.
+- `ConnectWooCommerceAsync()`: proveri adresu (`channel.url_invalid`) i oblik ključeva (`ck_…`, `cs_…`; `channel.keys_invalid`), proveri da firma već nema prodavnicu (`channel.already_connected`), a zatim **pozove prodavnicu pre čuvanja**. Ako ključevi ne rade, ništa se ne upisuje. Ključevi se čuvaju šifrovani kao JSON, uz nasumičnu tajnu od 32 bajta za buduće webhookove.
+- `RecheckAsync()`: ponovo pozove prodavnicu sa sačuvanim ključevima i upiše status.
+- `ReplaceCredentialsAsync()`: novi ključevi se čuvaju samo ako ih prodavnica prihvati.
+- `SalesChannelDto` nema ključeve: API ih prima, ali ih nikad ne vraća.
 
 ### Zalihe.Infrastructure
 
@@ -249,6 +261,12 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 **`DependencyInjection.cs`**: `AddInfrastructure()` registruje sve iz ovog sloja u DI kontejner (`DbContext`, `AccountService`). Web samo pozove jednu metodu i ne mora da zna detalje.
 - Connection string se čita **lenjo** (`(sp, options) => ...`), kad se `DbContext` prvi put zatraži, a ne pri pokretanju. Tako testovi stignu da podmetnu adresu svoje test baze.
 - `AddScoped`: jedna instanca po HTTP zahtevu. To je pravilo za sve što koristi `DbContext`.
+
+**`Security/DataProtectionCredentialProtector.cs`**: šifrovanje tajni preko ASP.NET Data Protection, sa sopstvenom namenom (`Zalihe.SalesChannels.Secrets.v1`), pa se ovi podaci ne mogu dešifrovati ključem za nešto drugo (npr. cookie). Ključevi za šifrovanje su lokalno u korisničkom profilu, a na serveru u folderu iz podešavanja `DataProtection:KeysPath`. **Ako se ti ključevi izgube, sačuvani API ključevi prodavnica više ne mogu da se pročitaju**, pa folder na serveru mora da ima rezervnu kopiju.
+
+**`Channels/WooCommerce/WooCommerceClient.cs`**: WooCommerce REST API (`/wp-json/wc/v3`). Ključevi idu kao Basic autentifikacija. Provera veze traži jedan proizvod i odgovore prevodi u kodove: nema mreže ili istekne vreme → `unreachable`, 401/403 → `unauthorized`, 404 → `not_woocommerce`, a sve ostalo, uključujući HTML stranicu sigurnosnog dodatka umesto JSON-a, → `unexpected_response`. `SalesChannelFactory` u istom fajlu pravi klijenta preko imenovanog `HttpClient`-a „WooCommerce” (20 s, `User-Agent: Zalihe/1.0`).
+
+**Izmene u `AppDbContext.cs` i `DependencyInjection.cs`**: tabela `SalesChannels` (tip i status kao tekst, jedinstven indeks `(TenantId, Type)`), migracija `AddSalesChannels`; registracija Data Protection-a, imenovanog HTTP klijenta i servisa. Infrastructure sada referencira `Microsoft.AspNetCore.App` (deo .NET-a, ne NuGet paket), zbog Data Protection-a.
 
 ### Zalihe.Web
 
@@ -323,6 +341,8 @@ Primer odgovora sa greškom:
 **`Properties/launchSettings.json`**: profili za `dotnet run`. Profil `http` pokreće API na portu 5131, i na njega pokazuje Vite proxy.
 
 **`Zalihe.Web.http`**: fajl za ručno slanje zahteva iz VS Code-a („Send Request”).
+
+**`Channels/ChannelsController.cs`**: `GET /api/channels`, `POST /api/channels/woocommerce` (201), `POST /api/channels/{id}/check` i `PUT /api/channels/{id}/credentials`. Tuđi kanal vraća 404, kao i kod artikala.
 
 ### src/web (React)
 
@@ -422,6 +442,8 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`pages/items/ItemModal.tsx`**: jedna forma za dodavanje i izmenu. Bez `item` pravi novi artikal, a sa `item` popuni polja (decimale u formatu jezika, npr. `12,5`, preko `formatDecimalInput()`), šalje `PUT` i nudi „Deaktiviraj” ili „Aktiviraj”. Roditelj joj daje `key` po artiklu, pa forma pri svakom otvaranju kreće od podataka tog artikla. Jedinice mere dolaze iz generisane konstante `Unit`, dakle iz istog izvora kao na backendu. Kategorija nudi predloge iz `GET /api/items/categories`. Posle uspešnog čuvanja invalidiraju se lista i kategorije, pa se novi artikal odmah vidi.
 
+**`pages/channels/ChannelsPage.tsx`**: „Kanali prodaje” (`/channels`). Bez povezane prodavnice prikazuje formu (adresa, consumer key, consumer secret) i uputstvo gde se ključevi prave u WooCommerce-u. Sa prodavnicom prikazuje karticu: adresu, status (tačka i tekst, nikad samo boja), prevedeni razlog greške i dugmad „Proveri vezu” i „Promeni ključeve”. Rezultat provere se upiše direktno u keš liste (`setQueryData`), bez novog zahteva. `KeyFields.tsx` su polja za ključeve, zajednička za formu i `ReplaceKeysModal.tsx`, i skidaju razmake koji se često nalepe pri kopiranju.
+
 **Frontend testovi** (`*.test.ts(x)`, Vitest + React Testing Library):
 - `locales.test.ts`: oba jezika imaju isti skup ključeva i nijedan prevod nije prazan;
 - `format.test.ts`: formatiranje i unos brojeva;
@@ -431,6 +453,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `MovementModal.test.tsx`, `ItemDetailPage.test.tsx`: unos kretanja (decimale, upozorenje za minus, razlika kod korekcije, greške), prikaz stanja i istorije;
 - `HomePage.test.tsx`: brojke, artikli za naručivanje, poslednja kretanja i prazna Početna;
 - `ImportPage.test.tsx`: ceo tok uvoza (predložene kolone, poslata polja, prevedeni problemi, uvoz), Excel fajl, onemogućena provera bez obaveznih kolona;
+- `ChannelsPage.test.tsx`: povezivanje (poslata polja, kartica posle uspeha), prevedena greška prodavnice i greška ispod polja za adresu, provera veze koja otkrije opozvane ključeve, zamena ključeva;
 - `ThemeToggle.test.tsx`: tamna tema na početku, klik prebacuje na svetlu i pamti izbor;
 - `ItemsPage.test.tsx`, `ItemModal.test.tsx`: izmena (popunjena polja, `PUT`), deaktivacija, oznaka i filter neaktivnih, redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
 
@@ -442,7 +465,7 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 
 **`Zalihe.IntegrationTests/Infrastructure/ZaliheApiFactory.cs`**: pokreće **ceo API u memoriji** (`WebApplicationFactory<Program>`), povezan sa **pravim Postgres-om u Dockeru** (Testcontainers).
 - `InitializeAsync()`: podigne kontejner i primeni migracije.
-- `ConfigureWebHost()`: podmetne connection string test baze.
+- `ConfigureWebHost()`: podmetne connection string test baze i lažnu WooCommerce prodavnicu (`Shop`).
 - `DisposeAsync()`: ugasi i obriše kontejner.
 - `ApiCollection` (`ICollectionFixture`): **svi testovi dele jedan kontejner**, pa se ne podiže baza za svaki test. Svaki test koristi jedinstven email (`UniqueEmail()`), pa se međusobno ne ometaju.
 
@@ -476,6 +499,10 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 **`Zalihe.IntegrationTests/Dashboard/DashboardTests.cs`**: vrednost i brojke (neaktivni se ne računaju), redosled hitnosti, poslednja kretanja, prazna firma i izolacija firmi.
 
 **`Zalihe.IntegrationTests/Tenancy/TenantFilterTests.cs`**: svaki entitet sa kolonom `TenantId` mora da implementira `ITenantOwned` i da ima filter, a upit bez postavljene firme mora da baci izuzetak.
+
+**`Zalihe.Domain.Tests/Channels/SalesChannelTests.cs`**: normalizacija adrese prodavnice i prelazi statusa.
+
+**`Zalihe.IntegrationTests/Channels/ChannelsTests.cs`**: povezivanje (Basic autentifikacija sa pravim ključevima), ključevi u bazi nisu čitljivi, svaki odgovor prodavnice daje svoj kod i ništa se ne čuva, loš unos se odbija pre poziva prodavnice, druga prodavnica, opozvani ključevi pa zamena, i izolacija firmi. **Prava prodavnica se nikad ne poziva**: `Infrastructure/FakeShopHandler.cs` zamenjuje mrežu za HTTP klijent „WooCommerce”, a svaki test određuje kako lažna prodavnica odgovara (`RespondWith`) i proverava šta joj je poslato (`Requests`).
 
 ## 5. Jedan zahtev kroz ceo sistem: registracija
 

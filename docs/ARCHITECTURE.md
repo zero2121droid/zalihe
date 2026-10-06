@@ -33,7 +33,7 @@ Strelica znači „zna za” (ima referencu). Ključno pravilo: **unutrašnji sl
 |---|---|---|
 | **Domain** | Entiteti (`Tenant`) i pravila (naziv firme ne sme biti prazan) | Nema nijednu zavisnost, ni EF Core ni ASP.NET. Najvažnija logika (obračun stanja, obrada porudžbina) može da se testira za milisekunde, bez baze. |
 | **Application** | Slučajevi korišćenja, interfejsi (`ISalesChannel`), zajednički tipovi (`AppError`) | Opisuje *šta* aplikacija radi, ne *kako*. Jezgro radi sa `ISalesChannel` i ne zna da WooCommerce postoji. |
-| **Infrastructure** | EF Core, Postgres, Identity, kasnije WooCommerce klijent, email i Hangfire | Sve što priča sa spoljnim svetom. Promena baze ili email servisa dira samo ovaj sloj. |
+| **Infrastructure** | EF Core, Postgres, Identity, WooCommerce klijent, šifrovanje tajni, kasnije email i Hangfire | Sve što priča sa spoljnim svetom. Promena baze ili email servisa dira samo ovaj sloj. |
 | **Web** | Kontroleri, filteri, konfiguracija, servira React | Tanak sloj koji HTTP zahtev pretvara u poziv servisa i rezultat u HTTP odgovor. |
 
 Ovo je „Clean Architecture light”: slojevi postoje, ali nema MediatR-a, CQRS-a i sličnih šablona. Servis je obična klasa sa metodama koju kontroler direktno poziva.
@@ -214,7 +214,7 @@ zalihe/
 - Nasleđuje `IdentityDbContext`, pa automatski dobija Identity tabele (`AspNetUsers` i ostale).
 - `DbSet<Tenant> Tenants`: tabela firmi.
 - `OnModelCreating`: opisuje šemu: dužine kolona, strani ključ korisnik → firma i indeks na `TenantId`. `OnDelete(Restrict)` sprečava brisanje firme koja ima korisnike.
-- Ovde dolaze **global query filteri** za `TenantId`, sa prvim entitetom koji sadrži podatke firme.
+- Ovde su i **global query filteri** za `TenantId` (vidi „Izmene u `AppDbContext.cs`” niže).
 
 **`Identity/UserDirectory.cs`**: imena korisnika za istoriju kretanja. Korisnici nemaju global query filter, pa je ovo jedino mesto koje ih izričito ograničava na trenutnu firmu.
 
@@ -531,6 +531,41 @@ SignInManager.SignInAsync → Set-Cookie: zalihe.auth=...
   ▼
 204 No Content
 ```
+
+### Povezivanje prodavnice: zahtev koji izlazi iz aplikacije
+
+Za razliku od registracije, ovde aplikacija sama zove spoljni sistem (prodavnicu), i to **pre** nego što išta sačuva.
+
+```
+Browser: POST /api/channels/woocommerce {baseUrl, consumerKey, consumerSecret}
+  │   (cookie + X-XSRF-TOKEN header, jer je zahtev autentifikovan cookie-jem)
+  ▼
+TenantMiddleware: tenant_id iz cookie-ja → TenantContext
+  │
+  ▼
+ChannelsController.ConnectWooCommerce → ChannelService.ConnectWooCommerceAsync
+  │   SalesChannel.NormalizeBaseUrl("zrno.rs/") → "https://zrno.rs"   └─ null → 400 channel.url_invalid
+  │   ključevi počinju sa ck_ / cs_?                                     └─ ne → 400 channel.keys_invalid
+  │   firma već ima WooCommerce? (global filter: samo svoja firma)      └─ da → 400 channel.already_connected
+  ▼
+ISalesChannelFactory.Create(...) → WooCommerceClient.CheckConnectionAsync
+  │   GET https://zrno.rs/wp-json/wc/v3/products?per_page=1   (Basic ck:cs, 20 s timeout)
+  │   └─ mreža / 401-403 / 404 / ne-JSON → SalesChannelException(kod) → 400 sa tim kodom, ništa nije sačuvano
+  ▼
+ICredentialProtector.Protect(JSON ključeva)   (Data Protection, namena Zalihe.SalesChannels.Secrets.v1)
+nasumična tajna za webhookove → Protect
+  │
+  ▼
+INSERT SalesChannels (EncryptedCredentials, EncryptedWebhookSecret, Status = Connected)
+  │   EnsureNewDataBelongsToCurrentTenant: TenantId mora biti trenutna firma
+  ▼
+201 Created {id, type, baseUrl, status, ...}   ← bez ključeva
+```
+
+Zašto ovakav redosled:
+- **Provera pre čuvanja**: korisnik odmah saznaje da ključevi ne rade, a u bazi nikad nema kanala koji nije radio ni jednom.
+- **Kodovi umesto poruka**: `channel.unauthorized` frontend prevodi u rečenicu koja kaže šta da proveri. Ista greška kasnije stiže i iz pozadinskih poslova (`LastErrorCode`), pa se prikazuje istim prevodom.
+- **Application ne zna za HTTP ni za šifrovanje**: zna samo za `ISalesChannelFactory` i `ICredentialProtector`. U testovima se zato menja samo mreža (`FakeShopHandler`), a sve ostalo radi kao u produkciji.
 
 ---
 

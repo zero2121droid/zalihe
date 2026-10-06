@@ -132,7 +132,12 @@
       "unreachable": "The shop can't be reached at this address. Check the address and that the site is up.",
       "unauthorized": "The shop rejected the keys. Check that they were copied exactly, have “Read/Write” permissions and haven't been revoked.",
       "not_woocommerce": "WooCommerce wasn't found at this address. Check the address and that WooCommerce is active.",
-      "unexpected_response": "The shop answered unexpectedly. Usually a security plugin (e.g. Wordfence) or a cache is blocking the REST API."
+      "unexpected_response": "The shop answered unexpectedly. Usually a security plugin (e.g. Wordfence) or a cache is blocking the REST API.",
+      "product_no_sku": "The product has no SKU. Add it in the shop, then run the import again.",
+      "product_sku_too_long": "The SKU is longer than {{max}} characters.",
+      "product_sku_duplicate": "Several products in the shop have this SKU. The SKU must be unique.",
+      "product_item_linked": "The item with this SKU is already linked to another product from the shop.",
+      "too_many_products": "The shop has more than {{max}} products, which the import doesn't support yet."
     }
   },
   "items": {
@@ -357,12 +362,53 @@
       "connectedSince": "Connected {{date}}",
       "checkedAt": "Checked {{date}}",
       "check": "Check connection",
-      "replaceKeys": "Change keys"
+      "replaceKeys": "Change keys",
+      "importProducts": "Import products"
     },
     "replace": {
       "title": "Change keys",
       "hint": "Create new keys in WooCommerce (Settings → Advanced → REST API, “Read/Write” permissions). We save them only if the shop accepts them.",
       "submit": "Save keys"
+    },
+    "import": {
+      "title": "Import products from the shop",
+      "reading": "Reading products from the shop…",
+      "retry": "Try again",
+      "figures": {
+        "new": "New products",
+        "toLink": "Already in Zalihe",
+        "linked": "Already linked",
+        "skipped": "Skipped"
+      },
+      "create": {
+        "title": "New items",
+        "note": "Choose which products become items. The shop's stock becomes their opening stock; you can add the minimum stock and purchase price later.",
+        "all": "Select all",
+        "price": "Shop price",
+        "stock": "Shop stock"
+      },
+      "link": {
+        "title": "Linking to existing items",
+        "note": "These products have the same SKU as items in Zalihe. They will be linked; the items are not changed.",
+        "product": "Shop product",
+        "item": "Item in Zalihe"
+      },
+      "skipped": {
+        "title": "Products that are skipped",
+        "reason": "Reason"
+      },
+      "summary": "New items: {{create}} · Linking: {{link}}",
+      "submit": "Import",
+      "allLinked": "All products from the shop are already linked.",
+      "nothing": "The shop has no products to import.",
+      "done": {
+        "title": "Import finished",
+        "created": "New items created: {{count}}",
+        "linked": "Linked to existing items: {{count}}",
+        "skipped": "Products skipped: {{count}}",
+        "toItems": "Go to items",
+        "toChannels": "Back to channels"
+      }
     }
   }
 }

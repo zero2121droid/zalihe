@@ -4,6 +4,7 @@ import { AppLayout } from './layout/AppLayout'
 import { AuthLayout } from './layout/AuthLayout'
 import type { RouteHandle } from './layout/pageWidth'
 import { ChannelsPage } from './pages/channels/ChannelsPage'
+import { ProductImportPage } from './pages/channels/ProductImportPage'
 import { HomePage } from './pages/HomePage'
 import { ImportPage } from './pages/items/ImportPage'
 import { ItemDetailPage } from './pages/items/ItemDetailPage'
@@ -36,6 +37,7 @@ export const routes: RouteObject[] = [
           { path: '/items/import', element: <ImportPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/:id', element: <ItemDetailPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/channels', element: <ChannelsPage />, handle: { width: 'wide' } satisfies RouteHandle },
+          { path: '/channels/:id/import', element: <ProductImportPage />, handle: { width: 'wide' } satisfies RouteHandle },
         ],
       },
     ],

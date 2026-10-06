@@ -26,7 +26,10 @@ import type {
 import type {
   ApiProblemDetails,
   ConnectWooCommerceRequest,
+  ImportProductsRequest,
   ProblemDetails,
+  ProductImportPreviewDto,
+  ProductImportResultDto,
   ReplaceCredentialsRequest,
   SalesChannelDto
 } from '../model';
@@ -377,4 +380,180 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getReplaceChannelCredentialsMutationOptions(options), queryClient);
+    }
+    export const getPreviewProductImportUrl = (id: string,) => {
+
+
+
+
+  return `/api/channels/${id}/products/preview`
+}
+
+export const previewProductImport = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ProductImportPreviewDto> => {
+
+  return customFetch<ProductImportPreviewDto>(getPreviewProductImportUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPreviewProductImportQueryKey = (id: string,) => {
+    return [
+    `/api/channels/${id}/products/preview`
+    ] as const;
+    }
+
+
+export const getPreviewProductImportQueryOptions = <TData = Awaited<ReturnType<typeof previewProductImport>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof previewProductImport>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPreviewProductImportQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof previewProductImport>>> = ({ signal }) => previewProductImport(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof previewProductImport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PreviewProductImportQueryResult = NonNullable<Awaited<ReturnType<typeof previewProductImport>>>
+export type PreviewProductImportQueryError = ErrorType<ApiProblemDetails | ProblemDetails>
+
+
+export function usePreviewProductImport<TData = Awaited<ReturnType<typeof previewProductImport>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof previewProductImport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof previewProductImport>>,
+          TError,
+          Awaited<ReturnType<typeof previewProductImport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePreviewProductImport<TData = Awaited<ReturnType<typeof previewProductImport>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof previewProductImport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof previewProductImport>>,
+          TError,
+          Awaited<ReturnType<typeof previewProductImport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePreviewProductImport<TData = Awaited<ReturnType<typeof previewProductImport>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof previewProductImport>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePreviewProductImport<TData = Awaited<ReturnType<typeof previewProductImport>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof previewProductImport>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPreviewProductImportQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getImportProductsUrl = (id: string,) => {
+
+
+
+
+  return `/api/channels/${id}/products/import`
+}
+
+export const importProducts = async (id: string,
+    importProductsRequest: ImportProductsRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProductImportResultDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProductImportResultDto>(getImportProductsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(importProductsRequest)
+  }
+);}
+
+
+
+
+
+export const getImportProductsMutationKey = () => ['importProducts'] as const;
+
+export const getImportProductsMutationOptions = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importProducts>>, TError,ImportProductsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importProducts>>, TError,ImportProductsMutationVariables, TContext> => {
+
+const mutationKey = getImportProductsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importProducts>>, ImportProductsMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  importProducts(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportProductsMutationResult = NonNullable<Awaited<ReturnType<typeof importProducts>>>
+    export type ImportProductsMutationBody = BodyType<ImportProductsRequest>
+    export type ImportProductsMutationError = ErrorType<ApiProblemDetails | ProblemDetails>
+    export type ImportProductsMutationVariables = {id: string;data: BodyType<ImportProductsRequest>}
+
+    export const useImportProducts = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importProducts>>, TError,ImportProductsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof importProducts>>,
+        TError,
+        ImportProductsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getImportProductsMutationOptions(options), queryClient);
     }

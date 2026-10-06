@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockLevel> StockLevels => Set<StockLevel>();
     public DbSet<SalesChannel> SalesChannels => Set<SalesChannel>();
+    public DbSet<ItemChannelMapping> ItemChannelMappings => Set<ItemChannelMapping>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -115,6 +116,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             channel.HasOne<Tenant>().WithMany().HasForeignKey(c => c.TenantId).OnDelete(DeleteBehavior.Restrict);
             // One shop of each type per company in v1.
             channel.HasIndex(c => new { c.TenantId, c.Type }).IsUnique();
+        });
+
+        builder.Entity<ItemChannelMapping>(mapping =>
+        {
+            mapping.Property(m => m.ExternalId).HasMaxLength(ItemChannelMapping.ExternalIdMaxLength);
+            mapping.Property(m => m.ParentExternalId).HasMaxLength(ItemChannelMapping.ExternalIdMaxLength);
+            mapping.HasOne<Item>().WithMany().HasForeignKey(m => m.ItemId).OnDelete(DeleteBehavior.Restrict);
+            mapping.HasOne<SalesChannel>().WithMany().HasForeignKey(m => m.ChannelId).OnDelete(DeleteBehavior.Restrict);
+            mapping.HasOne<Tenant>().WithMany().HasForeignKey(m => m.TenantId).OnDelete(DeleteBehavior.Restrict);
+            // A shop product belongs to one item, and an item to one product per shop.
+            mapping.HasIndex(m => new { m.ChannelId, m.ExternalId }).IsUnique();
+            mapping.HasIndex(m => new { m.ChannelId, m.ItemId }).IsUnique();
+            mapping.HasIndex(m => m.TenantId);
         });
 
         ApplyTenantFilters(builder);

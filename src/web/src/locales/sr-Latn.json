@@ -132,7 +132,12 @@
       "unreachable": "Prodavnica nije dostupna na ovoj adresi. Proveri adresu i da li sajt radi.",
       "unauthorized": "Prodavnica je odbila ključeve. Proveri da li su tačno kopirani, da imaju dozvole „Čitanje/Pisanje” i da nisu opozvani.",
       "not_woocommerce": "Na ovoj adresi nije pronađen WooCommerce. Proveri adresu i da li je WooCommerce uključen.",
-      "unexpected_response": "Prodavnica je odgovorila neočekivano. Najčešće sigurnosni dodatak (npr. Wordfence) ili keš blokira REST API."
+      "unexpected_response": "Prodavnica je odgovorila neočekivano. Najčešće sigurnosni dodatak (npr. Wordfence) ili keš blokira REST API.",
+      "product_no_sku": "Proizvod nema šifru (SKU). Dodaj je u prodavnici, pa pokreni uvoz ponovo.",
+      "product_sku_too_long": "Šifra je duža od {{max}} znakova.",
+      "product_sku_duplicate": "Više proizvoda u prodavnici ima ovu šifru. Šifra mora biti jedinstvena.",
+      "product_item_linked": "Artikal sa ovom šifrom je već povezan sa drugim proizvodom iz prodavnice.",
+      "too_many_products": "Prodavnica ima više od {{max}} proizvoda, što uvoz za sada ne podržava."
     }
   },
   "items": {
@@ -357,12 +362,53 @@
       "connectedSince": "Povezano {{date}}",
       "checkedAt": "Provereno {{date}}",
       "check": "Proveri vezu",
-      "replaceKeys": "Promeni ključeve"
+      "replaceKeys": "Promeni ključeve",
+      "importProducts": "Uvezi proizvode"
     },
     "replace": {
       "title": "Promeni ključeve",
       "hint": "Napravi nove ključeve u WooCommerce-u (Podešavanja → Napredno → REST API, dozvole „Čitanje/Pisanje”). Čuvamo ih samo ako prodavnica prihvati nove ključeve.",
       "submit": "Sačuvaj ključeve"
+    },
+    "import": {
+      "title": "Uvoz proizvoda iz prodavnice",
+      "reading": "Čitam proizvode iz prodavnice…",
+      "retry": "Pokušaj ponovo",
+      "figures": {
+        "new": "Novi proizvodi",
+        "toLink": "Postoje u Zalihama",
+        "linked": "Već povezano",
+        "skipped": "Preskočeno"
+      },
+      "create": {
+        "title": "Novi artikli",
+        "note": "Izaberi koji proizvodi postaju artikli. Stanje iz prodavnice postaje njihovo početno stanje, a minimalnu zalihu i nabavnu cenu možeš posle da dopuniš.",
+        "all": "Izaberi sve",
+        "price": "Cena u prodavnici",
+        "stock": "Stanje u prodavnici"
+      },
+      "link": {
+        "title": "Povezivanje sa postojećim artiklima",
+        "note": "Ovi proizvodi imaju istu šifru kao artikli u Zalihama. Biće povezani, a artikli se ne menjaju.",
+        "product": "Proizvod u prodavnici",
+        "item": "Artikal u Zalihama"
+      },
+      "skipped": {
+        "title": "Proizvodi koji se preskaču",
+        "reason": "Razlog"
+      },
+      "summary": "Novi artikli: {{create}} · Povezivanje: {{link}}",
+      "submit": "Uvezi",
+      "allLinked": "Svi proizvodi iz prodavnice su već povezani.",
+      "nothing": "U prodavnici nema proizvoda za uvoz.",
+      "done": {
+        "title": "Uvoz je završen",
+        "created": "Napravljeno novih artikala: {{count}}",
+        "linked": "Povezano sa postojećim artiklima: {{count}}",
+        "skipped": "Preskočeno proizvoda: {{count}}",
+        "toItems": "Idi na artikle",
+        "toChannels": "Nazad na kanale"
+      }
     }
   }
 }

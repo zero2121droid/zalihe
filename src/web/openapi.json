@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:5131/"
+      "url": "http://localhost:5199/"
     }
   ],
   "paths": {
@@ -1322,6 +1322,168 @@
         }
       }
     },
+    "/api/channels/{id}/products/preview": {
+      "get": {
+        "tags": [
+          "Channels"
+        ],
+        "operationId": "PreviewProductImport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportPreviewDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportPreviewDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportPreviewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{id}/products/import": {
+      "post": {
+        "tags": [
+          "Channels"
+        ],
+        "operationId": "ImportProducts",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProductsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProductsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProductsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportResultDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportResultDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductImportResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/register": {
       "post": {
         "tags": [
@@ -1812,6 +1974,20 @@
           }
         }
       },
+      "ImportProductsRequest": {
+        "required": [
+          "createExternalIds"
+        ],
+        "type": "object",
+        "properties": {
+          "createExternalIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ImportResultDto": {
         "required": [
           "importedCount",
@@ -2215,6 +2391,135 @@
           }
         }
       },
+      "ProductImportPreviewDto": {
+        "required": [
+          "linkedCount",
+          "toLink",
+          "toCreate",
+          "skipped"
+        ],
+        "type": "object",
+        "properties": {
+          "linkedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toLink": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductToLinkDto"
+            }
+          },
+          "toCreate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductToCreateDto"
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkippedProductDto"
+            }
+          }
+        }
+      },
+      "ProductImportResultDto": {
+        "required": [
+          "linkedCount",
+          "createdCount",
+          "skippedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "linkedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skippedCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ProductToCreateDto": {
+        "required": [
+          "externalId",
+          "name",
+          "groupName",
+          "sku",
+          "category",
+          "price",
+          "stock"
+        ],
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sku": {
+            "type": "string"
+          },
+          "category": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "stock": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ProductToLinkDto": {
+        "required": [
+          "externalId",
+          "name",
+          "sku",
+          "itemId",
+          "itemName"
+        ],
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemName": {
+            "type": "string"
+          }
+        }
+      },
       "RecentMovementDto": {
         "required": [
           "id",
@@ -2453,6 +2758,32 @@
         "enum": [
           "wooCommerce"
         ]
+      },
+      "SkippedProductDto": {
+        "required": [
+          "externalId",
+          "name",
+          "sku",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "error": {
+            "$ref": "#/components/schemas/AppError"
+          }
+        }
       },
       "StockMovementDto": {
         "required": [

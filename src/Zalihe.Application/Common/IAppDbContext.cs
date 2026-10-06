@@ -17,6 +17,7 @@ public interface IAppDbContext
     DbSet<StockMovement> StockMovements { get; }
     DbSet<StockLevel> StockLevels { get; }
     DbSet<SalesChannel> SalesChannels { get; }
+    DbSet<ItemChannelMapping> ItemChannelMappings { get; }
 
     /// <summary>For explicit transactions, e.g. around locking stock.</summary>
     DatabaseFacade Database { get; }

@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<ItemImportService>();
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ChannelService>();
+        services.AddScoped<ProductImportService>();
 
         // Shop API keys are encrypted with Data Protection. Its key ring must persist across
         // restarts and deployments (see DataProtection:KeysPath), or stored keys can't be read.

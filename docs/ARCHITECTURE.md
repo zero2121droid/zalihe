@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Početna strana” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Uvoz proizvoda iz prodavnice” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -161,6 +161,8 @@ zalihe/
 
 **`Channels/SalesChannel.cs`**: povezana prodavnica (za sada samo WooCommerce, jedna po firmi). Ključevi i tajna za webhookove se čuvaju **samo šifrovani**; domen ih nikad ne vidi kao čist tekst. Status je `Connected` ili `Error`, uz kod poslednje greške (`LastErrorCode`, npr. `channel.unauthorized`). `NormalizeBaseUrl()` pretvara „zrno.rs/” u „https://zrno.rs”: dozvoljen je samo https, osim http-a na lokalnom računaru (test prodavnica), a adresa ne sme imati upit ni fragment.
 
+**`Channels/ItemChannelMapping.cs`**: veza artikla sa proizvodom u prodavnici: `ExternalId` je ID prostog proizvoda ili varijacije, a `ParentExternalId` ID varijabilnog proizvoda (za varijacije). Konstruktor odbija artikal i prodavnicu različitih firmi. U bazi su dva jedinstvena indeksa: proizvod pripada jednom artiklu `(ChannelId, ExternalId)`, a artikal jednom proizvodu po prodavnici `(ChannelId, ItemId)`.
+
 ### Zalihe.Application
 
 **`Common/AppError.cs`**: jedna greška koja ide klijentu: `Code` (npr. `auth.email_taken`), `Field` (koje polje forme) i `Params` (npr. `{min: 8}`). Na ovom tipu počiva cela i18n priča: API šalje kod, a frontend ga prevodi preko `errors.auth.email_taken` i ubacuje parametre u rečenicu „Lozinka mora imati najmanje {{min}} znakova”. Ista greška radi na oba jezika i u mobilnoj aplikaciji.
@@ -198,13 +200,22 @@ zalihe/
 
 **`Common/ICredentialProtector.cs`**: `Protect()` i `Unprotect()` za tajne. Application zna samo za interfejs, a šifrovanje radi Infrastructure.
 
-**`Channels/ISalesChannel.cs`**: ugovor sa prodavnicom (SPEC 5). Za sada ima samo `CheckConnectionAsync()`, a uvoz proizvoda, porudžbine i slanje stanja dolaze u sledećim koracima. `ISalesChannelFactory` pravi klijenta za adresu i ključeve kanala. Kad prodavnica odbije zahtev, klijent baca `SalesChannelException` sa kodom koji frontend prevodi (`channel.unreachable`, `channel.unauthorized`, `channel.not_woocommerce`, `channel.unexpected_response`).
+**`Channels/ISalesChannel.cs`**: ugovor sa prodavnicom (SPEC 5): `CheckConnectionAsync()` i `FetchProductsAsync()`, koji vraća proizvode koji imaju stanje (`ExternalProduct`): proste proizvode i varijacije, a varijabilni proizvod je samo njihova grupa. Porudžbine i slanje stanja dolaze u sledećim koracima. `ISalesChannelFactory` pravi klijenta za adresu i ključeve kanala. Kad prodavnica odbije zahtev, klijent baca `SalesChannelException` sa kodom koji frontend prevodi (`channel.unreachable`, `channel.unauthorized`, `channel.not_woocommerce`, `channel.unexpected_response`).
 
 **`Channels/ChannelService.cs`**: povezivanje prodavnice.
 - `ConnectWooCommerceAsync()`: proveri adresu (`channel.url_invalid`) i oblik ključeva (`ck_…`, `cs_…`; `channel.keys_invalid`), proveri da firma već nema prodavnicu (`channel.already_connected`), a zatim **pozove prodavnicu pre čuvanja**. Ako ključevi ne rade, ništa se ne upisuje. Ključevi se čuvaju šifrovani kao JSON, uz nasumičnu tajnu od 32 bajta za buduće webhookove.
 - `RecheckAsync()`: ponovo pozove prodavnicu sa sačuvanim ključevima i upiše status.
 - `ReplaceCredentialsAsync()`: novi ključevi se čuvaju samo ako ih prodavnica prihvati.
 - `SalesChannelDto` nema ključeve: API ih prima, ali ih nikad ne vraća.
+
+**`Channels/ProductImportRules.cs`**: čista pravila uvoza proizvoda, bez baze. `Classify()` svaki proizvod svrsta u jedno od: već povezan (`Linked`), postoji artikal sa istom šifrom (`Match`), nov (`New`) ili preskočen (`Skipped`, uz kod: `channel.product_no_sku`, `channel.product_sku_too_long`, `channel.product_sku_duplicate` kad više proizvoda ima istu šifru, npr. varijacije koje nasleđuju šifru roditelja, i `channel.product_item_linked` kad je artikal sa tom šifrom već povezan sa drugim proizvodom). Šifra se poredi tačno (posle `Trim`), kao i jedinstvenost šifre u bazi. Tu su i pravila za vrednosti novog artikla: naziv se skraćuje na dužinu polja, cena na 2 decimale (negativna se odbacuje), stanje na 3 decimale.
+
+**`Channels/ProductImportService.cs`**: uvoz proizvoda u dva koraka, kao CSV uvoz bez stanja na serveru:
+- `PreviewAsync()`: pročita prodavnicu i vrati šta bi se desilo (povezivanje, novi proizvodi sa cenom i stanjem, preskočeni sa razlogom). Ništa ne upisuje.
+- `ImportAsync()`: ponovo pročita prodavnicu, poveže sve proizvode čija šifra postoji i napravi samo nove proizvode koje je korisnik izabrao (`createExternalIds`). Novi artikal dobija naziv, šifru, kategoriju, grupu i prodajnu cenu iz prodavnice, jedinicu `kom` i minimalnu zalihu 0, a stanje iz prodavnice postaje početno stanje (korekcija sa izvorom `WooCommerce` i napomenom „Početno stanje”). **Postojeći artikli se nikad ne menjaju**, samo se povežu. Sve ide u jednom `SaveChanges`.
+- Najviše 5000 proizvoda (`channel.too_many_products`). Greška prodavnice se vraća kao kod, isto kao pri povezivanju.
+
+**`Channels/SalesChannelFactoryExtensions.cs`**: `Create(channel, protector)` pravi klijenta za sačuvanu prodavnicu, a ključeve dešifruje samo za taj poziv.
 
 ### Zalihe.Infrastructure
 
@@ -265,6 +276,9 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 **`Security/DataProtectionCredentialProtector.cs`**: šifrovanje tajni preko ASP.NET Data Protection, sa sopstvenom namenom (`Zalihe.SalesChannels.Secrets.v1`), pa se ovi podaci ne mogu dešifrovati ključem za nešto drugo (npr. cookie). Ključevi za šifrovanje su lokalno u korisničkom profilu, a na serveru u folderu iz podešavanja `DataProtection:KeysPath`. **Ako se ti ključevi izgube, sačuvani API ključevi prodavnica više ne mogu da se pročitaju**, pa folder na serveru mora da ima rezervnu kopiju.
 
 **`Channels/WooCommerce/WooCommerceClient.cs`**: WooCommerce REST API (`/wp-json/wc/v3`). Ključevi idu kao Basic autentifikacija. Provera veze traži jedan proizvod i odgovore prevodi u kodove: nema mreže ili istekne vreme → `unreachable`, 401/403 → `unauthorized`, 404 → `not_woocommerce`, a sve ostalo, uključujući HTML stranicu sigurnosnog dodatka umesto JSON-a, → `unexpected_response`. `SalesChannelFactory` u istom fajlu pravi klijenta preko imenovanog `HttpClient`-a „WooCommerce” (20 s, `User-Agent: Zalihe/1.0`).
+- `FetchProductsAsync()` čita `/products` po 100 (`per_page=100&page=N`, dok strana nije puna), a za svaki varijabilni proizvod i `/products/{id}/variations`. `_fields` traži samo potrebna polja. Naziv varijacije je naziv proizvoda sa opcijama („Majica basic – M, Siva”), a grupa je naziv proizvoda. Grupisani i spoljni proizvodi nemaju sopstveno stanje i preskaču se. Cena je `regular_price` (tekst, npr. `"1250.00"`), a ako je nema, `price`. `stock_quantity` je `null` kad prodavnica ne prati stanje. Kategorija je prva kategorija proizvoda, osim WooCommerce-ove podrazumevane „Uncategorized” (slug `uncategorized`). HTML entiteti u nazivima se dekodiraju (`&amp;` → `&`). Polje neočekivanog tipa daje `unexpected_response`, nikad 500.
+
+**Uvoz proizvoda u `AppDbContext.cs`**: tabela `ItemChannelMappings` sa jedinstvenim indeksima iz `ItemChannelMapping`, migracija `AddItemChannelMappings`.
 
 **Izmene u `AppDbContext.cs` i `DependencyInjection.cs`**: tabela `SalesChannels` (tip i status kao tekst, jedinstven indeks `(TenantId, Type)`), migracija `AddSalesChannels`; registracija Data Protection-a, imenovanog HTTP klijenta i servisa. Infrastructure sada referencira `Microsoft.AspNetCore.App` (deo .NET-a, ne NuGet paket), zbog Data Protection-a.
 
@@ -342,7 +356,7 @@ Primer odgovora sa greškom:
 
 **`Zalihe.Web.http`**: fajl za ručno slanje zahteva iz VS Code-a („Send Request”).
 
-**`Channels/ChannelsController.cs`**: `GET /api/channels`, `POST /api/channels/woocommerce` (201), `POST /api/channels/{id}/check` i `PUT /api/channels/{id}/credentials`. Tuđi kanal vraća 404, kao i kod artikala.
+**`Channels/ChannelsController.cs`**: `GET /api/channels`, `POST /api/channels/woocommerce` (201), `POST /api/channels/{id}/check` i `PUT /api/channels/{id}/credentials`, `GET /api/channels/{id}/products/preview` i `POST /api/channels/{id}/products/import` (telo: `createExternalIds`). Tuđi kanal vraća 404, kao i kod artikala. Pregled je GET jer ništa ne menja; greška prodavnice je 400 sa kodom.
 
 ### src/web (React)
 
@@ -444,6 +458,8 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`pages/channels/ChannelsPage.tsx`**: „Kanali prodaje” (`/channels`). Bez povezane prodavnice prikazuje formu (adresa, consumer key, consumer secret) i uputstvo gde se ključevi prave u WooCommerce-u. Sa prodavnicom prikazuje karticu: adresu, status (tačka i tekst, nikad samo boja), prevedeni razlog greške i dugmad „Proveri vezu” i „Promeni ključeve”. Rezultat provere se upiše direktno u keš liste (`setQueryData`), bez novog zahteva. `KeyFields.tsx` su polja za ključeve, zajednička za formu i `ReplaceKeysModal.tsx`, i skidaju razmake koji se često nalepe pri kopiranju.
 
+**`pages/channels/ProductImportPage.tsx`**: „Uvoz proizvoda iz prodavnice” (`/channels/{id}/import`, dugme „Uvezi proizvode” na kartici kanala). Traka sa četiri brojke (novi, postoje u Zalihama, već povezano, preskočeno), tabela novih proizvoda sa izborom (svi su izabrani, korisnik isključuje ono što ne želi; zaglavlje ima „izaberi sve”), tabela povezivanja (link na postojeći artikal) i preskočeni sa prevedenim razlogom. Pregled se ne učitava ponovo pri povratku na prozor (`staleTime: Infinity`, `refetchOnWindowFocus: false`), jer je čitanje prodavnice sporo i opterećuje je. Posle uvoza se osvežavaju artikli, brojke i Početna, a pregled se briše iz keša.
+
 **Frontend testovi** (`*.test.ts(x)`, Vitest + React Testing Library):
 - `locales.test.ts`: oba jezika imaju isti skup ključeva i nijedan prevod nije prazan;
 - `format.test.ts`: formatiranje i unos brojeva;
@@ -453,6 +469,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `MovementModal.test.tsx`, `ItemDetailPage.test.tsx`: unos kretanja (decimale, upozorenje za minus, razlika kod korekcije, greške), prikaz stanja i istorije;
 - `HomePage.test.tsx`: brojke, artikli za naručivanje, poslednja kretanja i prazna Početna;
 - `ImportPage.test.tsx`: ceo tok uvoza (predložene kolone, poslata polja, prevedeni problemi, uvoz), Excel fajl, onemogućena provera bez obaveznih kolona;
+- `ProductImportPage.test.tsx`: brojke, novi, povezivanje i preskočeni sa razlogom; isključen proizvod se ne šalje; „izaberi sve”; greška prodavnice sa „Pokušaj ponovo”; sve već povezano;
 - `ChannelsPage.test.tsx`: povezivanje (poslata polja, kartica posle uspeha), prevedena greška prodavnice i greška ispod polja za adresu, provera veze koja otkrije opozvane ključeve, zamena ključeva;
 - `ThemeToggle.test.tsx`: tamna tema na početku, klik prebacuje na svetlu i pamti izbor;
 - `ItemsPage.test.tsx`, `ItemModal.test.tsx`: izmena (popunjena polja, `PUT`), deaktivacija, oznaka i filter neaktivnih, redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
@@ -501,6 +518,10 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 **`Zalihe.IntegrationTests/Tenancy/TenantFilterTests.cs`**: svaki entitet sa kolonom `TenantId` mora da implementira `ITenantOwned` i da ima filter, a upit bez postavljene firme mora da baci izuzetak.
 
 **`Zalihe.Domain.Tests/Channels/SalesChannelTests.cs`**: normalizacija adrese prodavnice i prelazi statusa.
+
+**`Zalihe.Domain.Tests/Channels/ItemChannelMappingTests.cs`** i **`Zalihe.Application.Tests/Channels/ProductImportRulesTests.cs`**: veza artikla i proizvoda, i razvrstavanje proizvoda (šifra postoji, nova, već povezan, bez šifre, predugačka, ista šifra dvaput, artikal već povezan sa drugim proizvodom).
+
+**`Zalihe.IntegrationTests/Channels/ProductImportTests.cs`**: lažna prodavnica odgovara po adresi (proizvodi, varijacije, strane). Pregled razvrstava proizvode i ništa ne upisuje; uvoz pravi izabrane artikle sa stanjem iz prodavnice i povezuje postojeće bez izmene; ponovni pregled i ponovni uvoz ne dupliraju ništa; čitanje više strana; greška prodavnice ne upisuje ništa; izolacija firmi (šifra druge firme se ne računa, tuđi kanal je 404); varijacija čuva ID roditelja. Test sa `stock_quantity: null` je otkrio grešku pre prvog pokretanja na pravoj prodavnici.
 
 **`Zalihe.IntegrationTests/Channels/ChannelsTests.cs`**: povezivanje (Basic autentifikacija sa pravim ključevima), ključevi u bazi nisu čitljivi, svaki odgovor prodavnice daje svoj kod i ništa se ne čuva, loš unos se odbija pre poziva prodavnice, druga prodavnica, opozvani ključevi pa zamena, i izolacija firmi. **Prava prodavnica se nikad ne poziva**: `Infrastructure/FakeShopHandler.cs` zamenjuje mrežu za HTTP klijent „WooCommerce”, a svaki test određuje kako lažna prodavnica odgovara (`RespondWith`) i proverava šta joj je poslato (`Requests`).
 

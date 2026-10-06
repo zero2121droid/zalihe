@@ -3,6 +3,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
 import {
   getListChannelsQueryKey,
@@ -197,6 +198,9 @@ function ChannelCard({ channel }: { channel: SalesChannelDto }) {
         </Stack>
 
         <Group gap="sm">
+          <Button component={Link} to={`/channels/${channel.id}/import`}>
+            {t('channels.card.importProducts')}
+          </Button>
           <Button variant="default" loading={check.isPending} onClick={() => check.mutate({ id: channel.id })}>
             {t('channels.card.check')}
           </Button>

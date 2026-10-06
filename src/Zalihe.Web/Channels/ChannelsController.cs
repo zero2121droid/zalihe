@@ -10,7 +10,7 @@ namespace Zalihe.Web.Channels;
 [Authorize]
 [Route("api/channels")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
-public class ChannelsController(ChannelService channelService) : ControllerBase
+public class ChannelsController(ChannelService channelService, ProductImportService productImport) : ControllerBase
 {
     [HttpGet(Name = "ListChannels")]
     [ProducesResponseType<IReadOnlyList<SalesChannelDto>>(StatusCodes.Status200OK)]
@@ -39,6 +39,36 @@ public class ChannelsController(ChannelService channelService) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<IActionResult> ReplaceCredentials(Guid id, ReplaceCredentialsRequest request, CancellationToken ct) =>
         Respond(await channelService.ReplaceCredentialsAsync(id, request.ConsumerKey, request.ConsumerSecret, ct));
+
+    /// <summary>
+    /// Reads the shop's products and shows what an import would do: link to items with the same SKU,
+    /// create new items, or skip (with the reason). Nothing is saved.
+    /// </summary>
+    [HttpGet("{id:guid}/products/preview", Name = "PreviewProductImport")]
+    [ProducesResponseType<ProductImportPreviewDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> PreviewProducts(Guid id, CancellationToken ct) =>
+        Respond(await productImport.PreviewAsync(id, ct));
+
+    /// <summary>
+    /// Links shop products to items with the same SKU and creates the chosen new products as items,
+    /// with the shop's stock as opening stock. Existing items are not changed.
+    /// </summary>
+    [HttpPost("{id:guid}/products/import", Name = "ImportProducts")]
+    [ProducesResponseType<ProductImportResultDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> ImportProducts(Guid id, ImportProductsRequest request, CancellationToken ct) =>
+        Respond(await productImport.ImportAsync(id, request.CreateExternalIds, ct));
+
+    private IActionResult Respond<T>(ProductImportResult<T> result)
+    {
+        if (result.NotFound) return NotFound();
+        return result.Error is { } error
+            ? ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed, [error])
+            : Ok(result.Value);
+    }
 
     private IActionResult Respond(ChannelResult result, bool created = false)
     {

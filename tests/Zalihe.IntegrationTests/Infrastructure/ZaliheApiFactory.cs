@@ -27,6 +27,8 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // Scheduled jobs would sync every test's shop at random moments; tests run them directly.
         builder.UseSetting("Jobs:OrderSyncCron", "");
         builder.UseSetting("Jobs:WebhookCleanupCron", "");
+        // Likewise stock pushes, which every stock change in every test would schedule.
+        builder.UseSetting("Jobs:StockPushDelaySeconds", "");
         builder.ConfigureTestServices(services =>
             services.AddHttpClient(SalesChannelFactory.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Shop));
     }

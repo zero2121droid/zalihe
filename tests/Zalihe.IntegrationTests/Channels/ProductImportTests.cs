@@ -164,6 +164,25 @@ public partial class ProductImportTests(ZaliheApiFactory factory)
     }
 
     [Fact]
+    public async Task Import_ExistingItem_ItsStockIsMarkedForTheShopButNewItemsAreNot()
+    {
+        // Arrange
+        var (client, channelId) = await ConnectedShopAsync();
+        await CreateItemAsync(client, "KF-ETI-250");
+        ShopHas(Products);
+
+        // Act
+        (await ImportAsync(client, channelId, "11", "51")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // Assert: the shop gets the existing item's own stock; new items already have the shop's.
+        using var scope = factory.Services.CreateScope();
+        var changed = await scope.ServiceProvider.GetRequiredService<AppDbContext>().ItemChannelMappings
+            .IgnoreQueryFilters().Where(m => m.ChannelId == Guid.Parse(channelId))
+            .ToDictionaryAsync(m => m.ExternalId, m => m.StockChangedAt is not null);
+        changed.ShouldBe(new Dictionary<string, bool> { ["10"] = true, ["11"] = false, ["51"] = false }, ignoreOrder: true);
+    }
+
+    [Fact]
     public async Task Preview_AfterImport_ShowsLinkedAndOnlyWhatIsLeft()
     {
         // Arrange

@@ -38,6 +38,7 @@ public class ProductImportService(
     ICredentialProtector protector,
     ISalesChannelFactory channels,
     ICurrentUser currentUser,
+    StockPushService stockPush,
     TimeProvider timeProvider)
 {
     public const int MaxProducts = 5000;
@@ -80,7 +81,10 @@ public class ProductImportService(
         var matchedItems = await db.Items.Where(i => matchedIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, ct);
         foreach (var row in matches)
         {
-            db.ItemChannelMappings.Add(Mapping(matchedItems[row.Item!.Id], channel, row.Product, now));
+            // An existing item keeps its own stock, and the shop gets it: the application is the source of truth.
+            var mapping = Mapping(matchedItems[row.Item!.Id], channel, row.Product, now);
+            mapping.MarkStockChanged(now);
+            db.ItemChannelMappings.Add(mapping);
         }
 
         var toCreate = rows.Where(r => r.Kind == ProductImportKind.New && selected.Contains(r.Product.ExternalId)).ToList();
@@ -103,8 +107,10 @@ public class ProductImportService(
             }
         }
 
-        // One SaveChanges: links and new items are saved together or not at all.
+        // One SaveChanges: links and new items are saved together or not at all. New items need no
+        // push: their stock is the shop's own.
         await db.SaveChangesAsync(ct);
+        if (matches.Count > 0) stockPush.Schedule([channel.Id]);
         var skipped = rows.Count(r => r.Kind == ProductImportKind.Skipped);
         return new(new ProductImportResultDto(matches.Count, toCreate.Count, skipped), null);
     }

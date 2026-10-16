@@ -400,7 +400,7 @@
       },
       "link": {
         "title": "Povezivanje sa postojećim artiklima",
-        "note": "Ovi proizvodi imaju istu šifru kao artikli u Zalihama. Biće povezani, a artikli se ne menjaju.",
+        "note": "Ovi proizvodi imaju istu šifru kao artikli u Zalihama. Biće povezani, a artikli se ne menjaju: prodavnica preuzima njihovo stanje iz Zaliha.",
         "product": "Proizvod u prodavnici",
         "item": "Artikal u Zalihama"
       },

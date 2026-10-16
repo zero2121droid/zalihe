@@ -7,4 +7,10 @@ namespace Zalihe.Application.Common;
 public interface IBackgroundJobs
 {
     void ProcessWebhookEvent(Guid tenantId, Guid webhookEventId);
+
+    /// <summary>
+    /// Sends the changed stock of a shop's items to the shop after a short pause, so changes made
+    /// together (an order with several lines, a quick series of receipts) go in one request.
+    /// </summary>
+    void PushStock(Guid tenantId, Guid channelId);
 }

@@ -29,7 +29,7 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
     {
         // The cheapest call that needs valid keys with read permission.
         using var response = await SendAsync(HttpMethod.Get, "products?per_page=1&_fields=id", ct);
-        using var _ = await ReadJsonArrayAsync(response, ct);
+        using var _ = await ReadJsonAsync(response, JsonValueKind.Array, ct);
     }
 
     public async Task<IReadOnlyList<ExternalProduct>> FetchProductsAsync(int max, CancellationToken ct)
@@ -97,6 +97,35 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
         return orders;
     }
 
+    public async Task<IReadOnlySet<string>> UpdateStockAsync(IReadOnlyList<ShopStockUpdate> updates, CancellationToken ct)
+    {
+        var accepted = new HashSet<string>(StringComparer.Ordinal);
+        // Simple products go to products/batch, variations to their own product's variations/batch.
+        foreach (var group in updates.GroupBy(u => u.ParentExternalId))
+        {
+            var path = group.Key is null ? "products/batch" : $"products/{group.Key}/variations/batch";
+            foreach (var chunk in group.Chunk(PageSize)) // WooCommerce takes at most 100 per batch
+            {
+                var body = new { update = chunk.Select(u => new { id = long.Parse(u.ExternalId, CultureInfo.InvariantCulture), manage_stock = true, stock_quantity = u.Stock }) };
+                using var response = await SendAsync(HttpMethod.Post, path, ct, body);
+                using var document = await ReadJsonAsync(response, JsonValueKind.Object, ct);
+
+                // Each result has the product, or an "error" (e.g. a product deleted from the shop).
+                if (!document.RootElement.TryGetProperty("update", out var results) || results.ValueKind != JsonValueKind.Array)
+                {
+                    throw new SalesChannelException(SalesChannelException.UnexpectedResponse);
+                }
+
+                foreach (var result in results.EnumerateArray())
+                {
+                    if (result.ValueKind == JsonValueKind.Object && !result.TryGetProperty("error", out _)) accepted.Add(Id(result));
+                }
+            }
+        }
+
+        return accepted;
+    }
+
     /// <summary>Every element of a paged list, one page of <see cref="PageSize"/> at a time.</summary>
     private async IAsyncEnumerable<JsonElement> PagesAsync(string path, [EnumeratorCancellation] CancellationToken ct)
     {
@@ -104,7 +133,7 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
         {
             List<JsonElement> elements;
             using (var response = await SendAsync(HttpMethod.Get, $"{path}&per_page={PageSize}&page={page}", ct))
-            using (var document = await ReadJsonArrayAsync(response, ct))
+            using (var document = await ReadJsonAsync(response, JsonValueKind.Array, ct))
             {
                 elements = document.RootElement.EnumerateArray().Select(e => e.Clone()).ToList();
             }
@@ -200,7 +229,7 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
     /// A 200 that isn't the expected JSON usually means a security plugin, a captcha page or a
     /// redirect to a login page answered instead of WooCommerce.
     /// </summary>
-    private static async Task<JsonDocument> ReadJsonArrayAsync(HttpResponseMessage response, CancellationToken ct)
+    private static async Task<JsonDocument> ReadJsonAsync(HttpResponseMessage response, JsonValueKind expected, CancellationToken ct)
     {
         JsonDocument? document = null;
         try
@@ -212,7 +241,7 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
         {
         }
 
-        if (document?.RootElement.ValueKind == JsonValueKind.Array) return document;
+        if (document?.RootElement.ValueKind == expected) return document;
         document?.Dispose();
         throw new SalesChannelException(SalesChannelException.UnexpectedResponse);
     }

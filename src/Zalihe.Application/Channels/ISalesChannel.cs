@@ -30,7 +30,18 @@ public interface ISalesChannel
     /// in every status except deleted. Orders that can't be read are left out, as they are in webhooks.
     /// </summary>
     Task<IReadOnlyList<ShopOrder>> FetchOrdersModifiedSinceAsync(DateTimeOffset since, CancellationToken ct);
+
+    /// <summary>
+    /// Sets the stock of products and variations, turning on stock tracking for them. Returns the IDs
+    /// the shop accepted; one it rejects (e.g. deleted from the shop) is left out. Throws
+    /// <see cref="SalesChannelException"/> when the shop can't be reached at all.
+    /// </summary>
+    Task<IReadOnlySet<string>> UpdateStockAsync(IReadOnlyList<ShopStockUpdate> updates, CancellationToken ct);
 }
+
+/// <param name="ExternalId">The product's ID, or the variation's ID for a variation.</param>
+/// <param name="ParentExternalId">The variable product's ID for a variation; null for a simple product.</param>
+public record ShopStockUpdate(string ExternalId, string? ParentExternalId, int Stock);
 
 /// <summary>Reads orders in a shop's own format. Customer data in it is never read.</summary>
 public interface IShopOrderReader

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Zalihe.Application.Channels;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Stock;
@@ -43,7 +44,7 @@ public record StockSummaryDto(int BelowMinimum, int OutOfStock);
 /// are saved in one transaction while the item's stock row is locked, so concurrent movements
 /// for the same item are applied one after another and none is lost.
 /// </summary>
-public class StockService(IAppDbContext db, ICurrentUser currentUser, IUserDirectory users, TimeProvider timeProvider)
+public class StockService(IAppDbContext db, ICurrentUser currentUser, IUserDirectory users, StockPushService stockPush, TimeProvider timeProvider)
 {
     public async Task<RecordMovementResult> RecordAsync(Guid itemId, RecordMovementCommand command, CancellationToken ct)
     {
@@ -72,8 +73,10 @@ public class StockService(IAppDbContext db, ICurrentUser currentUser, IUserDirec
 
         db.StockMovements.Add(movement);
         level.Apply(movement);
+        var shops = await stockPush.MarkChangedAsync([itemId], ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+        stockPush.Schedule(shops);
 
         var userName = await UserNameAsync(movement.UserId, ct);
         return new RecordMovementResult(ToDto(movement, userName), level.Quantity, []);

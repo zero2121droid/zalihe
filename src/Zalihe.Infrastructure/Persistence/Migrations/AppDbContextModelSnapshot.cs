@@ -176,6 +176,12 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<int?>("PushedStock")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("StockChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 

@@ -24,6 +24,15 @@ public class ItemChannelMapping : ITenantOwned
 
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>
+    /// When the item's stock last changed without the shop having it yet; null when the shop is up to date.
+    /// The stock push clears it only if it is still the value it read, so a change during a push is sent next time.
+    /// </summary>
+    public DateTimeOffset? StockChangedAt { get; private set; }
+
+    /// <summary>The stock last sent to the shop (whole units); null until the first push.</summary>
+    public int? PushedStock { get; private set; }
+
     public ItemChannelMapping(Item item, SalesChannel channel, string externalId, string? parentExternalId, DateTimeOffset createdAt)
     {
         if (item.TenantId != channel.TenantId) throw new InvalidOperationException("The item and the shop belong to different companies.");
@@ -36,6 +45,15 @@ public class ItemChannelMapping : ITenantOwned
         ParentExternalId = string.IsNullOrWhiteSpace(parentExternalId) ? null : Required(parentExternalId, nameof(parentExternalId));
         CreatedAt = createdAt;
     }
+
+    /// <summary>The item's stock changed and must be sent to the shop.</summary>
+    public void MarkStockChanged(DateTimeOffset at) => StockChangedAt = at;
+
+    /// <summary>
+    /// The stock a shop shows for <paramref name="stock"/>: WooCommerce stock is a whole number, so
+    /// 2,5 kg shows as 2 (never more than there is).
+    /// </summary>
+    public static int ShopStock(decimal stock) => (int)Math.Floor(stock);
 
     // For EF Core.
     private ItemChannelMapping()

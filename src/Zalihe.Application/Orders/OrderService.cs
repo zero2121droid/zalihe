@@ -15,7 +15,7 @@ public record ProcessOrderResult(bool Ignored, int MovementCount, int UnlinkedLi
 /// Applies orders from a shop to stock (SPEC 6). Called for webhook events and by the periodic sync,
 /// with the tenant already set; the same order may arrive any number of times, in any order.
 /// </summary>
-public class OrderService(IAppDbContext db, TimeProvider timeProvider)
+public class OrderService(IAppDbContext db, StockPushService stockPush, TimeProvider timeProvider)
 {
     /// <summary>
     /// Brings the stored order to the state the shop reports and records a sale or return for every
@@ -51,8 +51,11 @@ public class OrderService(IAppDbContext db, TimeProvider timeProvider)
             level.Apply(movement);
         }
 
+        // The shop changed its own stock for the order already; sending ours keeps the two the same.
+        var shops = await stockPush.MarkChangedAsync(itemIds, ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+        stockPush.Schedule(shops);
 
         var unlinked = stored.Lines.Count(l => !l.IsLinked && l.OrderedQuantity > 0);
         return new ProcessOrderResult(ignored, changes.Count, unlinked);

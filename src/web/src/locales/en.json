@@ -400,7 +400,7 @@
       },
       "link": {
         "title": "Linking to existing items",
-        "note": "These products have the same SKU as items in Zalihe. They will be linked; the items are not changed.",
+        "note": "These products have the same SKU as items in Zalihe. They will be linked and the items stay as they are: the shop takes over their stock from Zalihe.",
         "product": "Shop product",
         "item": "Item in Zalihe"
       },

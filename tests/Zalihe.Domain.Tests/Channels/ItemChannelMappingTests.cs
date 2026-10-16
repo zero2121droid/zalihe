@@ -56,4 +56,29 @@ public class ItemChannelMappingTests
 
         Should.Throw<ArgumentException>(() => new ItemChannelMapping(Item(tenantId), Channel(tenantId), externalId, null, Now));
     }
+
+    [Theory]
+    [InlineData(24, 24)]
+    [InlineData(2.5, 2)]
+    [InlineData(0.999, 0)]
+    [InlineData(-0.5, -1)]
+    public void ShopStock_Quantity_IsRoundedDownToWholeUnits(decimal stock, int expected)
+    {
+        ItemChannelMapping.ShopStock(stock).ShouldBe(expected);
+    }
+
+    [Fact]
+    public void MarkStockChanged_NewMapping_RemembersWhen()
+    {
+        // Arrange
+        var tenantId = Guid.NewGuid();
+        var mapping = new ItemChannelMapping(Item(tenantId), Channel(tenantId), "57", null, Now);
+
+        // Act
+        mapping.MarkStockChanged(Now.AddMinutes(1));
+
+        // Assert
+        mapping.StockChangedAt.ShouldBe(Now.AddMinutes(1));
+        mapping.PushedStock.ShouldBeNull();
+    }
 }

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:slow": "VITE_API_DELAY_MS=1500 vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",

@@ -1,4 +1,4 @@
-import { Anchor, Box, Button, Center, Checkbox, Group, Loader, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core'
+import { Anchor, Box, Button, Checkbox, Group, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useState } from 'react'
@@ -14,7 +14,11 @@ import { getGetDashboardQueryKey } from '../../api/generated/dashboard/dashboard
 import { getListItemsQueryKey } from '../../api/generated/items/items'
 import type { ProductImportPreviewDto, ProductImportResultDto } from '../../api/generated/model'
 import { getGetStockSummaryQueryKey } from '../../api/generated/stock/stock'
+import { BoxLoader, ImportOverlay } from '../../components/loaders'
+import loaderClasses from '../../components/loaders.module.css'
 import { formatMoney, formatNumber } from '../../lib/format'
+import { useCountUp } from '../../lib/useCountUp'
+import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
@@ -27,8 +31,11 @@ export function ProductImportPage() {
   const { id = '' } = useParams()
   const queryClient = useQueryClient()
   const [result, setResult] = useState<ProductImportResultDto | null>(null)
+  // The import's overlay stays over the list after it finishes, until the user closes it.
+  const [overlayClosed, setOverlayClosed] = useState(false)
   // Reading a shop is slow and costs it requests: don't read it again on focus or remount.
   const preview = usePreviewProductImport(id, { query: { staleTime: Infinity, refetchOnWindowFocus: false } })
+  const display = useLoadingDisplay(preview.isPending)
   const runImport = useImportProducts({
     mutation: {
       onSuccess: async (data) => {
@@ -57,15 +64,10 @@ export function ProductImportPage() {
         </Title>
       </Stack>
 
-      {result ? (
+      {result && overlayClosed ? (
         <Done result={result} />
-      ) : preview.isPending ? (
-        <Center py="xl">
-          <Group gap="xs">
-            <Loader size="sm" />
-            <Text c="dimmed">{t('channels.import.reading')}</Text>
-          </Group>
-        </Center>
+      ) : preview.isPending || display !== 'content' ? (
+        display === 'loader' && <BoxLoader label={t('channels.import.reading')} />
       ) : preview.isError ? (
         <Section>
           <Stack gap="md" align="flex-start">
@@ -81,6 +83,8 @@ export function ProductImportPage() {
         <Preview
           preview={preview.data}
           importing={runImport.isPending}
+          result={result}
+          onCloseResult={() => setOverlayClosed(true)}
           error={formErrorMessage(t, runImport.error)}
           onImport={(create) => runImport.mutate({ id, data: { createExternalIds: create } })}
         />
@@ -108,17 +112,20 @@ function Section({ title, note, children }: { title?: string; note?: string; chi
 interface PreviewProps {
   preview: ProductImportPreviewDto
   importing: boolean
+  result: ProductImportResultDto | null
+  onCloseResult: () => void
   error: string | null
   onImport: (createExternalIds: string[]) => void
 }
 
-function Preview({ preview, importing, error, onImport }: PreviewProps) {
+function Preview({ preview, importing, result, onCloseResult, error, onImport }: PreviewProps) {
   const { t, i18n } = useTranslation()
   // Every new product starts checked; the user unchecks what shouldn't become an item.
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set())
   const toCreate = preview.toCreate.filter((p) => !unchecked.has(p.externalId))
   const allChecked = toCreate.length === preview.toCreate.length
   const nothingToDo = preview.toCreate.length === 0 && preview.toLink.length === 0
+  const locked = importing || result !== null
 
   function toggle(externalId: string, checked: boolean) {
     const next = new Set(unchecked)
@@ -132,196 +139,256 @@ function Preview({ preview, importing, error, onImport }: PreviewProps) {
   }
 
   return (
-    <Stack gap="lg">
-      {/* One strip divided by lines, like the CSV import's preview. */}
-      <SimpleGrid
-        cols={{ base: 2, md: 4 }}
-        spacing={1}
-        verticalSpacing={1}
-        bg="var(--z-line)"
-        bd="1px solid var(--z-line)"
-        style={{ ...sectionStyle, overflow: 'hidden' }}
-      >
-        <Figure label={t('channels.import.figures.new')} value={preview.toCreate.length} />
-        <Figure label={t('channels.import.figures.toLink')} value={preview.toLink.length} />
-        <Figure label={t('channels.import.figures.linked')} value={preview.linkedCount} />
-        <Figure
-          label={t('channels.import.figures.skipped')}
-          value={preview.skipped.length}
-          color={preview.skipped.length ? 'var(--z-status-low)' : undefined}
-        />
-      </SimpleGrid>
+    <>
+      {/* While importing and until the result is closed, the list stays in place but faded and locked (inert), with the import animation over it. */}
+      {locked && <ImportStatus result={result} onClose={onCloseResult} />}
+      <Stack gap="lg" className={locked ? loaderClasses.dimmed : undefined} inert={locked} aria-busy={importing}>
+        {/* One strip divided by lines, like the CSV import's preview. */}
+        <SimpleGrid
+          cols={{ base: 2, md: 4 }}
+          spacing={1}
+          verticalSpacing={1}
+          bg="var(--z-line)"
+          bd="1px solid var(--z-line)"
+          style={{ ...sectionStyle, overflow: 'hidden' }}
+        >
+          <Figure label={t('channels.import.figures.new')} value={preview.toCreate.length} />
+          <Figure label={t('channels.import.figures.toLink')} value={preview.toLink.length} />
+          <Figure label={t('channels.import.figures.linked')} value={preview.linkedCount} />
+          <Figure
+            label={t('channels.import.figures.skipped')}
+            value={preview.skipped.length}
+            color={preview.skipped.length ? 'var(--z-status-low)' : undefined}
+          />
+        </SimpleGrid>
 
-      {preview.toCreate.length > 0 && (
-        <Section title={t('channels.import.create.title')} note={t('channels.import.create.note')}>
-          <Table.ScrollContainer minWidth={640}>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th w={40}>
-                    <Checkbox
-                      aria-label={t('channels.import.create.all')}
-                      checked={allChecked}
-                      indeterminate={!allChecked && toCreate.length > 0}
-                      onChange={(e) => toggleAll(e.currentTarget.checked)}
-                    />
-                  </Table.Th>
-                  <Table.Th>{t('items.columns.item')}</Table.Th>
-                  <Table.Th>{t('items.columns.sku')}</Table.Th>
-                  <Table.Th ta="right">{t('channels.import.create.price')}</Table.Th>
-                  <Table.Th ta="right">{t('channels.import.create.stock')}</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {preview.toCreate.map((product) => (
-                  <Table.Tr key={product.externalId}>
-                    <Table.Td>
+        {preview.toCreate.length > 0 && (
+          <Section title={t('channels.import.create.title')} note={t('channels.import.create.note')}>
+            <Table.ScrollContainer minWidth={640}>
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th w={40}>
                       <Checkbox
-                        aria-label={product.name}
-                        checked={!unchecked.has(product.externalId)}
-                        onChange={(e) => toggle(product.externalId, e.currentTarget.checked)}
+                        aria-label={t('channels.import.create.all')}
+                        checked={allChecked}
+                        indeterminate={!allChecked && toCreate.length > 0}
+                        onChange={(e) => toggleAll(e.currentTarget.checked)}
                       />
-                    </Table.Td>
-                    <Table.Td>
-                      <Text fz="sm" fw={500}>
-                        {product.name}
-                      </Text>
-                      {product.category && (
-                        <Text fz="xs" c="dimmed">
-                          {product.category}
+                    </Table.Th>
+                    <Table.Th>{t('items.columns.item')}</Table.Th>
+                    <Table.Th>{t('items.columns.sku')}</Table.Th>
+                    <Table.Th ta="right">{t('channels.import.create.price')}</Table.Th>
+                    <Table.Th ta="right">{t('channels.import.create.stock')}</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {preview.toCreate.map((product) => (
+                    <Table.Tr key={product.externalId}>
+                      <Table.Td>
+                        <Checkbox
+                          aria-label={product.name}
+                          checked={!unchecked.has(product.externalId)}
+                          onChange={(e) => toggle(product.externalId, e.currentTarget.checked)}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <Text fz="sm" fw={500}>
+                          {product.name}
                         </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>
-                      <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                        {product.sku}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td ta="right">
-                      <Text ff="monospace" fz="sm" c={product.price === null ? 'dimmed' : undefined}>
-                        {product.price === null ? (
-                          '—'
-                        ) : (
-                          <>
-                            {formatMoney(product.price, i18n.language)}{' '}
-                            <Text component="span" fz={11} c="dimmed">
-                              {t('common.currency')}
-                            </Text>
-                          </>
+                        {product.category && (
+                          <Text fz="xs" c="dimmed">
+                            {product.category}
+                          </Text>
                         )}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td ta="right">
-                      <Text ff="monospace" fz="sm" c={product.stock < 0 ? 'var(--z-status-out)' : undefined}>
-                        {formatNumber(product.stock, i18n.language)}{' '}
-                        <Text component="span" fz={11} c="dimmed">
-                          {t('items.units.kom')}
+                      </Table.Td>
+                      <Table.Td>
+                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                          {product.sku}
                         </Text>
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        </Section>
-      )}
+                      </Table.Td>
+                      <Table.Td ta="right">
+                        <Text ff="monospace" fz="sm" c={product.price === null ? 'dimmed' : undefined}>
+                          {product.price === null ? (
+                            '—'
+                          ) : (
+                            <>
+                              {formatMoney(product.price, i18n.language)}{' '}
+                              <Text component="span" fz={11} c="dimmed">
+                                {t('common.currency')}
+                              </Text>
+                            </>
+                          )}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td ta="right">
+                        <Text ff="monospace" fz="sm" c={product.stock < 0 ? 'var(--z-status-out)' : undefined}>
+                          {formatNumber(product.stock, i18n.language)}{' '}
+                          <Text component="span" fz={11} c="dimmed">
+                            {t('items.units.kom')}
+                          </Text>
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Section>
+        )}
 
-      {preview.toLink.length > 0 && (
-        <Section title={t('channels.import.link.title')} note={t('channels.import.link.note')}>
-          <Table.ScrollContainer minWidth={640}>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>{t('channels.import.link.product')}</Table.Th>
-                  <Table.Th>{t('items.columns.sku')}</Table.Th>
-                  <Table.Th>{t('channels.import.link.item')}</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {preview.toLink.map((product) => (
-                  <Table.Tr key={product.externalId}>
-                    <Table.Td>
-                      <Text fz="sm">{product.name}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                        {product.sku}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Anchor component={Link} to={`/items/${product.itemId}`} fz="sm">
-                        {product.itemName}
-                      </Anchor>
-                    </Table.Td>
+        {preview.toLink.length > 0 && (
+          <Section title={t('channels.import.link.title')} note={t('channels.import.link.note')}>
+            <Table.ScrollContainer minWidth={640}>
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('channels.import.link.product')}</Table.Th>
+                    <Table.Th>{t('items.columns.sku')}</Table.Th>
+                    <Table.Th>{t('channels.import.link.item')}</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        </Section>
-      )}
+                </Table.Thead>
+                <Table.Tbody>
+                  {preview.toLink.map((product) => (
+                    <Table.Tr key={product.externalId}>
+                      <Table.Td>
+                        <Text fz="sm">{product.name}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                          {product.sku}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Anchor component={Link} to={`/items/${product.itemId}`} fz="sm">
+                          {product.itemName}
+                        </Anchor>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Section>
+        )}
 
-      {preview.skipped.length > 0 && (
-        <Section title={t('channels.import.skipped.title')}>
-          <Table.ScrollContainer minWidth={640}>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>{t('channels.import.link.product')}</Table.Th>
-                  <Table.Th>{t('items.columns.sku')}</Table.Th>
-                  <Table.Th>{t('channels.import.skipped.reason')}</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {preview.skipped.map((product) => (
-                  <Table.Tr key={product.externalId}>
-                    <Table.Td>
-                      <Text fz="sm">{product.name}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                        {product.sku ?? '—'}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text fz="sm" c="var(--z-status-low)">
-                        {t(`errors.${product.error.code}`, {
-                          ...product.error.params,
-                          defaultValue: t('errors.common.unexpected'),
-                        })}
-                      </Text>
-                    </Table.Td>
+        {preview.skipped.length > 0 && (
+          <Section title={t('channels.import.skipped.title')}>
+            <Table.ScrollContainer minWidth={640}>
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('channels.import.link.product')}</Table.Th>
+                    <Table.Th>{t('items.columns.sku')}</Table.Th>
+                    <Table.Th>{t('channels.import.skipped.reason')}</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        </Section>
-      )}
+                </Table.Thead>
+                <Table.Tbody>
+                  {preview.skipped.map((product) => (
+                    <Table.Tr key={product.externalId}>
+                      <Table.Td>
+                        <Text fz="sm">{product.name}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                          {product.sku ?? '—'}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text fz="sm" c="var(--z-status-low)">
+                          {t(`errors.${product.error.code}`, {
+                            ...product.error.params,
+                            defaultValue: t('errors.common.unexpected'),
+                          })}
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          </Section>
+        )}
 
-      {error && (
-        <Text role="alert" c="var(--mantine-color-error)" fz="sm">
-          {error}
-        </Text>
-      )}
-      {nothingToDo ? (
-        <Text c="dimmed">{preview.linkedCount > 0 ? t('channels.import.allLinked') : t('channels.import.nothing')}</Text>
-      ) : (
-        <Group justify="flex-end" gap="md">
-          <Text fz="sm" c="dimmed">
-            {t('channels.import.summary', { create: toCreate.length, link: preview.toLink.length })}
+        {error && (
+          <Text role="alert" c="var(--mantine-color-error)" fz="sm">
+            {error}
           </Text>
-          <Button
-            onClick={() => onImport(toCreate.map((p) => p.externalId))}
-            loading={importing}
-            disabled={toCreate.length === 0 && preview.toLink.length === 0}
-          >
-            {t('channels.import.submit')}
-          </Button>
-        </Group>
-      )}
+        )}
+        {nothingToDo ? (
+          <Text c="dimmed">{preview.linkedCount > 0 ? t('channels.import.allLinked') : t('channels.import.nothing')}</Text>
+        ) : (
+          <Group justify="flex-end" gap="md">
+            <Text fz="sm" c="dimmed">
+              {t('channels.import.summary', { create: toCreate.length, link: preview.toLink.length })}
+            </Text>
+            <Button
+              onClick={() => onImport(toCreate.map((p) => p.externalId))}
+              loading={importing}
+              disabled={toCreate.length === 0 && preview.toLink.length === 0}
+            >
+              {t('channels.import.submit')}
+            </Button>
+          </Group>
+        )}
+      </Stack>
+    </>
+  )
+}
+
+/**
+ * The import animation over the list. The import is one request, so while it runs there is nothing
+ * to count; when the result arrives the number of imported products counts up one by one, then the
+ * packets stop and the user closes it with the X.
+ */
+function ImportStatus({ result, onClose }: { result: ProductImportResultDto | null; onClose: () => void }) {
+  const { t, i18n } = useTranslation()
+  const total = result ? result.createdCount + result.linkedCount : null
+  const { value, finished } = useCountUp(total)
+
+  const counter = total !== null && (
+    // Hidden from screen readers while counting, so they don't read every number; the lines below say it once.
+    <Stack gap={2} align="center" aria-hidden>
+      <Text ff="monospace" fz={26} fw={500} style={{ fontVariantNumeric: 'tabular-nums' }} data-testid="import-count">
+        {formatNumber(value, i18n.language)}
+        <Text component="span" ff="monospace" fz="sm" c="dimmed">
+          {' / '}
+          {formatNumber(total, i18n.language)}
+        </Text>
+      </Text>
+      <Text fz="xs" c="dimmed">
+        {t('channels.import.counted')}
+      </Text>
     </Stack>
+  )
+  const progress = total !== null && (
+    <div className={loaderClasses.progress} aria-hidden>
+      <div style={{ width: `${total === 0 ? 100 : (value / total) * 100}%` }} />
+    </div>
+  )
+
+  if (!result || !finished) {
+    return (
+      <ImportOverlay title={t('channels.import.importing')} note={t('channels.import.importingNote')}>
+        {progress}
+        {counter}
+      </ImportOverlay>
+    )
+  }
+  return (
+    <ImportOverlay title={t('channels.import.done.title')} running={false} onClose={onClose} closeLabel={t('common.close')}>
+      {progress}
+      {counter}
+      <Stack gap={2} align="center" mt="xs">
+        <Text fz="sm">{t('channels.import.done.created', { count: result.createdCount })}</Text>
+        <Text fz="sm">{t('channels.import.done.linked', { count: result.linkedCount })}</Text>
+        {result.skippedCount > 0 && (
+          <Text fz="sm" c="dimmed">
+            {t('channels.import.done.skipped', { count: result.skippedCount })}
+          </Text>
+        )}
+      </Stack>
+    </ImportOverlay>
   )
 }
 

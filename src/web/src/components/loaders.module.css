@@ -1,0 +1,318 @@
+/*
+ * Loading and empty-state motion. Line icons at stroke 1.8 like the Tabler icons, token colors
+ * only. Every animation stops under prefers-reduced-motion; the resting frame is always readable.
+ */
+
+.line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/*
+ * A large loader in the middle of the visible content area. Mantine's AppShell offsets keep it
+ * right of the navigation and below the phone header; without the app layout they are 0.
+ */
+.screen {
+  position: fixed;
+  inset: var(--app-shell-header-offset, 0px) 0 0 var(--app-shell-navbar-offset, 0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Content behind an overlay while it is being worked on: faded and locked, but still sharp. */
+.dimmed {
+  opacity: 0.3;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.2s ease-out;
+}
+
+/* Large loaders (120 px from a 48-unit grid): a thinner stroke keeps the lines near 2.5 px on screen. */
+.large .line {
+  stroke-width: 1;
+}
+
+/* Default Mantine loader (buttons, small spots): stock levels rising and falling on a shelf. */
+.shelf {
+  display: inline-block;
+  width: var(--loader-size);
+  height: var(--loader-size);
+  color: var(--loader-color);
+}
+
+.shelf svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bar {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: level 1.3s ease-in-out infinite alternate;
+}
+
+.bar:nth-of-type(2) {
+  animation-duration: 1.1s;
+  animation-delay: -0.4s;
+}
+
+.bar:nth-of-type(3) {
+  animation-duration: 1.5s;
+  animation-delay: -0.8s;
+}
+
+@keyframes level {
+  from {
+    transform: scaleY(0.25);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Page loader: three boxes stacking up. */
+.stack {
+  color: var(--z-accent-text);
+}
+
+.stackBox {
+  animation: drop 2.4s cubic-bezier(0.3, 0.7, 0.4, 1) infinite both;
+}
+
+.stackBox:nth-of-type(2) {
+  animation-delay: 0.22s;
+}
+
+.stackBox:nth-of-type(3) {
+  animation-delay: 0.44s;
+}
+
+@keyframes drop {
+  0% {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  14% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Box with a lid: opens while searching, barely moves in an empty state. */
+.box {
+  color: var(--z-accent-text);
+  /* Fully open, the lid's corner reaches above the 48-unit grid; don't clip it. */
+  overflow: visible;
+}
+
+.boxBody {
+  fill: var(--z-surface);
+}
+
+/*
+ * The lid stays open for most of the cycle, and the cycle starts as it lifts (the negative delay
+ * skips the closed rest at 0-15%): a loader may be on screen for only about half a second.
+ */
+.lid {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: lid 2.4s ease-in-out -0.36s infinite;
+}
+
+.peek {
+  fill: var(--z-accent);
+  animation: peek 2.4s ease-in-out -0.36s infinite;
+}
+
+@keyframes lid {
+  0%,
+  15% {
+    transform: rotate(0);
+  }
+  30%,
+  75% {
+    transform: rotate(-38deg);
+  }
+  90%,
+  100% {
+    transform: rotate(0);
+  }
+}
+
+@keyframes peek {
+  0%,
+  20% {
+    transform: translateY(8px);
+  }
+  35%,
+  70% {
+    transform: translateY(-6px);
+  }
+  85%,
+  100% {
+    transform: translateY(8px);
+  }
+}
+
+.calm .lid {
+  animation: lidCalm 3.6s ease-in-out infinite;
+}
+
+@keyframes lidCalm {
+  0%,
+  55% {
+    transform: rotate(0);
+  }
+  70% {
+    transform: rotate(-12deg);
+  }
+  85%,
+  100% {
+    transform: rotate(0);
+  }
+}
+
+/* Table skeleton: rows breathe through opacity only (no gradients, DESIGN.md). */
+.skeletonRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 56px;
+  gap: 24px;
+  padding: 14px var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--z-line-soft);
+}
+
+.skeletonRow:last-child {
+  border-bottom: 0;
+}
+
+.skeletonRow i {
+  display: block;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--z-surface-2);
+  animation: breathe 1.4s ease-in-out infinite alternate;
+  animation-delay: calc(var(--row) * 0.15s);
+}
+
+.skeletonRow i:first-child {
+  width: 60%;
+}
+
+@keyframes breathe {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.4;
+  }
+}
+
+/* Shop import: packets travel from the shop to the stock room. */
+.import {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  color: var(--z-text-2);
+}
+
+.path {
+  stroke: var(--z-line-strong);
+  stroke-dasharray: 3 5;
+}
+
+.packet {
+  fill: var(--z-accent);
+  opacity: 0;
+  animation: travel 1.6s linear infinite;
+}
+
+.packet:nth-of-type(2) {
+  animation-delay: 0.53s;
+}
+
+.packet:nth-of-type(3) {
+  animation-delay: 1.06s;
+}
+
+/* Import finished: packets stop and the stock room lights up in the accent color. */
+.stopped .packet {
+  animation: none;
+}
+
+.warehouse {
+  transition: color 0.3s;
+}
+
+.stopped .warehouse {
+  color: var(--z-accent-text);
+}
+
+/* Import progress under the counter: a thin bar, no gradient. */
+.progress {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--z-surface-2);
+  overflow: hidden;
+}
+
+.progress > div {
+  height: 100%;
+  background: var(--z-accent);
+}
+
+/* The section on the screen overlay: clickable (the overlay itself isn't), with room for the X. */
+.panel {
+  position: relative;
+  pointer-events: auto;
+}
+
+.close {
+  position: absolute;
+  top: var(--mantine-spacing-sm);
+  right: var(--mantine-spacing-sm);
+}
+
+@keyframes travel {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(162px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .stackBox,
+  .lid,
+  .peek,
+  .skeletonRow i,
+  .packet {
+    animation: none;
+  }
+
+  .peek {
+    display: none;
+  }
+}

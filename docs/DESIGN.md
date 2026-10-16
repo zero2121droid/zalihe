@@ -87,6 +87,22 @@ Jedinica mere stoji uz broj, manjom veličinom i `muted` bojom: **31** kom.
 
 Linijske ikone, debljina 1.8, 16 px u navigaciji i 18-20 px na telefonu. Biblioteka: Tabler Icons ili Lucide, jedna, dosledno. Dugme samo sa ikonom uvek ima `aria-label`.
 
+## Pokret
+
+Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CSS-a, bez biblioteke.
+
+- Linijske ikone debljine 1.8 u bojama tokena, nikad scene ni ilustracije.
+- Učitavanje: podrazumevani `Loader` su stubići na polici (isti se koristi i u dugmadima). Za celu stranicu služe kutije koje se slažu, za tabele redovi koji „dišu“ (samo providnost, bez preliva), a kad se otvara jedna stvar (artikal, spisak proizvoda iz prodavnice) kutija koja se otvara. Pretraga ne sklanja listu: stari rezultati ostaju, a u polju za pretragu se vrte mali stubići dok ne stignu novi. Loader se ne prikazuje ako odgovor stigne za manje od 200 ms, a kad se jednom pojavi, ostaje najmanje 500 ms, da ne bljesne (`useLoadingDisplay`).
+- Promena stanja: broj glatko pređe na novu vrednost (oko 0,5 s), a iznad njega kratko iskoči `+24` ili `−2`. Novo kretanje u istoriji se kratko istakne.
+- Uvoz iz prodavnice: lista ostaje na mestu, ali izbledi (30%) i zaključa se, a animacija uvoza stoji u sredini ekrana na sekciji (`surface`, okvir od 1 px). Bez zamagljivanja (vidi „Zabranjeno“: glassmorphism). Kad stigne rezultat, broj uvezenih proizvoda odbroji jedan po jedan do poslednjeg (oko 30 ms po broju, 0,6-3 s), paketi stanu, a animacija ostaje dok je korisnik ne zatvori na X (ili Escape). Uvoz je jedan zahtev, pa se broji tek kad je poznat stvaran broj, nikad izmišljen napredak.
+- Uvoz ima i tanku traku napretka (4 px, `accent`) koja se puni uz brojač, a kad se završi, skladište na animaciji dobije `accent-text` boju.
+- Čuvanje forme: dugme prvo pokaže stubiće, a kad uspe, iscrta se kvačica i piše „Sačuvano“ (pozadina `selected`, tekst `accent-text`), oko 0,6 s, pa se forma zatvori (`SaveButton`, `useSaved`).
+- Greška u formi: polje sa greškom se kratko protrese (0,36 s) na svaki neuspeo pokušaj slanja, a poruka ispod kaže šta da se ispravi (`useShake`).
+- Početna: brojevi u pregledu odbroje od 0 do svoje vrednosti (oko 0,5 s), a artikli ispod minimuma se pojave jedan za drugim.
+- Pulsira samo ono što traži pažnju (status ispod minimuma ili bez zaliha), i to samo na detalju artikla, ne u listama.
+- Uz `prefers-reduced-motion` sve animacije staju, a brojevi se menjaju odmah. Mirno stanje mora biti čitljivo bez animacije.
+- Komponente: `src/web/src/components/loaders.tsx`, `stock.tsx` i `feedback.tsx`. Sve se mogu videti na `/dev/animacije` (samo u razvoju).
+
 ## Zabranjeno
 
 - gradijenti, glassmorphism, senke kao dekoracija

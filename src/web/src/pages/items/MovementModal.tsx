@@ -7,7 +7,10 @@ import { getGetItemHistoryQueryKey, getGetItemQueryKey, getListItemsQueryKey } f
 import type { ItemDto, ManualMovementKind } from '../../api/generated/model'
 import { getGetStockSummaryQueryKey, useRecordStockMovement } from '../../api/generated/stock/stock'
 import { DecimalInput } from '../../components/DecimalInput'
+import { SaveButton } from '../../components/feedback'
 import { formatNumber, formatSignedQuantity, readDecimal } from '../../lib/format'
+import { useSaved } from '../../lib/useSaved'
+import { useShake } from '../../lib/useShake'
 
 interface MovementModalProps {
   item: ItemDto
@@ -26,6 +29,8 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
   const [quantityError, setQuantityError] = useState<string | null>(null)
+  const saved = useSaved()
+  const shake = useShake()
 
   const record = useRecordStockMovement({
     mutation: {
@@ -36,8 +41,10 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
           queryClient.invalidateQueries({ queryKey: getGetItemHistoryQueryKey(item.id) }),
           queryClient.invalidateQueries({ queryKey: getGetStockSummaryQueryKey() }),
         ])
+        await saved.confirm()
         close()
       },
+      onError: shake.shake,
     },
   })
 
@@ -65,6 +72,7 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
     if (!kind) return
     if (value === 'invalid' || value === null) {
       setQuantityError(value === null ? t('errors.validation.required') : t('errors.validation.number'))
+      shake.shake()
       return
     }
     record.mutate({ itemId: item.id, data: { kind, quantity: value, note: note.trim() || null } })
@@ -72,7 +80,7 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
 
   return (
     <Modal opened={kind !== null} onClose={close} title={kind ? t(`stock.form.titles.${kind}`) : ''}>
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate className={shake.className}>
         <Stack gap="md">
           <Group justify="space-between" align="baseline">
             <Stack gap={0} miw={0}>
@@ -148,9 +156,9 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
             <Button variant="default" onClick={close}>
               {t('common.cancel')}
             </Button>
-            <Button type="submit" loading={record.isPending}>
+            <SaveButton type="submit" loading={record.isPending} saved={saved.saved}>
               {t('stock.form.submit')}
-            </Button>
+            </SaveButton>
           </Group>
         </Stack>
       </form>

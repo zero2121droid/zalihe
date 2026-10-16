@@ -42,6 +42,10 @@ export const routes: RouteObject[] = [
       },
     ],
   },
+  // Development only: every animation running all the time. Not part of the production build.
+  ...(import.meta.env.DEV
+    ? [{ path: '/dev/animacije', lazy: async () => ({ Component: (await import('./pages/dev/AnimationsPage')).AnimationsPage }) }]
+    : []),
   { path: '*', element: <Navigate to="/" replace /> },
 ]
 

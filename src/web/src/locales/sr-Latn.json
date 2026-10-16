@@ -19,11 +19,16 @@
     "currency": "RSD",
     "previousPage": "Prethodna strana",
     "nextPage": "Sledeća strana",
+    "pagination": "Strane",
+    "page": "Strana {{page}}",
+    "pageSize": "Po strani",
     "theme": {
       "toLight": "Uključi svetlu temu",
       "toDark": "Uključi tamnu temu"
     },
-    "back": "Nazad"
+    "back": "Nazad",
+    "close": "Zatvori",
+    "saved": "Sačuvano"
   },
   "auth": {
     "login": {
@@ -145,6 +150,7 @@
     "new": "Novi artikal",
     "search": "Pretraga artikala",
     "searchPlaceholder": "Naziv, šifra ili barkod",
+    "searching": "Tražim artikle…",
     "columns": {
       "item": "Artikal",
       "sku": "Šifra",
@@ -200,6 +206,7 @@
     "open": "Otvori artikal {{name}}",
     "detail": {
       "notFound": "Artikal ne postoji ili ne pripada tvojoj firmi.",
+      "opening": "Otvaram artikal…",
       "edit": "Izmeni",
       "minStock": "Minimalna zaliha",
       "sold30Days": "Prodaja 30 dana",
@@ -373,6 +380,9 @@
     "import": {
       "title": "Uvoz proizvoda iz prodavnice",
       "reading": "Čitam proizvode iz prodavnice…",
+      "importing": "Uvozim proizvode…",
+      "importingNote": "Ne zatvaraj stranicu dok uvoz traje.",
+      "counted": "Uvezeno proizvoda",
       "retry": "Pokušaj ponovo",
       "figures": {
         "new": "Novi proizvodi",

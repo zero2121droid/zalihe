@@ -27,8 +27,9 @@ describe('HomePage', () => {
     await renderPage(<HomePage />)
 
     // Assert
-    expect(await screen.findByText('1.284.350')).toBeInTheDocument()
-    expect(screen.getByText('312')).toBeInTheDocument()
+    // The figures count up from 0 when the screen opens; wait for their final values.
+    expect(await screen.findByText('1.284.350', undefined, { timeout: 2000 })).toBeInTheDocument()
+    expect(await screen.findByText('312')).toBeInTheDocument()
     expect(screen.getByText('Džezva bakarna 300 ml')).toBeInTheDocument()
     expect(screen.getByText('min. 15 pak')).toBeInTheDocument()
     expect(screen.getByText('Prodaja · WooCommerce #1048')).toBeInTheDocument()

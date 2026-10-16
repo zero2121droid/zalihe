@@ -1,6 +1,6 @@
-import { ActionIcon, Anchor, Badge, Box, Button, Center, Group, Loader, Stack, Switch, Table, Text, TextInput, Title } from '@mantine/core'
+import { Anchor, Badge, Box, Button, Group, Loader, Stack, Switch, Table, Text, TextInput, Title } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconChevronLeft, IconChevronRight, IconSearch } from '@tabler/icons-react'
+import { IconSearch } from '@tabler/icons-react'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,30 +10,32 @@ import { useListItems } from '../../api/generated/items/items'
 import type { ItemDto } from '../../api/generated/model'
 import { useGetStockSummary } from '../../api/generated/stock/stock'
 import { FilterPill } from '../../components/FilterPill'
+import { EmptyBox, SkeletonRows } from '../../components/loaders'
+import { Pager } from '../../components/Pager'
 import { StockQuantity, StockStatusLabel } from '../../components/stock'
 import { formatMoney, formatNumber } from '../../lib/format'
+import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
+import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { ItemModal } from './ItemModal'
 
-const PAGE_SIZE = 20
-
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
-// Mantine drops the border of disabled buttons; the mockup keeps it on both arrows.
-const pagerButtonStyle = { border: '1px solid var(--z-line)' }
 
 type StatusFilter = 'low' | 'outOfStock' | null
 
 interface ListState {
   search: string
   page: number
+  pageSize: number
   showInactive: boolean
   status: StatusFilter
 }
 
 // Search, page and filters live in the URL, so back/forward and refresh keep them.
-function toParams({ search, page, showInactive, status }: ListState) {
+function toParams({ search, page, pageSize, showInactive, status }: ListState) {
   return {
     ...(search && { q: search }),
     ...(page > 1 && { page: String(page) }),
+    ...(pageSize !== DEFAULT_PAGE_SIZE && { size: String(pageSize) }),
     ...(showInactive && { inactive: '1' }),
     ...(status && { status }),
   }
@@ -47,6 +49,7 @@ export function ItemsPage() {
   const state: ListState = {
     search: params.get('q') ?? '',
     page: Math.max(1, Number(params.get('page')) || 1),
+    pageSize: parsePageSize(params.get('size')),
     showInactive: params.get('inactive') === '1',
     status: statusParam === 'low' || statusParam === 'outOfStock' ? statusParam : null,
   }
@@ -66,14 +69,17 @@ export function ItemsPage() {
       includeInactive: state.showInactive || undefined,
       status: state.status ?? undefined,
       page: state.page,
-      pageSize: PAGE_SIZE,
+      pageSize: state.pageSize,
     },
     { query: { placeholderData: keepPreviousData } },
   )
   const summary = useGetStockSummary()
+  const display = useLoadingDisplay(items.isPending)
 
   const data = items.data
-  const totalPages = data ? Math.max(1, Math.ceil(data.totalCount / PAGE_SIZE)) : 1
+  // Typed text not yet sent (debounce) or new results on their way: the old rows stay on screen,
+  // and a small loader in the search field says the list is about to change.
+  const searching = searchInput.trim() !== state.search || items.isPlaceholderData
 
   return (
     <Stack gap="lg">
@@ -103,6 +109,7 @@ export function ItemsPage() {
           aria-label={t('items.search')}
           placeholder={t('items.searchPlaceholder')}
           leftSection={<IconSearch size={16} stroke={1.8} />}
+          rightSection={searching ? <Loader size={16} role="status" aria-label={t('items.searching')} /> : null}
           value={searchInput}
           onChange={(e) => setSearchInput(e.currentTarget.value)}
         />
@@ -127,10 +134,8 @@ export function ItemsPage() {
       </Group>
 
       <Box component="section" bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
-        {items.isPending ? (
-          <Center py="xl">
-            <Loader size="sm" aria-label={t('common.loading')} />
-          </Center>
+        {items.isPending || display !== 'content' ? (
+          display === 'loader' && <SkeletonRows />
         ) : items.isError ? (
           <Text role="alert" p="lg">
             {formErrorMessage(t, items.error)}
@@ -142,37 +147,13 @@ export function ItemsPage() {
             <Table.ScrollContainer minWidth={900}>
               <ItemsTable items={data!.items} />
             </Table.ScrollContainer>
-            <Group justify="space-between" px="lg" py="sm">
-              <Text fz="sm" c="dimmed">
-                {t('items.range', {
-                  from: (state.page - 1) * PAGE_SIZE + 1,
-                  to: Math.min(state.page * PAGE_SIZE, data!.totalCount),
-                  total: data!.totalCount,
-                })}
-              </Text>
-              <Group gap={6}>
-                <ActionIcon
-                  variant="default"
-                  size={32}
-                  style={pagerButtonStyle}
-                  aria-label={t('common.previousPage')}
-                  disabled={state.page <= 1}
-                  onClick={() => update({ page: state.page - 1 })}
-                >
-                  <IconChevronLeft size={14} stroke={2} />
-                </ActionIcon>
-                <ActionIcon
-                  variant="default"
-                  size={32}
-                  style={pagerButtonStyle}
-                  aria-label={t('common.nextPage')}
-                  disabled={state.page >= totalPages}
-                  onClick={() => update({ page: state.page + 1 })}
-                >
-                  <IconChevronRight size={14} stroke={2} />
-                </ActionIcon>
-              </Group>
-            </Group>
+            <Pager
+              page={state.page}
+              pageSize={state.pageSize}
+              totalCount={data!.totalCount}
+              onChange={(page) => update({ page })}
+              onPageSizeChange={(pageSize) => update({ pageSize })}
+            />
           </>
         )}
       </Box>
@@ -246,7 +227,7 @@ function ItemsTable({ items }: { items: ItemDto[] }) {
               </Text>
             </Table.Td>
             <Table.Td ta="right">
-              <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} />
+              <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} animate />
             </Table.Td>
             <Table.Td ta="right">
               <Text {...number} c="dimmed">
@@ -282,6 +263,7 @@ function EmptyState({ search, filtered, onAdd }: { search: string; filtered: boo
   }
   return (
     <Stack gap="sm" p="lg" align="flex-start">
+      <EmptyBox />
       <Stack gap={4}>
         <Title order={2}>{t('items.empty.title')}</Title>
         <Text c="dimmed">{t('items.empty.description')}</Text>

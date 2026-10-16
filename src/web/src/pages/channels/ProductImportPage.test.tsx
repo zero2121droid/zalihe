@@ -44,6 +44,46 @@ describe('ProductImportPage', () => {
     expect(screen.getByText('Novi artikli: 2 · Povezivanje: 1')).toBeInTheDocument()
   })
 
+  it('Import_Running_ShowsAnimationOverLockedList', async () => {
+    // Arrange
+    const fetchMock = mockApi({ 'GET /api/channels/c1/products/preview': { status: 200, body: preview } })
+    const answer = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation((input, init) => (init?.method === 'POST' ? new Promise<Response>(() => {}) : answer(input, init)))
+    await render()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Uvezi' }))
+
+    // Assert
+    expect(await screen.findByText('Uvozim proizvode…')).toBeInTheDocument()
+    expect(screen.getByText('Ručni mlin').closest('[inert]')).not.toBeNull()
+    expect(screen.getByText('Uvozim proizvode…').closest('[inert]')).toBeNull()
+  })
+
+  it('Import_Finished_CountsUpThenClosesWithX', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/channels/c1/products/preview': { status: 200, body: preview },
+      'POST /api/channels/c1/products/import': { status: 200, body: { linkedCount: 1, createdCount: 2, skippedCount: 0 } },
+    })
+    await render()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Uvezi' }))
+    const close = await screen.findByRole('button', { name: 'Zatvori' }, { timeout: 2000 })
+
+    // Assert: the overlay counted to the last number and the list behind it is still locked
+    expect(screen.getByTestId('import-count')).toHaveTextContent('3 / 3')
+    expect(screen.getByText('Ručni mlin').closest('[inert]')).not.toBeNull()
+
+    // Act
+    await userEvent.click(close)
+
+    // Assert
+    expect(screen.queryByTestId('import-count')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Idi na artikle' })).toBeInTheDocument()
+  })
+
   it('Import_OneProductUnchecked_SendsOnlyCheckedAndShowsResult', async () => {
     // Arrange
     const fetchMock = mockApi({
@@ -57,7 +97,8 @@ describe('ProductImportPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
 
     // Assert
-    expect(await screen.findByText('Uvoz je završen')).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: 'Zatvori' }, { timeout: 2000 }))
+    expect(screen.getByText('Uvoz je završen')).toBeInTheDocument()
     expect(screen.getByText('Napravljeno novih artikala: 1')).toBeInTheDocument()
     expect(screen.getByText('Povezano sa postojećim artiklima: 1')).toBeInTheDocument()
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')

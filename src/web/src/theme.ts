@@ -6,12 +6,14 @@ import {
   type CSSVariablesResolver,
   createTheme,
   Input,
+  Loader,
   type MantineColorsTuple,
   Modal,
   NavLink,
   SegmentedControl,
   Table,
 } from '@mantine/core'
+import { ShelfLoader } from './components/loaders'
 
 /**
  * Design tokens from docs/DESIGN.md, one set per color scheme. Components use these CSS
@@ -255,6 +257,10 @@ export const theme = createTheme({
         },
         tr: { borderColor: 'var(--z-line-soft)' },
       },
+    }),
+    // Stock levels rising and falling instead of a spinner, also inside loading buttons.
+    Loader: Loader.extend({
+      defaultProps: { loaders: { ...Loader.defaultLoaders, shelf: ShelfLoader }, type: 'shelf' },
     }),
     Badge: Badge.extend({
       defaultProps: { variant: 'outline', radius: 'lg' },

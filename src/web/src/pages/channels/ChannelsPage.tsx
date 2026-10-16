@@ -1,4 +1,4 @@
-import { Anchor, Box, Button, Center, Group, List, Loader, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core'
+import { Anchor, Box, Button, Group, List, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, type SubmitEvent, useState } from 'react'
@@ -13,7 +13,9 @@ import {
 } from '../../api/generated/channels/channels'
 import type { SalesChannelDto, SalesChannelStatus } from '../../api/generated/model'
 import { Eyebrow } from '../../components/Eyebrow'
+import { PageLoader } from '../../components/loaders'
 import { formatDateTime } from '../../lib/format'
+import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { KeyFields } from './KeyFields'
 import { emptyKeys, type Keys } from './keys'
 import { ReplaceKeysModal } from './ReplaceKeysModal'
@@ -28,6 +30,7 @@ const statusColor: Record<SalesChannelStatus, string> = {
 export function ChannelsPage() {
   const { t } = useTranslation()
   const channels = useListChannels()
+  const display = useLoadingDisplay(channels.isPending)
 
   return (
     <Stack gap={28}>
@@ -38,10 +41,8 @@ export function ChannelsPage() {
         </Title>
       </Stack>
 
-      {channels.isPending ? (
-        <Center py="xl">
-          <Loader size="sm" aria-label={t('common.loading')} />
-        </Center>
+      {channels.isPending || display !== 'content' ? (
+        display === 'loader' && <PageLoader />
       ) : channels.isError ? (
         <Text role="alert">{formErrorMessage(t, channels.error)}</Text>
       ) : channels.data.length === 0 ? (

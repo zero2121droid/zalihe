@@ -1,0 +1,108 @@
+/*
+ * Confirmation and error motion in forms. Token colors only; everything stops under
+ * prefers-reduced-motion and the resting state stays readable.
+ */
+
+/* Saved: a check draws itself in the submit button. */
+.check {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.check polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  animation: draw 0.35s ease-out 0.05s forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+ * A field with an error shakes once when the form is submitted. Two identical animations, so
+ * switching between them restarts the shake on every submit (useShake).
+ */
+.shakeA :global(.mantine-Input-input[data-error]) {
+  animation: shakeA 0.36s ease-in-out;
+}
+
+.shakeB :global(.mantine-Input-input[data-error]) {
+  animation: shakeB 0.36s ease-in-out;
+}
+
+@keyframes shakeA {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes shakeB {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+/* Rows that appear one after another (home screen "below minimum"). */
+.enter {
+  animation: enter 0.35s ease-out both;
+  animation-delay: calc(0.15s + var(--i, 0) * 0.07s);
+}
+
+@keyframes enter {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check polyline {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .shakeA :global(.mantine-Input-input[data-error]),
+  .shakeB :global(.mantine-Input-input[data-error]),
+  .enter {
+    animation: none;
+  }
+}

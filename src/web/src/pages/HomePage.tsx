@@ -1,12 +1,16 @@
-import { Anchor, Box, Button, Center, Group, Loader, SimpleGrid, Stack, Text, Title } from '@mantine/core'
-import { type ReactNode, useState } from 'react'
+import { Anchor, Box, Button, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { type CSSProperties, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formErrorMessage } from '../api/errors'
 import { useGetDashboard } from '../api/generated/dashboard/dashboard'
 import type { DashboardDto, RecentMovementDto, ReorderItemDto } from '../api/generated/model'
 import { Eyebrow } from '../components/Eyebrow'
+import { PageLoader } from '../components/loaders'
+import feedbackClasses from '../components/feedback.module.css'
 import { MovementQuantity, StockQuantity } from '../components/stock'
+import { useAnimatedNumber } from '../lib/useAnimatedNumber'
+import { useLoadingDisplay } from '../lib/useLoadingDisplay'
 import { formatLongDate, formatMoney, formatNumber, formatRecentTime } from '../lib/format'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
@@ -15,6 +19,7 @@ export function HomePage() {
   const { t, i18n } = useTranslation()
   const [today] = useState(() => new Date())
   const dashboard = useGetDashboard()
+  const display = useLoadingDisplay(dashboard.isPending)
 
   return (
     <Stack gap={28}>
@@ -25,10 +30,8 @@ export function HomePage() {
         </Title>
       </Stack>
 
-      {dashboard.isPending ? (
-        <Center py="xl">
-          <Loader size="sm" aria-label={t('common.loading')} />
-        </Center>
+      {dashboard.isPending || display !== 'content' ? (
+        display === 'loader' && <PageLoader />
       ) : dashboard.isError ? (
         <Text role="alert">{formErrorMessage(t, dashboard.error)}</Text>
       ) : dashboard.data.activeItems === 0 && dashboard.data.recentMovements.length === 0 ? (
@@ -43,6 +46,11 @@ export function HomePage() {
 function Overview({ data }: { data: DashboardDto }) {
   const { t, i18n } = useTranslation()
   const number = (value: number) => formatNumber(value, i18n.language)
+  // The figures count up from 0 when the screen opens.
+  const stockValue = useAnimatedNumber(data.stockValue, 0)
+  const activeItems = useAnimatedNumber(data.activeItems, 0)
+  const belowMinimum = useAnimatedNumber(data.belowMinimum, 0)
+  const outOfStock = useAnimatedNumber(data.outOfStock, 0)
 
   return (
     <>
@@ -58,27 +66,27 @@ function Overview({ data }: { data: DashboardDto }) {
         style={{ ...sectionStyle, overflow: 'hidden' }}
       >
         <Figure label={t('home.figures.stockValue')} hint={t('home.figures.stockValueHint')}>
-          {formatMoney(data.stockValue, i18n.language)}{' '}
+          {formatMoney(stockValue, i18n.language)}{' '}
           <Text component="span" fz={13} c="dimmed" fw={400}>
             {t('common.currency')}
           </Text>
         </Figure>
         <Figure label={t('home.figures.activeItems')} hint={t('home.figures.activeItemsHint')}>
-          {number(data.activeItems)}
+          {number(activeItems)}
         </Figure>
         <Figure
           label={t('home.figures.belowMinimum')}
           hint={t('home.figures.belowMinimumHint')}
           color={data.belowMinimum > 0 ? 'var(--z-status-low)' : undefined}
         >
-          {number(data.belowMinimum)}
+          {number(belowMinimum)}
         </Figure>
         <Figure
           label={t('home.figures.outOfStock')}
           hint={t('home.figures.outOfStockHint')}
           color={data.outOfStock > 0 ? 'var(--z-status-out)' : undefined}
         >
-          {number(data.outOfStock)}
+          {number(outOfStock)}
         </Figure>
       </SimpleGrid>
 
@@ -89,7 +97,7 @@ function Overview({ data }: { data: DashboardDto }) {
               {t('home.reorder.none')}
             </Text>
           ) : (
-            data.reorder.map((item) => <ReorderRow key={item.itemId} item={item} />)
+            data.reorder.map((item, index) => <ReorderRow key={item.itemId} item={item} index={index} />)
           )}
         </Panel>
         <Panel title={t('home.recent.title')} link={{ to: '/items', label: t('home.recent.all') }}>
@@ -138,14 +146,22 @@ function Panel({ title, link, children }: { title: string; link: { to: string; l
 
 const rowStyle = { borderBottom: '1px solid var(--z-line-soft)' }
 
-function ReorderRow({ item }: { item: ReorderItemDto }) {
+/** `index` staggers the rows: they appear one after another when the screen opens. */
+function ReorderRow({ item, index }: { item: ReorderItemDto; index: number }) {
   const { t, i18n } = useTranslation()
   // How much of the minimum is left, for the bar (out of stock shows an empty bar).
   const share = item.minStock > 0 ? Math.min(Math.max(item.stock / item.minStock, 0), 1) : 0
   const color = item.status === 'outOfStock' ? 'var(--z-status-out)' : 'var(--z-status-low)'
 
   return (
-    <Group px="lg" py={13} gap="md" wrap="nowrap" style={rowStyle}>
+    <Group
+      px="lg"
+      py={13}
+      gap="md"
+      wrap="nowrap"
+      className={feedbackClasses.enter}
+      style={{ ...rowStyle, '--i': index } as CSSProperties}
+    >
       <Stack gap={2} miw={0} flex={1}>
         <Anchor component={Link} to={`/items/${item.itemId}`} fw={500} c="var(--z-text)" truncate>
           {item.name}

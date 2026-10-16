@@ -1,0 +1,41 @@
+/* Same look as FilterPill: line border, accent border and selected background on the current page. */
+.control {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--z-line);
+  border-radius: var(--mantine-radius-sm);
+  background: transparent;
+  color: var(--z-text-2);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-sm);
+  font-variant-numeric: tabular-nums;
+
+  &:where(:not(:disabled, [data-disabled])):hover {
+    background: var(--z-surface-2);
+    color: var(--z-text);
+  }
+
+  &[data-active] {
+    border-color: var(--z-accent);
+    background: var(--z-selected);
+    color: var(--z-text);
+  }
+
+  &:disabled,
+  &[data-disabled] {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.dots {
+  color: var(--z-text-2);
+}
+
+/* As high as the page buttons next to it. */
+.sizeInput {
+  --input-height: 32px;
+  font-family: var(--mantine-font-family-monospace);
+  font-variant-numeric: tabular-nums;
+}

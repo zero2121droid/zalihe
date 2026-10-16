@@ -56,6 +56,40 @@ describe('MovementModal', () => {
     expect(postedBody(fetchMock)).toEqual({ kind: 'sale', quantity: 1.5, note: null })
   })
 
+  it('Submit_Saved_ShowsSavedOnButtonBeforeClosing', async () => {
+    // Arrange
+    mockApi({ 'POST /api/items/item-1/movements': recorded })
+    let closed = false
+    await render('sale', () => (closed = true))
+
+    // Act
+    await userEvent.type(screen.getByLabelText(/^Prodata količina/), '2')
+    await userEvent.click(screen.getByRole('button', { name: 'Zabeleži' }))
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Sačuvano' })).toBeInTheDocument()
+    expect(closed).toBe(false)
+    await waitFor(() => expect(closed).toBe(true))
+  })
+
+  it('Submit_QuantityMissing_ShakesFieldOnEverySubmit', async () => {
+    // Arrange
+    mockApi({})
+    await render('sale')
+    const form = screen.getByRole('button', { name: 'Zabeleži' }).closest('form')!
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Zabeleži' }))
+    const first = form.className
+
+    await userEvent.click(screen.getByRole('button', { name: 'Zabeleži' }))
+
+    // Assert: the class switches on each submit, which restarts the shake
+    expect(first).not.toBe('')
+    expect(form.className).not.toBe('')
+    expect(form.className).not.toBe(first)
+  })
+
   it('Type_SaleBeyondStock_WarnsButAllows', async () => {
     // Arrange
     mockApi({})

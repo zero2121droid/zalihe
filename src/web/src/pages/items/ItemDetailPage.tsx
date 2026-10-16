@@ -1,5 +1,5 @@
-import { ActionIcon, Anchor, Badge, Box, Button, Center, Group, Loader, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core'
-import { IconArrowLeft, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { Anchor, Badge, Box, Button, Group, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { keepPreviousData } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
 import { useState } from 'react'
@@ -9,27 +9,28 @@ import { ApiError, formErrorMessage } from '../../api/errors'
 import { useGetItem, useGetItemHistory } from '../../api/generated/items/items'
 import type { ItemDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
 import { FilterPill } from '../../components/FilterPill'
+import { BoxLoader, SkeletonRows } from '../../components/loaders'
+import { Pager } from '../../components/Pager'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
+import stockClasses from '../../components/stock.module.css'
 import { formatDateTime, formatMoney, formatNumber } from '../../lib/format'
+import { DEFAULT_PAGE_SIZE } from '../../lib/pageSize'
+import { useArrivals } from '../../lib/useArrivals'
+import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { ItemModal } from './ItemModal'
 import { MovementModal } from './MovementModal'
 
-const HISTORY_PAGE_SIZE = 20
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
-const pagerButtonStyle = { border: '1px solid var(--z-line)' }
 const movementKinds: ManualMovementKind[] = ['receipt', 'sale', 'return', 'count']
 
 export function ItemDetailPage() {
   const { t } = useTranslation()
   const { id = '' } = useParams()
   const item = useGetItem(id)
+  const display = useLoadingDisplay(item.isPending)
 
-  if (item.isPending) {
-    return (
-      <Center py="xl">
-        <Loader size="sm" aria-label={t('common.loading')} />
-      </Center>
-    )
+  if (item.isPending || display !== 'content') {
+    return display === 'loader' ? <BoxLoader label={t('items.detail.opening')} /> : null
   }
 
   if (item.isError) {
@@ -42,7 +43,8 @@ export function ItemDetailPage() {
     )
   }
 
-  return <ItemDetail item={item.data} />
+  // Keyed by item, so moving to another item doesn't animate one item's stock into the other's.
+  return <ItemDetail key={item.data.id} item={item.data} />
 }
 
 function BackLink() {
@@ -108,8 +110,8 @@ function ItemDetail({ item }: { item: ItemDto }) {
         style={{ ...sectionStyle, overflow: 'hidden' }}
       >
         <Figure label={t('items.columns.stock')}>
-          <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} size={26} />
-          <StockStatusLabel status={item.status} />
+          <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} size={26} animate />
+          <StockStatusLabel status={item.status} pulse />
         </Figure>
         <Figure label={t('items.detail.minStock')}>
           <StockQuantity quantity={item.minStock} unit={item.unit} status="inStock" size={26} />
@@ -158,13 +160,15 @@ function History({ item }: { item: ItemDto }) {
   const { t, i18n } = useTranslation()
   const [filter, setFilter] = useState<ItemHistoryFilter>('all')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE)
   const history = useGetItemHistory(
     item.id,
-    { filter: filter === 'all' ? undefined : filter, page, pageSize: HISTORY_PAGE_SIZE },
+    { filter: filter === 'all' ? undefined : filter, page, pageSize },
     { query: { placeholderData: keepPreviousData } },
   )
   const data = history.data
-  const totalPages = data ? Math.max(1, Math.ceil(data.totalCount / HISTORY_PAGE_SIZE)) : 1
+  const display = useLoadingDisplay(history.isPending)
+  const arrivals = useArrivals(history.isPlaceholderData ? undefined : data?.items.map((e) => e.id), `${filter}:${page}:${pageSize}`)
 
   return (
     <Box component="section" bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
@@ -186,10 +190,8 @@ function History({ item }: { item: ItemDto }) {
         </Group>
       </Group>
 
-      {history.isPending ? (
-        <Center py="xl">
-          <Loader size="sm" aria-label={t('common.loading')} />
-        </Center>
+      {history.isPending || display !== 'content' ? (
+        display === 'loader' && <SkeletonRows rows={4} />
       ) : history.isError ? (
         <Text role="alert" p="lg">
           {formErrorMessage(t, history.error)}
@@ -213,7 +215,7 @@ function History({ item }: { item: ItemDto }) {
               </Table.Thead>
               <Table.Tbody>
                 {data!.items.map((entry) => (
-                  <Table.Tr key={entry.id}>
+                  <Table.Tr key={entry.id} className={arrivals.has(entry.id) ? stockClasses.freshRow : undefined}>
                     <Table.Td>
                       <Text ff="monospace" fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
                         {formatDateTime(entry.occurredAt, i18n.language)}
@@ -268,37 +270,16 @@ function History({ item }: { item: ItemDto }) {
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
-          <Group justify="space-between" px="lg" py="sm">
-            <Text fz="sm" c="dimmed">
-              {t('items.range', {
-                from: formatNumber((page - 1) * HISTORY_PAGE_SIZE + 1, i18n.language),
-                to: formatNumber(Math.min(page * HISTORY_PAGE_SIZE, data!.totalCount), i18n.language),
-                total: formatNumber(data!.totalCount, i18n.language),
-              })}
-            </Text>
-            <Group gap={6}>
-              <ActionIcon
-                variant="default"
-                size={32}
-                style={pagerButtonStyle}
-                aria-label={t('common.previousPage')}
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                <IconChevronLeft size={14} stroke={2} />
-              </ActionIcon>
-              <ActionIcon
-                variant="default"
-                size={32}
-                style={pagerButtonStyle}
-                aria-label={t('common.nextPage')}
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                <IconChevronRight size={14} stroke={2} />
-              </ActionIcon>
-            </Group>
-          </Group>
+          <Pager
+            page={page}
+            pageSize={pageSize}
+            totalCount={data!.totalCount}
+            onChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setPage(1)
+            }}
+          />
         </>
       )}
     </Box>

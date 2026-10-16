@@ -107,6 +107,22 @@ describe('ItemsPage', () => {
     expect(await screen.findByText('Nema artikala za „etiop”.')).toBeInTheDocument()
   })
 
+  it('Search_Typing_ShowsLoaderInFieldUntilResultsArrive', async () => {
+    // Arrange
+    mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item()]) })
+    await renderRoutes(routes, '/items')
+    await screen.findByText('Kafa Etiopija 250 g')
+    expect(screen.queryByRole('status', { name: 'Tražim artikle…' })).not.toBeInTheDocument()
+
+    // Act
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Pretraga artikala' }), 'etiop')
+
+    // Assert
+    expect(screen.getByRole('status', { name: 'Tražim artikle…' })).toBeInTheDocument()
+    expect(screen.getByText('Kafa Etiopija 250 g')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('status', { name: 'Tražim artikle…' })).not.toBeInTheDocument())
+  })
+
   it('Render_InactiveItem_ShowsInactiveLabel', async () => {
     // Arrange
     mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item({ isActive: false })]) })

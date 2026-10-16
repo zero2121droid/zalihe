@@ -19,11 +19,16 @@
     "currency": "RSD",
     "previousPage": "Previous page",
     "nextPage": "Next page",
+    "pagination": "Pages",
+    "page": "Page {{page}}",
+    "pageSize": "Per page",
     "theme": {
       "toLight": "Switch to light theme",
       "toDark": "Switch to dark theme"
     },
-    "back": "Back"
+    "back": "Back",
+    "close": "Close",
+    "saved": "Saved"
   },
   "auth": {
     "login": {
@@ -145,6 +150,7 @@
     "new": "New item",
     "search": "Search items",
     "searchPlaceholder": "Name, SKU or barcode",
+    "searching": "Searching items…",
     "columns": {
       "item": "Item",
       "sku": "SKU",
@@ -200,6 +206,7 @@
     "open": "Open item {{name}}",
     "detail": {
       "notFound": "This item doesn't exist or doesn't belong to your company.",
+      "opening": "Opening the item…",
       "edit": "Edit",
       "minStock": "Minimum stock",
       "sold30Days": "Sold in 30 days",
@@ -373,6 +380,9 @@
     "import": {
       "title": "Import products from the shop",
       "reading": "Reading products from the shop…",
+      "importing": "Importing products…",
+      "importingNote": "Keep this page open until the import finishes.",
+      "counted": "Products imported",
       "retry": "Try again",
       "figures": {
         "new": "New products",

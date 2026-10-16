@@ -16,7 +16,10 @@ import {
 } from '../../api/generated/items/items'
 import { type ItemDto, Unit } from '../../api/generated/model'
 import { DecimalInput } from '../../components/DecimalInput'
+import { SaveButton } from '../../components/feedback'
 import { formatDecimalInput, readDecimal } from '../../lib/format'
+import { useSaved } from '../../lib/useSaved'
+import { useShake } from '../../lib/useShake'
 
 interface Fields {
   name: string
@@ -76,18 +79,32 @@ export function ItemModal({ opened, onClose, item }: ItemModalProps) {
   const [localErrors, setLocalErrors] = useState<Partial<Record<keyof Fields, string>>>({})
   const categories = useListItemCategories({ query: { enabled: opened } })
 
-  async function refreshAndClose() {
+  const saved = useSaved()
+  const shake = useShake()
+
+  async function refresh() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }),
       queryClient.invalidateQueries({ queryKey: getListItemCategoriesQueryKey() }),
       item && queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(item.id) }),
       item && queryClient.invalidateQueries({ queryKey: getGetItemHistoryQueryKey(item.id) }),
     ])
+  }
+
+  async function refreshAndClose() {
+    await refresh()
     close()
   }
 
-  const createItem = useCreateItem({ mutation: { onSuccess: refreshAndClose } })
-  const updateItem = useUpdateItem({ mutation: { onSuccess: refreshAndClose } })
+  // Saving shows "Saved" on the button for a moment before the modal closes.
+  async function confirmAndClose() {
+    await refresh()
+    await saved.confirm()
+    close()
+  }
+
+  const createItem = useCreateItem({ mutation: { onSuccess: confirmAndClose, onError: shake.shake } })
+  const updateItem = useUpdateItem({ mutation: { onSuccess: confirmAndClose, onError: shake.shake } })
   const deactivateItem = useDeactivateItem({ mutation: { onSuccess: refreshAndClose } })
   const activateItem = useActivateItem({ mutation: { onSuccess: refreshAndClose } })
   const save = item ? updateItem : createItem
@@ -117,6 +134,7 @@ export function ItemModal({ opened, onClose, item }: ItemModalProps) {
     const invalid = decimalFields.filter((f) => numbers[f] === 'invalid')
     if (invalid.length > 0) {
       setLocalErrors(Object.fromEntries(invalid.map((f) => [f, t('errors.validation.number')])))
+      shake.shake()
       return
     }
 
@@ -147,7 +165,7 @@ export function ItemModal({ opened, onClose, item }: ItemModalProps) {
       onClose={close}
       title={item ? t('items.form.editTitle') : t('items.form.title')}
     >
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate className={shake.className}>
         <Stack gap="md">
           {item && !item.isActive && (
             <Text fz="sm" c="dimmed" p="sm" bg="var(--z-surface-2)" style={{ borderRadius: 'var(--mantine-radius-sm)' }}>
@@ -261,9 +279,9 @@ export function ItemModal({ opened, onClose, item }: ItemModalProps) {
               <Button variant="default" onClick={close}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" loading={save.isPending}>
+              <SaveButton type="submit" loading={save.isPending} saved={saved.saved}>
                 {t('items.form.submit')}
-              </Button>
+              </SaveButton>
             </Group>
           </Group>
         </Stack>

@@ -160,7 +160,7 @@ zalihe/
 
 **`docker/woocommerce/zalihe-local-https.php`**: samo za lokalni razvoj. WooCommerce prihvata API ključeve samo preko HTTPS-a, a test prodavnica je na `http://localhost:8080`, pa ovaj dodatak (mu-plugin) REST zahteve tretira kao HTTPS. Prave prodavnice su na HTTPS-u i ovo im ne treba.
 
-**`docker/woocommerce/zalihe-local-webhooks.php`**: samo za lokalni razvoj. WordPress odbija da šalje zahteve na privatne adrese (`host.docker.internal`) i portove osim 80, 443 i 8080, a WooCommerce webhookove šalje preko WP-Cron-a, koji u ovom kontejneru ne radi (sajt misli da je na `localhost:8080`, a to unutar kontejnera ne postoji). Dodatak dozvoljava adresu i port 5131 i isporučuje webhook odmah, u istom zahtevu u kom je porudžbina sačuvana.
+**`docker/woocommerce/zalihe-local-webhooks.php`**: samo za lokalni razvoj. WordPress odbija da šalje zahteve na privatne adrese (`host.docker.internal`) i portove osim 80, 443 i 8080, a WooCommerce webhookove šalje preko WP-Cron-a, koji u ovom kontejneru ne radi (sajt misli da je na `localhost:8080`, a to unutar kontejnera ne postoji). Dodatak dozvoljava adresu i port 5131 i isporučuje webhook odmah, u istom zahtevu u kom je porudžbina sačuvana. Zato uvek učitava i REST putanje `wc/v3`: kupovina u prodavnici je Store API zahtev (`wc/store`), za koji WooCommerce učitava samo njegove putanje, a telo webhooka se pravi internim `wc/v3` pozivom. Bez toga webhook nosi grešku `rest_no_route` umesto porudžbine i aplikacija ga zanemari. Prave prodavnice ovo nemaju: webhook šalju iz pozadinskog zahteva, u kom su učitane sve putanje.
 
 ### Zalihe.Domain
 

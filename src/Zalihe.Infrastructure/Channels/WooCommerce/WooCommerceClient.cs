@@ -19,6 +19,9 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
     private const string ProductFields = "id,name,type,sku,regular_price,price,stock_quantity,categories";
     private const string VariationFields = "id,sku,regular_price,price,stock_quantity,attributes";
 
+    /// <summary>Only what stock needs: the shop doesn't even send the customer's data.</summary>
+    private const string OrderFields = "id,status,date_modified_gmt,line_items";
+
     /// <summary>The same topics <see cref="Application.Webhooks.WebhookService"/> accepts.</summary>
     private static readonly string[] WebhookTopics = ["order.created", "order.updated"];
 
@@ -78,6 +81,20 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
                 ? await SendAsync(HttpMethod.Post, "webhooks", ct, webhook)
                 : await SendAsync(HttpMethod.Put, $"webhooks/{Id(match)}", ct, webhook);
         }
+    }
+
+    public async Task<IReadOnlyList<ShopOrder>> FetchOrdersModifiedSinceAsync(DateTimeOffset since, CancellationToken ct)
+    {
+        // "any" is every status except trash. Dates are read and compared in UTC.
+        var after = since.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture);
+        var orders = new List<ShopOrder>();
+        await foreach (var order in PagesAsync(
+            $"orders?modified_after={after}&dates_are_gmt=true&status=any&orderby=modified&order=asc&_fields={OrderFields}", ct))
+        {
+            if (WooCommerceOrderReader.Read(order) is { } read) orders.Add(read);
+        }
+
+        return orders;
     }
 
     /// <summary>Every element of a paged list, one page of <see cref="PageSize"/> at a time.</summary>

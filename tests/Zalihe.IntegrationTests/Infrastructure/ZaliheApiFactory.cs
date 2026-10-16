@@ -24,6 +24,9 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
         builder.UseSetting("Webhooks:BaseUrl", WebhookBaseUrl);
+        // Scheduled jobs would sync every test's shop at random moments; tests run them directly.
+        builder.UseSetting("Jobs:OrderSyncCron", "");
+        builder.UseSetting("Jobs:WebhookCleanupCron", "");
         builder.ConfigureTestServices(services =>
             services.AddHttpClient(SalesChannelFactory.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Shop));
     }

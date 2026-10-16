@@ -231,6 +231,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             .Select(c => (Guid?)c.TenantId)
             .SingleOrDefaultAsync(ct);
 
+    public async Task<IReadOnlyList<ChannelOwner>> ListAllChannelsAsync(CancellationToken ct) =>
+        await SalesChannels
+            .IgnoreQueryFilters()
+            .OrderBy(c => c.Id)
+            .Select(c => new ChannelOwner(c.TenantId, c.Id))
+            .ToListAsync(ct);
+
+    public Task<int> DeleteWebhookEventsReceivedBeforeAsync(DateTimeOffset before, CancellationToken ct) =>
+        WebhookEvents
+            .IgnoreQueryFilters()
+            .Where(e => e.ReceivedAt < before)
+            .ExecuteDeleteAsync(ct);
+
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {
         EnsureNewDataBelongsToCurrentTenant();

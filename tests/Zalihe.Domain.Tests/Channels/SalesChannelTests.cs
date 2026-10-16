@@ -63,4 +63,31 @@ public class SalesChannelTests
         channel.LastErrorCode.ShouldBeNull();
         channel.EncryptedCredentials.ShouldBe("new-enc-credentials");
     }
+
+    [Fact]
+    public void MarkSynced_OlderRunFinishesLast_KeepsNewerTime()
+    {
+        // Arrange
+        var channel = Create();
+        channel.MarkSynced(Now.AddMinutes(15));
+
+        // Act
+        channel.MarkSynced(Now);
+
+        // Assert
+        channel.LastSyncedAt.ShouldBe(Now.AddMinutes(15));
+    }
+
+    [Fact]
+    public void MarkSynced_NeverSynced_RemembersStart()
+    {
+        // Arrange
+        var channel = Create();
+
+        // Act
+        channel.MarkSynced(Now);
+
+        // Assert
+        channel.LastSyncedAt.ShouldBe(Now);
+    }
 }

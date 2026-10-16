@@ -40,6 +40,7 @@ public class SalesChannel : ITenantOwned
     /// <summary>Error code of the last failed contact (e.g. "channel.unauthorized"); null when connected.</summary>
     public string? LastErrorCode { get; private set; }
 
+    /// <summary>When the last order sync started; the next one asks the shop for orders changed since then.</summary>
     public DateTimeOffset? LastSyncedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -79,6 +80,13 @@ public class SalesChannel : ITenantOwned
     {
         Status = SalesChannelStatus.Connected;
         LastErrorCode = null;
+    }
+
+    /// <param name="startedAt">When the sync started, so orders changed while it ran are read again next time.</param>
+    public void MarkSynced(DateTimeOffset startedAt)
+    {
+        if (LastSyncedAt is { } last && startedAt < last) return; // an older run finished after a newer one
+        LastSyncedAt = startedAt;
     }
 
     public void MarkFailed(string errorCode)

@@ -24,6 +24,12 @@ public interface ISalesChannel
     /// existing ones (a shop disables a webhook after repeated failed deliveries). Safe to call again.
     /// </summary>
     Task EnsureWebhooksAsync(string deliveryUrl, string secret, CancellationToken ct);
+
+    /// <summary>
+    /// Orders the shop changed after <paramref name="since"/> (by the shop's clock), oldest change first,
+    /// in every status except deleted. Orders that can't be read are left out, as they are in webhooks.
+    /// </summary>
+    Task<IReadOnlyList<ShopOrder>> FetchOrdersModifiedSinceAsync(DateTimeOffset since, CancellationToken ct);
 }
 
 /// <summary>Reads orders in a shop's own format. Customer data in it is never read.</summary>

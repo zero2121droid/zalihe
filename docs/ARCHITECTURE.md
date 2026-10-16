@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Webhookovi” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Usklađivanje porudžbina” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -259,9 +259,12 @@ zalihe/
 **`Webhooks/WebhookService.cs`**:
 - `ReceiveAsync()`: proveri potpis (`IsSignedBy`: base64(HMAC-SHA256(telo, tajna)), poređenje u konstantnom vremenu, pa vreme odgovora ne otkriva koliko je lažni potpis bio blizu). Teme osim `order.created` i `order.updated` i tela koja nisu porudžbina vraćaju `Ignored`, na šta kontroler odgovara 200 da prodavnica ne bi isključila webhook. Porudžbina se upiše kao `WebhookEvent` i zakaže se posao. **Čuva se samo pročitana porudžbina (`ShopOrder` kao JSON), nikad telo isporuke**, u kome su ime, adresa, telefon i email kupca.
 - `ProcessAsync()`: pozove `OrderService` i označi događaj kao obrađen. Već obrađen događaj preskače.
+- `DeleteExpiredAsync()`: briše događaje svih firmi starije od 30 dana (`Retention`, SPEC 8). Zove ga dnevni posao, bez postavljene firme.
 - `RecordFailureAsync()`: upiše razlog greške na događaj.
 
-**`Orders/OrderService.cs`**: `ProcessAsync(channelId, porudžbina)` u jednoj transakciji zaključa porudžbinu, poveže stavke sa artiklima preko `ItemChannelMappings` te prodavnice, pozove `ExternalOrder.Apply()` i za svaku razliku upiše `Sale` ili `Return` (izvor `WooCommerce`, `ExternalRef` = broj porudžbine, vreme = vreme izmene porudžbine, bez korisnika) i ažurira stanje. Stanja artikala zaključava uvek istim redom (po ID-ju), da se dve porudžbine sa istim artiklima ne bi zaglavile (deadlock). Vraća `ProcessOrderResult`: da li je događaj zanemaren kao stariji, broj kretanja i broj nepovezanih stavki. Firma mora biti postavljena pre poziva; tuđi kanal baca izuzetak. Poziva ga posao za webhook, a pozivaće ga i usklađivanje.
+**`Orders/OrderSyncService.cs`**: usklađivanje (SPEC 7.4). WooCommerce ne šalje ponovo webhook koji nije uspeo da isporuči, pa bi porudžbina iz vremena kad aplikacija nije radila zauvek ostala nepromenjena na stanju. `SyncAsync(channelId)` pita prodavnicu za porudžbine izmenjene od početka prethodnog usklađivanja minus 10 minuta (`Overlap`: prodavnica može imati sat koji kasni, a porudžbina sačuvana baš dok je prethodno usklađivanje čitalo bi se inače izgubila) i svaku propusti kroz `OrderService`. Ponovljena porudžbina ne menja ništa, pa preklapanje ne smeta. Prvo usklađivanje kreće od povezivanja: starije porudžbine su već u stanju preuzetom pri uvozu. Na kraju upiše početak kao `LastSyncedAt` (`SalesChannel.MarkSynced`, koji ne vraća vreme unazad ako stariji posao završi posle novijeg). Ako prodavnica ne odgovori, baca `SalesChannelException` i `LastSyncedAt` ostaje, pa sledeće usklađivanje traži iste porudžbine.
+
+**`Orders/OrderService.cs`**: `ProcessAsync(channelId, porudžbina)` u jednoj transakciji zaključa porudžbinu, poveže stavke sa artiklima preko `ItemChannelMappings` te prodavnice, pozove `ExternalOrder.Apply()` i za svaku razliku upiše `Sale` ili `Return` (izvor `WooCommerce`, `ExternalRef` = broj porudžbine, vreme = vreme izmene porudžbine, bez korisnika) i ažurira stanje. Stanja artikala zaključava uvek istim redom (po ID-ju), da se dve porudžbine sa istim artiklima ne bi zaglavile (deadlock). Vraća `ProcessOrderResult`: da li je događaj zanemaren kao stariji, broj kretanja i broj nepovezanih stavki. Firma mora biti postavljena pre poziva; tuđi kanal baca izuzetak. Pozivaju ga posao za webhook i usklađivanje.
 
 ### Zalihe.Infrastructure
 
@@ -328,13 +331,17 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 
 **`Channels/WooCommerce/WooCommerceClient.cs`, webhookovi**: `EnsureWebhooksAsync()` pročita postojeće webhookove (`GET /webhooks`), pa za `order.created` i `order.updated` napravi webhook koji nedostaje (`POST`) ili ažurira postojeći sa istom adresom (`PUT`, status `active` i tajna). Tuđi webhookovi (druga adresa) se ne diraju. Pri pravljenju webhooka WooCommerce odmah pošalje „ping” na adresu.
 
-**`Channels/WooCommerce/WooCommerceOrderReader.cs`**: čita porudžbinu iz WooCommerce JSON-a: `id`, `status`, `date_modified_gmt` (UTC bez oznake zone) i stavke. Proizvod stavke je `variation_id` ako postoji, inače `product_id`; stavka obrisanog proizvoda (`product_id: 0`) se preskače. Polja kupca se ne čitaju uopšte. Koristiće ga i usklađivanje (`GET /orders`).
+**`Channels/WooCommerce/WooCommerceOrderReader.cs`**: čita porudžbinu iz WooCommerce JSON-a: `id`, `status`, `date_modified_gmt` (UTC bez oznake zone) i stavke. Proizvod stavke je `variation_id` ako postoji, inače `product_id`; stavka obrisanog proizvoda (`product_id: 0`) se preskače. Polja kupca se ne čitaju uopšte. Koristi ga i usklađivanje.
+
+**`Channels/WooCommerce/WooCommerceClient.cs`, usklađivanje**: `FetchOrdersModifiedSinceAsync(od)` čita `GET /orders?modified_after=…&dates_are_gmt=true&status=any&orderby=modified&order=asc`, stranu po stranu. `status=any` su svi statusi osim kante. `_fields=id,status,date_modified_gmt,line_items` znači da prodavnica **ni ne pošalje** podatke kupca (provereno na lokalnoj prodavnici preko HTTP-a; interni WordPress poziv `_fields` zanemaruje).
 
 **`Jobs/HangfireBackgroundJobs.cs`**: `HangfireBackgroundJobs` zakazuje poslove, a `WebhookEventJob` postavi firmu i obradi događaj. Hangfire svaki posao pokreće u sopstvenom DI scope-u. Ako obrada padne, razlog se upiše na događaj iz **novog** scope-a (stari može da drži napola urađene izmene), a izuzetak se baci ponovo, pa Hangfire pokuša kasnije, sa sve dužim pauzama (podrazumevano 10 pokušaja).
 
+**`Jobs/RecurringJobs.cs`**: poslovi po rasporedu, koje `Program.cs` upiše u Hangfire pri pokretanju (`ScheduleRecurringJobs`). Raspored je cron izraz iz `Jobs` u `appsettings.json`: `OrderSyncCron` (svakih 15 minuta) i `WebhookCleanupCron` (svakog dana u 3:30 UTC). Prazna vrednost briše posao; integracioni testovi tako isključe oba, da se usred testa ne bi pokrenulo usklađivanje svih test prodavnica. `OrderSyncJob.ScheduleAllAsync` pročita prodavnice svih firmi (`ListAllChannelsAsync`) i za svaku zakaže poseban posao `SyncChannelAsync(firma, kanal)`, pa spora ili pokvarena prodavnica ne zadržava ostale. Oba nemaju ponovne pokušaje (`AutomaticRetry(Attempts = 0)`): ponovni pokušaj je sledeće usklađivanje, koje kreće od poslednjeg uspešnog. Kad usklađivanje upiše kretanja, to se loguje, jer znači da su webhookovi nešto propustili. `WebhookCleanupJob` briše stare događaje.
+
 **Hangfire u `DependencyInjection.cs`**: poslovi se čuvaju u istoj bazi, u šemi `hangfire`, koju Hangfire sam napravi. `EnableLongPolling` (Postgres LISTEN/NOTIFY) pokreće nov posao odmah, umesto na sledećoj proveri (podrazumevano na 15 s). Server za poslove radi u istom procesu kao API. `WebhookSettings` se čita iz `Webhooks:BaseUrl`; bez te vrednosti povezivanje prodavnice namerno pada (500), da se podešavanje u produkciji ne bi prećutno zaboravilo.
 
-**Webhookovi u `AppDbContext.cs`**: tabela `WebhookEvents` (`Payload` je `jsonb`, indeks po `ReceivedAt` za brisanje posle 30 dana), migracija `AddWebhookEvents`. `FindChannelTenantAsync()` je jedino čitanje preko granice firmi: webhook zna samo ID prodavnice, pa se firma čita iz kanala bez filtera, i odmah zatim postavlja.
+**Webhookovi u `AppDbContext.cs`**: tabela `WebhookEvents` (`Payload` je `jsonb`, indeks po `ReceivedAt` za brisanje posle 30 dana), migracija `AddWebhookEvents`. Samo tri metode prelaze granicu firmi, i sve su u `IAppDbContext`, da se vide na jednom mestu. `FindChannelTenantAsync()`: webhook zna samo ID prodavnice, pa se firma čita iz kanala bez filtera, i odmah zatim postavlja. `ListAllChannelsAsync()`: usklađivanje zakazuje posao za svaku prodavnicu. `DeleteWebhookEventsReceivedBeforeAsync()`: brisanje starih događaja (`ExecuteDeleteAsync`, jedan `DELETE` bez učitavanja).
 
 **Porudžbine u `AppDbContext.cs`**: tabele `ExternalOrders` (jedinstven indeks `(ChannelId, ExternalId)`) i `ExternalOrderLines` (jedinstven indeks `(ExternalOrderId, ExternalProductId)`), migracija `AddExternalOrders`. ID stavke je `ValueGeneratedNever`: stavku pravi domen sa već postavljenim ID-jem, pa EF novu stavku na učitanoj porudžbini upiše kao novi red, a ne kao izmenu. `LockOrAddExternalOrderAsync()` prvo upiše porudžbinu ako je nema (`INSERT … ON CONFLICT DO NOTHING`, uz ručnu proveru firme, jer sirov SQL zaobilazi proveru u `SaveChanges`), zatim zaključa red porudžbine (`FOR UPDATE`) i posebnim upitom učita stavke. Kad bi stavke bile u istom upitu, upit koji je čekao na zaključavanje bi ih čitao onakve kakve su bile pre čekanja i primenio istu razliku dvaput. Tu grešku je otkrio test `Process_ConcurrentEventsForStoredOrder_AppliesTheDifferenceOnce`.
 
@@ -589,6 +596,8 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 
 **`Zalihe.IntegrationTests/Orders/OrderProcessingTests.cs`**: `OrderService` protiv prave baze, pozvan kao što će ga zvati pozadinski posao (sopstveni scope, firma postavljena eksplicitno). Prodaja i stanje, duplirani događaj, otkazivanje sa povratom, dodata stavka i izmenjena količina, stariji događaj, nepovezana stavka, stanje jednako zbiru kretanja posle niza događaja, pet istovremenih događaja za istu porudžbinu, pet istovremenih događaja za novu porudžbinu (roba skinuta jednom, bez greške) i izolacija: kanal druge firme se odbija. Prodavnicu sa dva povezana proizvoda pravi `Infrastructure/LinkedShop.cs`, zajednički za ove testove i testove webhookova.
 
+**`Zalihe.IntegrationTests/Orders/OrderSyncTests.cs`**: usklađivanje protiv prave baze i lažne prodavnice. Propuštena porudžbina skida robu i pamti vreme usklađivanja, upit traži samo potrebna polja i kreće od povezivanja, porudžbina koju je webhook već primenio ne skida robu ponovo, propušteno otkazivanje vraća robu, drugo usklađivanje kreće od početka prvog minus preklapanje, odbijeni ključevi bacaju grešku i ne pomeraju vreme, prodavnica druge firme se ne dira (izolacija). Zakazivanje za prodavnice više firmi, sa lažnim `IBackgroundJobClient` (NSubstitute), da posao ne bi stvarno krenuo. Brisanje događaja starijih od 30 dana za sve firme.
+
 **`Zalihe.IntegrationTests/Webhooks/WebhooksTests.cs`**: ceo put webhooka, sa pravim Hangfire serverom u test hostu (test čeka dok se događaj ne obradi): stanje pada u pozadini, u bazi nema podataka kupca, otkazivanje vraća robu, ista isporuka dvaput skida robu jednom, pogrešan ili nedostajući potpis i telo izmenjeno posle potpisivanja daju 401, tajna druge firme daje 401 (izolacija), ping daje 200 i za nepoznat kanal, nepoznat kanal 404, druge teme i nepotpune porudžbine 200 bez upisa.
 
 **`Zalihe.Application.Tests/Webhooks/WebhookSignatureTests.cs`**: provera potpisa protiv vrednosti izračunate nezavisno (`openssl dgst -sha256 -hmac`), izmenjeno telo, druga tajna, loš base64. **`Zalihe.Domain.Tests/Channels/WebhookEventTests.cs`**: obrada briše grešku, predugačka greška se skraćuje.
@@ -689,7 +698,7 @@ WebhookService.ProcessAsync → OrderService.ProcessAsync   (vidi „Porudžbine
 WebhookEvent.ProcessedAt = sada
 ```
 
-Ako webhook ne stigne (server ne radi, prodavnica isključi webhook), porudžbinu će pokupiti usklađivanje (SPEC 7.4), sledeći korak.
+Ako webhook ne stigne (server ne radi, prodavnica isključi webhook), porudžbinu najkasnije za 15 minuta pokupi usklađivanje: `OrderSyncJob` → `OrderSyncService` → isti `OrderService.ProcessAsync`.
 
 ## 6. Kako se dodaje nova funkcionalnost
 

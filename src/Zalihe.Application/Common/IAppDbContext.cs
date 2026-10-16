@@ -41,9 +41,18 @@ public interface IAppDbContext
 
     /// <summary>
     /// The company a shop belongs to, read without a current company: a webhook arrives knowing only
-    /// its shop, and the company is set from this. The only read that crosses companies.
+    /// its shop, and the company is set from this. Crosses companies, like the two methods below;
+    /// nothing else may.
     /// </summary>
     Task<Guid?> FindChannelTenantAsync(Guid channelId, CancellationToken ct);
 
+    /// <summary>Every company's shops, for background jobs that then work on each shop with its company set.</summary>
+    Task<IReadOnlyList<ChannelOwner>> ListAllChannelsAsync(CancellationToken ct);
+
+    /// <summary>Deletes every company's webhook events received before <paramref name="before"/>; returns how many.</summary>
+    Task<int> DeleteWebhookEventsReceivedBeforeAsync(DateTimeOffset before, CancellationToken ct);
+
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
+
+public record ChannelOwner(Guid TenantId, Guid ChannelId);

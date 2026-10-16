@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Zalihe.Application.Common;
 using Zalihe.Infrastructure;
+using Zalihe.Infrastructure.Jobs;
 using Zalihe.Web.Auth;
 using Zalihe.Web.Errors;
 using Zalihe.Web.Tenancy;
@@ -40,6 +41,8 @@ app.UseMiddleware<TenantMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.Services.ScheduleRecurringJobs();
 
 app.Run();
 

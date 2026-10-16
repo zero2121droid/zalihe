@@ -39,6 +39,9 @@ public class WebhookService(
         "order.created", "order.updated",
     };
 
+    /// <summary>How long received events are kept (SPEC 8); by then the periodic sync has covered any that failed.</summary>
+    public static readonly TimeSpan Retention = TimeSpan.FromDays(30);
+
     public async Task<WebhookOutcome> ReceiveAsync(Guid channelId, string? topic, string? signature, byte[] body, CancellationToken ct)
     {
         var channel = await db.SalesChannels.AsNoTracking().SingleOrDefaultAsync(c => c.Id == channelId, ct);
@@ -93,6 +96,10 @@ public class WebhookService(
         webhookEvent.MarkFailed(error);
         await db.SaveChangesAsync(ct);
     }
+
+    /// <summary>Deletes every company's events older than <see cref="Retention"/>; needs no current company.</summary>
+    public Task<int> DeleteExpiredAsync(CancellationToken ct) =>
+        db.DeleteWebhookEventsReceivedBeforeAsync(timeProvider.GetUtcNow() - Retention, ct);
 
     /// <summary>
     /// WooCommerce signs the exact body: base64(HMAC-SHA256(body, secret)). Compared in constant time,

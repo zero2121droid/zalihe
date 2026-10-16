@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<ProductImportService>();
         services.AddScoped<OrderService>();
         services.AddScoped<WebhookService>();
+        services.AddScoped<OrderSyncService>();
         services.AddSingleton<IShopOrderReader, WooCommerceOrderReader>();
         services.AddSingleton(sp =>
         {

@@ -67,9 +67,10 @@ public record ExternalProduct(
 /// <summary>
 /// An order as read from a shop (webhook or sync), with only what stock needs: no customer data.
 /// </summary>
+/// <param name="CreatedAt">When the order was placed; a product takes stock only for orders placed after it was linked.</param>
 /// <param name="ModifiedAt">When the shop last changed the order; decides which of two events is newer.</param>
 /// <param name="Lines">All lines the order has now; a line that is gone was removed from the order.</param>
-public record ShopOrder(string ExternalId, string Status, DateTimeOffset ModifiedAt, IReadOnlyList<ShopOrderLine> Lines);
+public record ShopOrder(string ExternalId, string Status, DateTimeOffset CreatedAt, DateTimeOffset ModifiedAt, IReadOnlyList<ShopOrderLine> Lines);
 
 /// <param name="ExternalProductId">The product's ID, or the variation's ID for a variation (as in <see cref="ExternalProduct.ExternalId"/>).</param>
 public record ShopOrderLine(string ExternalProductId, decimal Quantity);

@@ -40,6 +40,7 @@ public class OrderSyncTests(ZaliheApiFactory factory)
         {
             id = 1041,
             status,
+            date_created_gmt = DateTimeOffset.UtcNow.AddMinutes(1).UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture),
             date_modified_gmt = modifiedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture),
             line_items = new[] { new { id = 1, product_id = productId, variation_id = 0, quantity } },
         });
@@ -95,7 +96,7 @@ public class OrderSyncTests(ZaliheApiFactory factory)
         QueryValue(request, "modified_after").ShouldBe(channel.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture));
         QueryValue(request, "dates_are_gmt").ShouldBe("true");
         QueryValue(request, "status").ShouldBe("any");
-        QueryValue(request, "_fields").ShouldBe("id,status,date_modified_gmt,line_items");
+        QueryValue(request, "_fields").ShouldBe("id,status,date_created_gmt,date_modified_gmt,line_items");
 
         (await ChannelAsync(channelId)).LastSyncedAt.ShouldNotBeNull().ShouldBeGreaterThanOrEqualTo(before);
     }
@@ -107,7 +108,7 @@ public class OrderSyncTests(ZaliheApiFactory factory)
         var (client, channelId) = await LinkedShop.CreateAsync(factory);
         var tenantId = (await ChannelAsync(channelId)).TenantId;
         await InScopeAsync(tenantId, s => s.GetRequiredService<OrderService>().ProcessAsync(
-            channelId, new ShopOrder("1041", "processing", T1, [new ShopOrderLine("10", 2)]), CancellationToken.None));
+            channelId, new ShopOrder("1041", "processing", DateTimeOffset.UtcNow.AddMinutes(1), T1, [new ShopOrderLine("10", 2)]), CancellationToken.None));
         ShopHasOrders($"[{OrderJson("processing", T1, 10, 2)}]");
 
         // Act

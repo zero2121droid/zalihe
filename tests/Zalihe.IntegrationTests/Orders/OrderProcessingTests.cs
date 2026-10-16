@@ -32,7 +32,10 @@ public class OrderProcessingTests(ZaliheApiFactory factory)
     }
 
     private static ShopOrder Order(string status, DateTimeOffset modifiedAt, params (string ProductId, decimal Quantity)[] lines) =>
-        new("1041", status, modifiedAt, lines.Select(l => new ShopOrderLine(l.ProductId, l.Quantity)).ToList());
+        new("1041", status, PlacedNow, modifiedAt, lines.Select(l => new ShopOrderLine(l.ProductId, l.Quantity)).ToList());
+
+    /// <summary>Products are linked when a test starts, so its orders are placed after that.</summary>
+    private static DateTimeOffset PlacedNow => DateTimeOffset.UtcNow.AddMinutes(1);
 
     [Fact]
     public async Task Process_NewOrder_RecordsSalesAndLowersStock()
@@ -142,6 +145,23 @@ public class OrderProcessingTests(ZaliheApiFactory factory)
         var unlinked = lines.Single(l => l.ExternalProductId == "99");
         unlinked.ItemId.ShouldBeNull();
         unlinked.OrderedQuantity.ShouldBe(4);
+    }
+
+    [Fact]
+    public async Task Process_OrderPlacedBeforeLinkingChangesLater_TakesNoStock()
+    {
+        // Arrange: the shop's stock taken over at import already excludes this order.
+        var (client, channelId) = await LinkedShop.CreateAsync(factory);
+        var placedBefore = DateTimeOffset.UtcNow.AddDays(-2);
+        var lines = new List<ShopOrderLine> { new("10", 2) };
+
+        // Act
+        var result = await ProcessAsync(channelId, new ShopOrder("1041", "completed", placedBefore, DateTimeOffset.UtcNow, lines));
+
+        // Assert
+        result.MovementCount.ShouldBe(0);
+        (await LinkedShop.StockAsync(client, "KF-ETI-250")).ShouldBe(24);
+        (await LinkedShop.OrderMovementsAsync(client, "KF-ETI-250")).ShouldBeEmpty();
     }
 
     [Fact]

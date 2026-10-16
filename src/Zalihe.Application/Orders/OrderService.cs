@@ -58,18 +58,24 @@ public class OrderService(IAppDbContext db, TimeProvider timeProvider)
         return new ProcessOrderResult(ignored, changes.Count, unlinked);
     }
 
-    /// <summary>The order's lines with the items their products are linked to in this shop.</summary>
+    /// <summary>
+    /// The order's lines with the items their products are linked to in this shop. A product linked
+    /// after the order was placed counts as not linked for it: the item's stock at linking already
+    /// excludes that order (taken over from the shop at import, or counted by the user), so taking
+    /// it again would count it twice. This covers orders from before the shop was connected that
+    /// change later, e.g. "processing" → "completed".
+    /// </summary>
     private async Task<IReadOnlyList<OrderLineSnapshot>> SnapshotAsync(Guid channelId, ShopOrder order, CancellationToken ct)
     {
         var productIds = order.Lines.Select(l => l.ExternalProductId.Trim()).Distinct().ToList();
         var linked = await db.ItemChannelMappings
             .Where(m => m.ChannelId == channelId && productIds.Contains(m.ExternalId))
-            .ToDictionaryAsync(m => m.ExternalId, m => m.ItemId, ct);
+            .ToDictionaryAsync(m => m.ExternalId, m => (m.ItemId, LinkedAt: m.CreatedAt), ct);
 
         return order.Lines
             .Select(l => new OrderLineSnapshot(
                 l.ExternalProductId.Trim(),
-                linked.TryGetValue(l.ExternalProductId.Trim(), out var itemId) ? itemId : null,
+                linked.TryGetValue(l.ExternalProductId.Trim(), out var link) && order.CreatedAt >= link.LinkedAt ? link.ItemId : null,
                 l.Quantity))
             .ToList();
     }

@@ -7,7 +7,7 @@ namespace Zalihe.Infrastructure.Channels.WooCommerce;
 
 /// <summary>
 /// Reads a WooCommerce order (REST API v3 format, as in webhooks and /orders). Only the order's ID,
-/// status, change time and line products and quantities are read; billing, shipping, customer and
+/// status, creation and change times and line products and quantities are read; billing, shipping, customer and
 /// payment fields are never touched, so they can't end up stored anywhere.
 /// </summary>
 public class WooCommerceOrderReader : IShopOrderReader
@@ -33,7 +33,8 @@ public class WooCommerceOrderReader : IShopOrderReader
         if (order.ValueKind != JsonValueKind.Object
             || Long(order, "id") is not { } id || id <= 0
             || Text(order, "status") is not { } status
-            || ModifiedAt(order) is not { } modifiedAt
+            || Utc(order, "date_created_gmt") is not { } createdAt
+            || Utc(order, "date_modified_gmt") is not { } modifiedAt
             || !order.TryGetProperty("line_items", out var items) || items.ValueKind != JsonValueKind.Array)
         {
             return null;
@@ -55,7 +56,7 @@ public class WooCommerceOrderReader : IShopOrderReader
             lines.Add(new ShopOrderLine(productId.ToString(CultureInfo.InvariantCulture), value));
         }
 
-        return new ShopOrder(id.ToString(CultureInfo.InvariantCulture), status, modifiedAt, lines);
+        return new ShopOrder(id.ToString(CultureInfo.InvariantCulture), status, createdAt, modifiedAt, lines);
     }
 
     private static long? Long(JsonElement element, string name) =>
@@ -70,9 +71,9 @@ public class WooCommerceOrderReader : IShopOrderReader
             ? text.Trim()
             : null;
 
-    /// <summary>"date_modified_gmt" is UTC without an offset, e.g. "2026-10-16T09:00:00".</summary>
-    private static DateTimeOffset? ModifiedAt(JsonElement order) =>
-        DateTimeOffset.TryParse(Text(order, "date_modified_gmt"), CultureInfo.InvariantCulture,
+    /// <summary>The "_gmt" dates are UTC without an offset, e.g. "2026-10-16T09:00:00".</summary>
+    private static DateTimeOffset? Utc(JsonElement order, string name) =>
+        DateTimeOffset.TryParse(Text(order, name), CultureInfo.InvariantCulture,
             DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var value)
             ? value
             : null;

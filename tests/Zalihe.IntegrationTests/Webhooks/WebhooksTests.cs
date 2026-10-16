@@ -30,7 +30,8 @@ public class WebhooksTests(ZaliheApiFactory factory)
             id = 1041,
             status,
             currency = "RSD",
-            date_created_gmt = "2026-10-16T08:59:00",
+            // Products are linked when a test starts, so its orders are placed after that.
+            date_created_gmt = DateTime.UtcNow.AddMinutes(1).ToString("yyyy-MM-dd'T'HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
             date_modified_gmt = modifiedGmt,
             total = "4490.00",
             customer_id = 12,

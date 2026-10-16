@@ -20,7 +20,7 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
     private const string VariationFields = "id,sku,regular_price,price,stock_quantity,attributes";
 
     /// <summary>Only what stock needs: the shop doesn't even send the customer's data.</summary>
-    private const string OrderFields = "id,status,date_modified_gmt,line_items";
+    private const string OrderFields = "id,status,date_created_gmt,date_modified_gmt,line_items";
 
     /// <summary>The same topics <see cref="Application.Webhooks.WebhookService"/> accepts.</summary>
     private static readonly string[] WebhookTopics = ["order.created", "order.updated"];

@@ -365,6 +365,7 @@
       "step3": "Klikni „Generiši API ključ” i ovde nalepi Consumer key i Consumer secret. Secret se u WooCommerce-u prikazuje samo jednom.",
       "safety": "Ključevi se čuvaju šifrovani i posle povezivanja se više nigde ne prikazuju. Možeš ih opozvati u WooCommerce-u u svakom trenutku."
     },
+    "privacy": "Iz porudžbina Zalihe čitaju samo artikle, količine i status. Podatke kupaca (ime, adresu, telefon, email) ne preuzimamo i ne čuvamo.",
     "card": {
       "connectedSince": "Povezano {{date}}",
       "checkedAt": "Provereno {{date}}",

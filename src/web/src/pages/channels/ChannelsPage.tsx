@@ -139,6 +139,9 @@ function KeysHelp() {
         <Text fz="sm" c="dimmed">
           {t('channels.help.safety')}
         </Text>
+        <Text fz="sm" c="dimmed">
+          {t('channels.privacy')}
+        </Text>
       </Stack>
     </Section>
   )
@@ -209,6 +212,10 @@ function ChannelCard({ channel }: { channel: SalesChannelDto }) {
             {t('channels.card.replaceKeys')}
           </Button>
         </Group>
+
+        <Text fz="xs" c="dimmed">
+          {t('channels.privacy')}
+        </Text>
       </Stack>
       <ReplaceKeysModal channel={channel} opened={keysOpened} onClose={closeKeys} />
     </Section>

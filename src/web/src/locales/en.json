@@ -365,6 +365,7 @@
       "step3": "Click “Generate API key” and paste the Consumer key and Consumer secret here. WooCommerce shows the secret only once.",
       "safety": "Keys are stored encrypted and are never shown again after connecting. You can revoke them in WooCommerce at any time."
     },
+    "privacy": "From orders, Zalihe reads only products, quantities and status. Customer data (name, address, phone, email) is never fetched or stored.",
     "card": {
       "connectedSince": "Connected {{date}}",
       "checkedAt": "Checked {{date}}",

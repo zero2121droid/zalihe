@@ -17,6 +17,27 @@ public interface ISalesChannel
     /// when the shop can't be read, or <see cref="SalesChannelException.TooManyProducts"/> above <paramref name="max"/>.
     /// </summary>
     Task<IReadOnlyList<ExternalProduct>> FetchProductsAsync(int max, CancellationToken ct);
+
+    /// <summary>
+    /// Makes sure the shop sends new and changed orders to <paramref name="deliveryUrl"/>, signed with
+    /// <paramref name="secret"/>: creates the webhooks that are missing and re-enables and updates
+    /// existing ones (a shop disables a webhook after repeated failed deliveries). Safe to call again.
+    /// </summary>
+    Task EnsureWebhooksAsync(string deliveryUrl, string secret, CancellationToken ct);
+}
+
+/// <summary>Reads orders in a shop's own format. Customer data in it is never read.</summary>
+public interface IShopOrderReader
+{
+    /// <summary>The order in a webhook body; null when the body is not an order that can be read.</summary>
+    ShopOrder? ReadWebhook(SalesChannelType type, byte[] body);
+}
+
+/// <param name="BaseUrl">This application's public address as shops reach it, e.g. "https://app.zalihe.rs".</param>
+public record WebhookSettings(string BaseUrl)
+{
+    /// <summary>Where a WooCommerce shop sends its events; the path is the webhook controller's route.</summary>
+    public string WooCommerceDeliveryUrl(Guid channelId) => $"{BaseUrl.TrimEnd('/')}/webhooks/woo/{channelId}";
 }
 
 /// <summary>

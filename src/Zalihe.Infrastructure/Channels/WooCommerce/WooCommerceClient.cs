@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -17,6 +18,9 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
     private const int PageSize = 100;
     private const string ProductFields = "id,name,type,sku,regular_price,price,stock_quantity,categories";
     private const string VariationFields = "id,sku,regular_price,price,stock_quantity,attributes";
+
+    /// <summary>The same topics <see cref="Application.Webhooks.WebhookService"/> accepts.</summary>
+    private static readonly string[] WebhookTopics = ["order.created", "order.updated"];
 
     public async Task CheckConnectionAsync(CancellationToken ct)
     {
@@ -55,6 +59,25 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
         }
 
         return products;
+    }
+
+    public async Task EnsureWebhooksAsync(string deliveryUrl, string secret, CancellationToken ct)
+    {
+        var existing = new List<JsonElement>();
+        await foreach (var webhook in PagesAsync("webhooks?_fields=id,topic,delivery_url,status", ct))
+        {
+            existing.Add(webhook);
+        }
+
+        foreach (var topic in WebhookTopics)
+        {
+            var match = existing.FirstOrDefault(w => Text(w, "topic") == topic && Text(w, "delivery_url") == deliveryUrl);
+            var webhook = new { name = $"Zalihe ({topic})", topic, delivery_url = deliveryUrl, secret, status = "active" };
+            // An existing one is updated too: it may be disabled after failed deliveries, or have an old secret.
+            using var _ = match.ValueKind == JsonValueKind.Undefined
+                ? await SendAsync(HttpMethod.Post, "webhooks", ct, webhook)
+                : await SendAsync(HttpMethod.Put, $"webhooks/{Id(match)}", ct, webhook);
+        }
     }
 
     /// <summary>Every element of a paged list, one page of <see cref="PageSize"/> at a time.</summary>
@@ -122,9 +145,10 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
         return options.Count > 0 ? $"{productName} – {string.Join(", ", options)}" : $"{productName} #{Id(variation)}";
     }
 
-    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, CancellationToken ct)
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, CancellationToken ct, object? body = null)
     {
         using var request = new HttpRequestMessage(method, $"{baseUrl}/wp-json/wc/v3/{path}");
+        if (body is not null) request.Content = JsonContent.Create(body);
         var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{credentials.ConsumerKey}:{credentials.ConsumerSecret}"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

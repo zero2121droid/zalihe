@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<SalesChannel> SalesChannels => Set<SalesChannel>();
     public DbSet<ItemChannelMapping> ItemChannelMappings => Set<ItemChannelMapping>();
     public DbSet<ExternalOrder> ExternalOrders => Set<ExternalOrder>();
+    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -159,6 +160,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             line.HasIndex(l => l.TenantId);
         });
 
+        builder.Entity<WebhookEvent>(webhookEvent =>
+        {
+            webhookEvent.Property(e => e.Topic).HasMaxLength(WebhookEvent.TopicMaxLength);
+            webhookEvent.Property(e => e.Payload).HasColumnType("jsonb");
+            webhookEvent.Property(e => e.Error).HasMaxLength(WebhookEvent.ErrorMaxLength);
+            webhookEvent.HasOne<SalesChannel>().WithMany().HasForeignKey(e => e.ChannelId).OnDelete(DeleteBehavior.Restrict);
+            webhookEvent.HasOne<Tenant>().WithMany().HasForeignKey(e => e.TenantId).OnDelete(DeleteBehavior.Restrict);
+            // Old events are deleted by the time they were received (SPEC 8).
+            webhookEvent.HasIndex(e => e.ReceivedAt);
+            webhookEvent.HasIndex(e => e.TenantId);
+        });
+
         ApplyTenantFilters(builder);
     }
 
@@ -186,19 +199,37 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             .FromSql($"""SELECT *, xmin FROM "StockLevels" WHERE "ItemId" = {itemId} FOR UPDATE""")
             .SingleOrDefaultAsync(ct);
 
-    public async Task<ExternalOrder?> LockExternalOrderAsync(Guid channelId, string externalId, CancellationToken ct)
+    public async Task<ExternalOrder> LockOrAddExternalOrderAsync(ExternalOrder candidate, CancellationToken ct)
     {
+        // Raw SQL skips the check in SaveChanges, so it is done here.
+        if (candidate.TenantId != CurrentTenantId) throw new InvalidOperationException("The order belongs to a different tenant.");
+
+        // When two events for a new order arrive together, the second insert waits for the first
+        // transaction and then does nothing, instead of failing on the unique index.
+        await Database.ExecuteSqlAsync($"""
+            INSERT INTO "ExternalOrders" ("Id", "TenantId", "ChannelId", "ExternalId", "CreatedAt")
+            VALUES ({candidate.Id}, {candidate.TenantId}, {candidate.ChannelId}, {candidate.ExternalId}, {candidate.CreatedAt})
+            ON CONFLICT ("ChannelId", "ExternalId") DO NOTHING
+            """, ct);
+
         // Locks only the order row; its lines are changed only while the order is locked. The lines
         // must be read by a second statement: a statement that waited for the lock sees the latest
         // locked row, but reads every other table as it was when the statement started, so lines read
         // in the same statement could miss what the transaction holding the lock just applied.
         var id = await ExternalOrders
-            .FromSql($"""SELECT * FROM "ExternalOrders" WHERE "ChannelId" = {channelId} AND "ExternalId" = {externalId} FOR UPDATE""")
-            .Select(o => (Guid?)o.Id)
-            .SingleOrDefaultAsync(ct);
+            .FromSql($"""SELECT * FROM "ExternalOrders" WHERE "ChannelId" = {candidate.ChannelId} AND "ExternalId" = {candidate.ExternalId} FOR UPDATE""")
+            .Select(o => o.Id)
+            .SingleAsync(ct);
 
-        return id is null ? null : await ExternalOrders.Include(o => o.Lines).SingleAsync(o => o.Id == id, ct);
+        return await ExternalOrders.Include(o => o.Lines).SingleAsync(o => o.Id == id, ct);
     }
+
+    public Task<Guid?> FindChannelTenantAsync(Guid channelId, CancellationToken ct) =>
+        SalesChannels
+            .IgnoreQueryFilters()
+            .Where(c => c.Id == channelId)
+            .Select(c => (Guid?)c.TenantId)
+            .SingleOrDefaultAsync(ct);
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {

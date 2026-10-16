@@ -14,12 +14,16 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18").Build();
 
+    /// <summary>The public address shops are told to send webhooks to.</summary>
+    public const string WebhookBaseUrl = "https://app.zalihe.test";
+
     /// <summary>The fake WooCommerce shop every channel talks to in tests.</summary>
     public FakeShopHandler Shop { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
+        builder.UseSetting("Webhooks:BaseUrl", WebhookBaseUrl);
         builder.ConfigureTestServices(services =>
             services.AddHttpClient(SalesChannelFactory.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Shop));
     }

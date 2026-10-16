@@ -1,3 +1,5 @@
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.DataProtection.Repositories;
@@ -11,6 +13,8 @@ using Zalihe.Application.Dashboard;
 using Zalihe.Application.Imports;
 using Zalihe.Application.Items;
 using Zalihe.Application.Orders;
+using Zalihe.Application.Webhooks;
+using Zalihe.Infrastructure.Jobs;
 using Zalihe.Application.Stock;
 using Zalihe.Infrastructure.Channels.WooCommerce;
 using Zalihe.Infrastructure.Identity;
@@ -42,6 +46,29 @@ public static class DependencyInjection
         services.AddScoped<ChannelService>();
         services.AddScoped<ProductImportService>();
         services.AddScoped<OrderService>();
+        services.AddScoped<WebhookService>();
+        services.AddSingleton<IShopOrderReader, WooCommerceOrderReader>();
+        services.AddSingleton(sp =>
+        {
+            // Shops send webhooks to this address, so it must be reachable from the internet in production
+            // (locally, from the WordPress container: http://host.docker.internal:5131).
+            var baseUrl = sp.GetRequiredService<IConfiguration>()["Webhooks:BaseUrl"];
+            return Uri.TryCreate(baseUrl, UriKind.Absolute, out _)
+                ? new WebhookSettings(baseUrl)
+                : throw new InvalidOperationException("Webhooks:BaseUrl must be set to the application's public address.");
+        });
+
+        // Background jobs in the application's own database. Long polling (LISTEN/NOTIFY) starts a new
+        // job right away instead of on the next poll. The connection string is read lazily, like the DbContext's.
+        services.AddHangfire((sp, config) => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UsePostgreSqlStorage(
+                options => options.UseNpgsqlConnection(sp.GetRequiredService<IConfiguration>().GetConnectionString("Default")),
+                new PostgreSqlStorageOptions { SchemaName = "hangfire", PrepareSchemaIfNecessary = true, EnableLongPolling = true }));
+        services.AddHangfireServer();
+        services.AddScoped<IBackgroundJobs, HangfireBackgroundJobs>();
 
         // Shop API keys are encrypted with Data Protection. Its key ring must persist across
         // restarts and deployments (see DataProtection:KeysPath), or stored keys can't be read.

@@ -19,8 +19,7 @@ public class OrderService(IAppDbContext db, TimeProvider timeProvider)
 {
     /// <summary>
     /// Brings the stored order to the state the shop reports and records a sale or return for every
-    /// difference, all in one transaction. When the same new order is processed twice at the same
-    /// moment, one of them fails on the unique order index; the caller retries it and it then changes nothing.
+    /// difference, all in one transaction.
     /// </summary>
     public async Task<ProcessOrderResult> ProcessAsync(Guid channelId, ShopOrder order, CancellationToken ct)
     {
@@ -30,12 +29,7 @@ public class OrderService(IAppDbContext db, TimeProvider timeProvider)
             ?? throw new InvalidOperationException($"Sales channel {channelId} was not found for the current company.");
 
         // Waits while another event for this order is being processed, then reads what it applied.
-        var stored = await db.LockExternalOrderAsync(channelId, order.ExternalId.Trim(), ct);
-        if (stored is null)
-        {
-            stored = new ExternalOrder(channel, order.ExternalId, timeProvider.GetUtcNow());
-            db.ExternalOrders.Add(stored);
-        }
+        var stored = await db.LockOrAddExternalOrderAsync(new ExternalOrder(channel, order.ExternalId, timeProvider.GetUtcNow()), ct);
 
         var ignored = stored.LastModifiedAt > order.ModifiedAt;
         var changes = stored.Apply(order.Status, order.ModifiedAt, await SnapshotAsync(channelId, order, ct));

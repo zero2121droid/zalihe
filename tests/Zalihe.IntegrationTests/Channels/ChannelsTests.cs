@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Zalihe.Application.Common;
 using Zalihe.Infrastructure.Persistence;
 using Zalihe.IntegrationTests.Infrastructure;
 
@@ -39,10 +40,10 @@ public class ChannelsTests(ZaliheApiFactory factory)
         channel.GetProperty("status").GetString().ShouldBe("connected");
         channel.TryGetProperty("encryptedCredentials", out _).ShouldBeFalse();
 
-        var request = factory.Shop.Requests.ShouldHaveSingleItem();
-        request.RequestUri!.ToString().ShouldStartWith("https://zrno.rs/wp-json/wc/v3/products");
-        request.Headers.Authorization!.Scheme.ShouldBe("Basic");
-        Encoding.UTF8.GetString(Convert.FromBase64String(request.Headers.Authorization.Parameter!)).ShouldBe($"{Key}:{Secret}");
+        factory.Shop.Requests[0].RequestUri!.ToString().ShouldStartWith("https://zrno.rs/wp-json/wc/v3/products");
+        factory.Shop.Requests.ShouldAllBe(r => r.Headers.Authorization!.Scheme == "Basic");
+        factory.Shop.Requests.Select(r => Encoding.UTF8.GetString(Convert.FromBase64String(r.Headers.Authorization!.Parameter!)))
+            .ShouldAllBe(credentials => credentials == $"{Key}:{Secret}");
 
         var list = await client.GetFromJsonAsync<JsonElement[]>("/api/channels");
         list!.ShouldHaveSingleItem().GetProperty("baseUrl").GetString().ShouldBe("https://zrno.rs");
@@ -179,8 +180,90 @@ public class ChannelsTests(ZaliheApiFactory factory)
         // Assert
         fixedChannel.GetProperty("status").GetString().ShouldBe("connected");
         fixedChannel.GetProperty("lastErrorCode").ValueKind.ShouldBe(JsonValueKind.Null);
-        Encoding.UTF8.GetString(Convert.FromBase64String(factory.Shop.Requests.Single().Headers.Authorization!.Parameter!))
-            .ShouldBe("ck_new1234567890:cs_new1234567890");
+        factory.Shop.Requests.Select(r => Encoding.UTF8.GetString(Convert.FromBase64String(r.Headers.Authorization!.Parameter!)))
+            .ShouldAllBe(credentials => credentials == "ck_new1234567890:cs_new1234567890");
+    }
+
+    private async Task<(Guid Id, string Secret)> StoredChannelAsync(Guid id)
+    {
+        using var scope = factory.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var channel = await services.GetRequiredService<AppDbContext>().SalesChannels.IgnoreQueryFilters().SingleAsync(c => c.Id == id);
+        return (id, services.GetRequiredService<ICredentialProtector>().Unprotect(channel.EncryptedWebhookSecret));
+    }
+
+    private List<JsonElement> SentWebhooks(HttpMethod method) =>
+        factory.Shop.Requests
+            .Select((request, i) => (request, body: factory.Shop.Bodies[i]))
+            .Where(r => r.request.Method == method && r.request.RequestUri!.AbsolutePath.Contains("/webhooks", StringComparison.Ordinal))
+            .Select(r => JsonDocument.Parse(r.body!).RootElement.Clone())
+            .ToList();
+
+    [Fact]
+    public async Task Connect_WorkingKeys_RegistersOrderWebhooksSignedWithChannelSecret()
+    {
+        // Arrange
+        var client = await factory.CreateSignedInClientAsync();
+        ShopAnswers(HttpStatusCode.OK);
+
+        // Act
+        var created = await (await client.PostAsJsonAsync("/api/channels/woocommerce", Connect())).Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert
+        var (id, secret) = await StoredChannelAsync(created.GetProperty("id").GetGuid());
+        var webhooks = SentWebhooks(HttpMethod.Post);
+        webhooks.Select(w => w.GetProperty("topic").GetString()).ShouldBe(["order.created", "order.updated"]);
+        webhooks.ShouldAllBe(w => w.GetProperty("delivery_url").GetString() == $"{ZaliheApiFactory.WebhookBaseUrl}/webhooks/woo/{id}");
+        webhooks.ShouldAllBe(w => w.GetProperty("secret").GetString() == secret);
+        webhooks.ShouldAllBe(w => w.GetProperty("status").GetString() == "active");
+    }
+
+    [Fact]
+    public async Task Check_WebhooksAlreadyInShop_UpdatesThemInsteadOfAddingMore()
+    {
+        // Arrange
+        var client = await factory.CreateSignedInClientAsync();
+        ShopAnswers(HttpStatusCode.OK);
+        var id = (await (await client.PostAsJsonAsync("/api/channels/woocommerce", Connect())).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+        var url = $"{ZaliheApiFactory.WebhookBaseUrl}/webhooks/woo/{id}";
+        // order.created is disabled after failed deliveries; another plugin's webhook is left alone
+        var existing = JsonSerializer.Serialize(new object[]
+        {
+            new { id = 7, topic = "order.created", delivery_url = url, status = "disabled" },
+            new { id = 8, topic = "order.updated", delivery_url = url, status = "active" },
+            new { id = 9, topic = "order.created", delivery_url = "https://other.example/hook", status = "active" },
+        });
+        factory.Shop.RespondWith(request => FakeShopHandler.Json(
+            request.Method == HttpMethod.Get && request.RequestUri!.AbsolutePath.EndsWith("/webhooks", StringComparison.Ordinal)
+            && request.RequestUri.Query.Contains("page=1", StringComparison.Ordinal) ? existing : "[]"));
+
+        // Act
+        var checkedChannel = await (await client.PostAsync($"/api/channels/{id}/check", null)).Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert
+        checkedChannel.GetProperty("status").GetString().ShouldBe("connected");
+        SentWebhooks(HttpMethod.Post).ShouldBeEmpty();
+        factory.Shop.Requests.Where(r => r.Method == HttpMethod.Put).Select(r => r.RequestUri!.AbsolutePath)
+            .ShouldBe(["/wp-json/wc/v3/webhooks/7", "/wp-json/wc/v3/webhooks/8"]);
+        SentWebhooks(HttpMethod.Put).ShouldAllBe(w => w.GetProperty("status").GetString() == "active");
+    }
+
+    [Fact]
+    public async Task Connect_ReadOnlyKeys_ReturnsUnauthorizedAndSavesNothing()
+    {
+        // Arrange: reading works, but creating a webhook needs read/write keys
+        var client = await factory.CreateSignedInClientAsync();
+        factory.Shop.RespondWith(request => request.Method == HttpMethod.Get
+            ? FakeShopHandler.Json("[]")
+            : FakeShopHandler.Json("""{"code":"woocommerce_rest_cannot_create"}""", HttpStatusCode.Unauthorized));
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/channels/woocommerce", Connect());
+
+        // Assert
+        (await response.ReadProblemAsync()).GetProperty("errors")[0].GetProperty("code").GetString().ShouldBe("channel.unauthorized");
+        (await client.GetFromJsonAsync<JsonElement[]>("/api/channels"))!.ShouldBeEmpty();
     }
 
     [Fact]

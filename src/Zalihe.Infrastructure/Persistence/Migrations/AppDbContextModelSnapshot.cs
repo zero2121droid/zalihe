@@ -244,6 +244,48 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.ToTable("SalesChannels");
                 });
 
+            modelBuilder.Entity("Zalihe.Domain.Channels.WebhookEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChannelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Topic")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("ReceivedAt");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("WebhookEvents");
+                });
+
             modelBuilder.Entity("Zalihe.Domain.Items.Item", b =>
                 {
                     b.Property<Guid>("Id")
@@ -670,6 +712,21 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Zalihe.Domain.Channels.SalesChannel", b =>
                 {
+                    b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Channels.WebhookEvent", b =>
+                {
+                    b.HasOne("Zalihe.Domain.Channels.SalesChannel", null)
+                        .WithMany()
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
                         .WithMany()
                         .HasForeignKey("TenantId")

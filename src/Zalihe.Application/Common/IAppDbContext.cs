@@ -20,6 +20,7 @@ public interface IAppDbContext
     DbSet<SalesChannel> SalesChannels { get; }
     DbSet<ItemChannelMapping> ItemChannelMappings { get; }
     DbSet<ExternalOrder> ExternalOrders { get; }
+    DbSet<WebhookEvent> WebhookEvents { get; }
 
     /// <summary>For explicit transactions, e.g. around locking stock.</summary>
     DatabaseFacade Database { get; }
@@ -32,10 +33,17 @@ public interface IAppDbContext
     Task<StockLevel?> LockStockLevelAsync(Guid itemId, CancellationToken ct);
 
     /// <summary>
-    /// Loads a shop order with its lines and locks it until the current transaction ends, so two
-    /// events for the same order are processed one after another. Must be called inside a transaction.
+    /// Loads the shop order with <paramref name="candidate"/>'s shop and number, saving the candidate first
+    /// when there is none, and locks it until the current transaction ends. Two events for the same
+    /// order, even a new one, are therefore processed one after another. Must be called inside a transaction.
     /// </summary>
-    Task<ExternalOrder?> LockExternalOrderAsync(Guid channelId, string externalId, CancellationToken ct);
+    Task<ExternalOrder> LockOrAddExternalOrderAsync(ExternalOrder candidate, CancellationToken ct);
+
+    /// <summary>
+    /// The company a shop belongs to, read without a current company: a webhook arrives knowing only
+    /// its shop, and the company is set from this. The only read that crosses companies.
+    /// </summary>
+    Task<Guid?> FindChannelTenantAsync(Guid channelId, CancellationToken ct);
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

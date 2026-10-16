@@ -18,7 +18,7 @@ printf 'apache_modules:\n  - mod_rewrite\n' > wp-cli.yml
 wp rewrite structure '/%postname%/' --hard >/dev/null
 
 mkdir -p wp-content/mu-plugins
-cp /scripts/zalihe-local-https.php wp-content/mu-plugins/
+cp /scripts/zalihe-local-https.php /scripts/zalihe-local-webhooks.php wp-content/mu-plugins/
 
 if ! wp plugin is-active woocommerce 2>/dev/null; then
   wp plugin install woocommerce --activate

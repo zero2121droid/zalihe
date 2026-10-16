@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Obrada porudžbina” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Webhookovi” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -33,7 +33,7 @@ Strelica znači „zna za” (ima referencu). Ključno pravilo: **unutrašnji sl
 |---|---|---|
 | **Domain** | Entiteti (`Tenant`) i pravila (naziv firme ne sme biti prazan) | Nema nijednu zavisnost, ni EF Core ni ASP.NET. Najvažnija logika (obračun stanja, obrada porudžbina) može da se testira za milisekunde, bez baze. |
 | **Application** | Slučajevi korišćenja, interfejsi (`ISalesChannel`), zajednički tipovi (`AppError`) | Opisuje *šta* aplikacija radi, ne *kako*. Jezgro radi sa `ISalesChannel` i ne zna da WooCommerce postoji. |
-| **Infrastructure** | EF Core, Postgres, Identity, WooCommerce klijent, šifrovanje tajni, kasnije email i Hangfire | Sve što priča sa spoljnim svetom. Promena baze ili email servisa dira samo ovaj sloj. |
+| **Infrastructure** | EF Core, Postgres, Identity, WooCommerce klijent, šifrovanje tajni, Hangfire, kasnije email | Sve što priča sa spoljnim svetom. Promena baze ili email servisa dira samo ovaj sloj. |
 | **Web** | Kontroleri, filteri, konfiguracija, servira React | Tanak sloj koji HTTP zahtev pretvara u poziv servisa i rezultat u HTTP odgovor. |
 
 Ovo je „Clean Architecture light”: slojevi postoje, ali nema MediatR-a, CQRS-a i sličnih šablona. Servis je obična klasa sa metodama koju kontroler direktno poziva.
@@ -112,7 +112,7 @@ COMMIT
 - **Stavka koje više nema** u porudžbini tretira se kao naručeno 0.
 - **Nepovezan proizvod** (nema artikal u Zalihama) se čuva kao stavka bez artikla i ništa ne skida. Kad se proizvod poveže, isti događaj ponovo obrađen skida robu (`Apply` sa istim vremenom je dozvoljen).
 - **Roba se vraća istom artiklu** sa kog je skinuta, čak i ako je proizvod u međuvremenu povezan sa drugim artiklom.
-- **Dva događaja za novu porudžbinu u istom trenutku**: oba pokušaju da je upišu, jedan padne na jedinstvenom indeksu `(ChannelId, ExternalId)`. Pozadinski posao ga ponovi, i tada ne menja ništa.
+- **Dva događaja za novu porudžbinu u istom trenutku** (WooCommerce šalje `order.created` i odmah `order.updated`): porudžbina se upisuje sa `INSERT … ON CONFLICT DO NOTHING`, pa drugi upis sačeka prvu transakciju i ne uradi ništa, a zatim sačeka zaključavanje. Nijedan ne pada.
 
 ## 3. Folder struktura
 
@@ -159,6 +159,8 @@ zalihe/
 **`docker/woocommerce/setup.sh`**: pravi lokalnu WooCommerce prodavnicu (SPEC 9): instalira WordPress i WooCommerce, podesi RSD i srpske separatore, doda test proizvode (šest prostih, među njima jedan bez zaliha i jedan koji ne postoji u aplikaciji, i majicu sa četiri varijacije veličina × boja) i pri svakom pokretanju napravi nov API ključ za Zalihe i ispiše ga. Može da se pokrene ponovo, jer proizvode ne duplira.
 
 **`docker/woocommerce/zalihe-local-https.php`**: samo za lokalni razvoj. WooCommerce prihvata API ključeve samo preko HTTPS-a, a test prodavnica je na `http://localhost:8080`, pa ovaj dodatak (mu-plugin) REST zahteve tretira kao HTTPS. Prave prodavnice su na HTTPS-u i ovo im ne treba.
+
+**`docker/woocommerce/zalihe-local-webhooks.php`**: samo za lokalni razvoj. WordPress odbija da šalje zahteve na privatne adrese (`host.docker.internal`) i portove osim 80, 443 i 8080, a WooCommerce webhookove šalje preko WP-Cron-a, koji u ovom kontejneru ne radi (sajt misli da je na `localhost:8080`, a to unutar kontejnera ne postoji). Dodatak dozvoljava adresu i port 5131 i isporučuje webhook odmah, u istom zahtevu u kom je porudžbina sačuvana.
 
 ### Zalihe.Domain
 
@@ -236,6 +238,7 @@ zalihe/
 - `ConnectWooCommerceAsync()`: proveri adresu (`channel.url_invalid`) i oblik ključeva (`ck_…`, `cs_…`; `channel.keys_invalid`), proveri da firma već nema prodavnicu (`channel.already_connected`), a zatim **pozove prodavnicu pre čuvanja**. Ako ključevi ne rade, ništa se ne upisuje. Ključevi se čuvaju šifrovani kao JSON, uz nasumičnu tajnu od 32 bajta za buduće webhookove.
 - `RecheckAsync()`: ponovo pozove prodavnicu sa sačuvanim ključevima i upiše status.
 - `ReplaceCredentialsAsync()`: novi ključevi se čuvaju samo ako ih prodavnica prihvati.
+- Sva tri koraka idu kroz `SetUpShopAsync()`: provera ključeva, pa `EnsureWebhooksAsync()` (prodavnica šalje porudžbine na adresu ovog kanala, potpisane tajnom kanala). Ključevi samo za čitanje prođu proveru, ali ne mogu da naprave webhook, pa daju `channel.unauthorized`. Zato „Proveri vezu” popravlja i webhook koji je prodavnica isključila posle neuspelih isporuka. Kanal se pri povezivanju pravi pre poziva prodavnice (webhook mora da zna njegov ID), a čuva se tek kad prodavnica prihvati.
 - `SalesChannelDto` nema ključeve: API ih prima, ali ih nikad ne vraća.
 
 **`Channels/ProductImportRules.cs`**: čista pravila uvoza proizvoda, bez baze. `Classify()` svaki proizvod svrsta u jedno od: već povezan (`Linked`), postoji artikal sa istom šifrom (`Match`), nov (`New`) ili preskočen (`Skipped`, uz kod: `channel.product_no_sku`, `channel.product_sku_too_long`, `channel.product_sku_duplicate` kad više proizvoda ima istu šifru, npr. varijacije koje nasleđuju šifru roditelja, i `channel.product_item_linked` kad je artikal sa tom šifrom već povezan sa drugim proizvodom). Šifra se poredi tačno (posle `Trim`), kao i jedinstvenost šifre u bazi. Tu su i pravila za vrednosti novog artikla: naziv se skraćuje na dužinu polja, cena na 2 decimale (negativna se odbacuje), stanje na 3 decimale.
@@ -249,7 +252,16 @@ zalihe/
 
 **`ShopOrder` i `ShopOrderLine`** (u `Channels/ISalesChannel.cs`): porudžbina kako je pročita webhook ili usklađivanje: broj, status, vreme izmene i stavke (ID proizvoda ili varijacije i količina). Ime nije `ExternalOrder`, da se ne bi mešalo sa entitetom.
 
-**`Orders/OrderService.cs`**: `ProcessAsync(channelId, porudžbina)` u jednoj transakciji zaključa porudžbinu, poveže stavke sa artiklima preko `ItemChannelMappings` te prodavnice, pozove `ExternalOrder.Apply()` i za svaku razliku upiše `Sale` ili `Return` (izvor `WooCommerce`, `ExternalRef` = broj porudžbine, vreme = vreme izmene porudžbine, bez korisnika) i ažurira stanje. Stanja artikala zaključava uvek istim redom (po ID-ju), da se dve porudžbine sa istim artiklima ne bi zaglavile (deadlock). Vraća `ProcessOrderResult`: da li je događaj zanemaren kao stariji, broj kretanja i broj nepovezanih stavki. Firma mora biti postavljena pre poziva; tuđi kanal baca izuzetak. Za sada ga pozivaju samo testovi, a pozivaće ga webhook i usklađivanje.
+**`Channels/ISalesChannel.cs`, dopune za webhookove**: `EnsureWebhooksAsync(adresa, tajna)` u ugovoru sa prodavnicom; `IShopOrderReader` čita porudžbinu iz tela webhooka u formatu prodavnice (implementacija je u Infrastructure, jer zna WooCommerce JSON); `WebhookSettings` je javna adresa aplikacije (`Webhooks:BaseUrl`) i od nje pravi adresu za isporuku `{BaseUrl}/webhooks/woo/{channelId}`.
+
+**`Common/IBackgroundJobs.cs`**: zakazivanje pozadinskih poslova. Svaki posao dobija firmu kao parametar, jer nema prijavljenog korisnika (SPEC 3.3). Application ne zna za Hangfire.
+
+**`Webhooks/WebhookService.cs`**:
+- `ReceiveAsync()`: proveri potpis (`IsSignedBy`: base64(HMAC-SHA256(telo, tajna)), poređenje u konstantnom vremenu, pa vreme odgovora ne otkriva koliko je lažni potpis bio blizu). Teme osim `order.created` i `order.updated` i tela koja nisu porudžbina vraćaju `Ignored`, na šta kontroler odgovara 200 da prodavnica ne bi isključila webhook. Porudžbina se upiše kao `WebhookEvent` i zakaže se posao. **Čuva se samo pročitana porudžbina (`ShopOrder` kao JSON), nikad telo isporuke**, u kome su ime, adresa, telefon i email kupca.
+- `ProcessAsync()`: pozove `OrderService` i označi događaj kao obrađen. Već obrađen događaj preskače.
+- `RecordFailureAsync()`: upiše razlog greške na događaj.
+
+**`Orders/OrderService.cs`**: `ProcessAsync(channelId, porudžbina)` u jednoj transakciji zaključa porudžbinu, poveže stavke sa artiklima preko `ItemChannelMappings` te prodavnice, pozove `ExternalOrder.Apply()` i za svaku razliku upiše `Sale` ili `Return` (izvor `WooCommerce`, `ExternalRef` = broj porudžbine, vreme = vreme izmene porudžbine, bez korisnika) i ažurira stanje. Stanja artikala zaključava uvek istim redom (po ID-ju), da se dve porudžbine sa istim artiklima ne bi zaglavile (deadlock). Vraća `ProcessOrderResult`: da li je događaj zanemaren kao stariji, broj kretanja i broj nepovezanih stavki. Firma mora biti postavljena pre poziva; tuđi kanal baca izuzetak. Poziva ga posao za webhook, a pozivaće ga i usklađivanje.
 
 ### Zalihe.Infrastructure
 
@@ -314,7 +326,17 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 
 **Uvoz proizvoda u `AppDbContext.cs`**: tabela `ItemChannelMappings` sa jedinstvenim indeksima iz `ItemChannelMapping`, migracija `AddItemChannelMappings`.
 
-**Porudžbine u `AppDbContext.cs`**: tabele `ExternalOrders` (jedinstven indeks `(ChannelId, ExternalId)`) i `ExternalOrderLines` (jedinstven indeks `(ExternalOrderId, ExternalProductId)`), migracija `AddExternalOrders`. ID stavke je `ValueGeneratedNever`: stavku pravi domen sa već postavljenim ID-jem, pa EF novu stavku na učitanoj porudžbini upiše kao novi red, a ne kao izmenu. `LockExternalOrderAsync()` radi u dva upita: prvi zaključa red porudžbine (`FOR UPDATE`), a drugi učita stavke. Kad bi stavke bile u istom upitu, upit koji je čekao na zaključavanje bi ih čitao onakve kakve su bile pre čekanja i primenio istu razliku dvaput. Tu grešku je otkrio test `Process_ConcurrentEventsForStoredOrder_AppliesTheDifferenceOnce`.
+**`Channels/WooCommerce/WooCommerceClient.cs`, webhookovi**: `EnsureWebhooksAsync()` pročita postojeće webhookove (`GET /webhooks`), pa za `order.created` i `order.updated` napravi webhook koji nedostaje (`POST`) ili ažurira postojeći sa istom adresom (`PUT`, status `active` i tajna). Tuđi webhookovi (druga adresa) se ne diraju. Pri pravljenju webhooka WooCommerce odmah pošalje „ping” na adresu.
+
+**`Channels/WooCommerce/WooCommerceOrderReader.cs`**: čita porudžbinu iz WooCommerce JSON-a: `id`, `status`, `date_modified_gmt` (UTC bez oznake zone) i stavke. Proizvod stavke je `variation_id` ako postoji, inače `product_id`; stavka obrisanog proizvoda (`product_id: 0`) se preskače. Polja kupca se ne čitaju uopšte. Koristiće ga i usklađivanje (`GET /orders`).
+
+**`Jobs/HangfireBackgroundJobs.cs`**: `HangfireBackgroundJobs` zakazuje poslove, a `WebhookEventJob` postavi firmu i obradi događaj. Hangfire svaki posao pokreće u sopstvenom DI scope-u. Ako obrada padne, razlog se upiše na događaj iz **novog** scope-a (stari može da drži napola urađene izmene), a izuzetak se baci ponovo, pa Hangfire pokuša kasnije, sa sve dužim pauzama (podrazumevano 10 pokušaja).
+
+**Hangfire u `DependencyInjection.cs`**: poslovi se čuvaju u istoj bazi, u šemi `hangfire`, koju Hangfire sam napravi. `EnableLongPolling` (Postgres LISTEN/NOTIFY) pokreće nov posao odmah, umesto na sledećoj proveri (podrazumevano na 15 s). Server za poslove radi u istom procesu kao API. `WebhookSettings` se čita iz `Webhooks:BaseUrl`; bez te vrednosti povezivanje prodavnice namerno pada (500), da se podešavanje u produkciji ne bi prećutno zaboravilo.
+
+**Webhookovi u `AppDbContext.cs`**: tabela `WebhookEvents` (`Payload` je `jsonb`, indeks po `ReceivedAt` za brisanje posle 30 dana), migracija `AddWebhookEvents`. `FindChannelTenantAsync()` je jedino čitanje preko granice firmi: webhook zna samo ID prodavnice, pa se firma čita iz kanala bez filtera, i odmah zatim postavlja.
+
+**Porudžbine u `AppDbContext.cs`**: tabele `ExternalOrders` (jedinstven indeks `(ChannelId, ExternalId)`) i `ExternalOrderLines` (jedinstven indeks `(ExternalOrderId, ExternalProductId)`), migracija `AddExternalOrders`. ID stavke je `ValueGeneratedNever`: stavku pravi domen sa već postavljenim ID-jem, pa EF novu stavku na učitanoj porudžbini upiše kao novi red, a ne kao izmenu. `LockOrAddExternalOrderAsync()` prvo upiše porudžbinu ako je nema (`INSERT … ON CONFLICT DO NOTHING`, uz ručnu proveru firme, jer sirov SQL zaobilazi proveru u `SaveChanges`), zatim zaključa red porudžbine (`FOR UPDATE`) i posebnim upitom učita stavke. Kad bi stavke bile u istom upitu, upit koji je čekao na zaključavanje bi ih čitao onakve kakve su bile pre čekanja i primenio istu razliku dvaput. Tu grešku je otkrio test `Process_ConcurrentEventsForStoredOrder_AppliesTheDifferenceOnce`.
 
 **Izmene u `AppDbContext.cs` i `DependencyInjection.cs`**: tabela `SalesChannels` (tip i status kao tekst, jedinstven indeks `(TenantId, Type)`), migracija `AddSalesChannels`; registracija Data Protection-a, imenovanog HTTP klijenta i servisa. Infrastructure sada referencira `Microsoft.AspNetCore.App` (deo .NET-a, ne NuGet paket), zbog Data Protection-a.
 
@@ -391,6 +413,10 @@ Primer odgovora sa greškom:
 **`Properties/launchSettings.json`**: profili za `dotnet run`. Profil `http` pokreće API na portu 5131, i na njega pokazuje Vite proxy.
 
 **`Zalihe.Web.http`**: fajl za ručno slanje zahteva iz VS Code-a („Send Request”).
+
+**`Webhooks/WooCommerceWebhooksController.cs`**: `POST /webhooks/woo/{channelId}`, poziva ga prodavnica, ne korisnik: `[AllowAnonymous]`, bez antiforgery tokena (zahtev nema cookie) i van OpenAPI dokumenta (`IgnoreApi`). Redosled: ping (formular `webhook_id=…` bez potpisa) → 200 odmah, čak i pre nego što je kanal sačuvan; nepoznat kanal → 404; firma iz kanala → `TenantContext`; pogrešan potpis → 401; sve ostalo → 200. Telo se čita kao bajtovi, jer se potpis računa nad tačnim bajtovima, najviše 1 MB. MVC sam pročita telo formulara, pa se ping prepoznaje preko `Request.Form`, a ne iz tela.
+
+**`appsettings.Development.json`, `Webhooks:BaseUrl`**: `http://host.docker.internal:5131`, adresa računara kako je vidi WordPress kontejner. U produkciji je to javna HTTPS adresa aplikacije.
 
 **`Channels/ChannelsController.cs`**: `GET /api/channels`, `POST /api/channels/woocommerce` (201), `POST /api/channels/{id}/check` i `PUT /api/channels/{id}/credentials`, `GET /api/channels/{id}/products/preview` i `POST /api/channels/{id}/products/import` (telo: `createExternalIds`). Tuđi kanal vraća 404, kao i kod artikala. Pregled je GET jer ništa ne menja; greška prodavnice je 400 sa kodom.
 
@@ -561,9 +587,13 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 
 **`Zalihe.Domain.Tests/Orders/ExternalOrderTests.cs`**: svih sedam slučajeva iz SPEC 6 (nova porudžbina, duplirani događaj, otkazivanje, ponovno aktiviranje, izmena količine, uklonjena stavka, događaji van redosleda), plus status koji još ne skida robu, ista šifra u dva reda, nepovezan proizvod, proizvod povezan kasnije i vraćanje robe istom artiklu posle promene veze.
 
-**`Zalihe.IntegrationTests/Orders/OrderProcessingTests.cs`**: `OrderService` protiv prave baze, pozvan kao što će ga zvati pozadinski posao (sopstveni scope, firma postavljena eksplicitno). Prodaja i stanje, duplirani događaj, otkazivanje sa povratom, dodata stavka i izmenjena količina, stariji događaj, nepovezana stavka, stanje jednako zbiru kretanja posle niza događaja, pet istovremenih događaja za istu porudžbinu, dva istovremena događaja za novu porudžbinu (jedan pada i ponavlja se) i izolacija: kanal druge firme se odbija.
+**`Zalihe.IntegrationTests/Orders/OrderProcessingTests.cs`**: `OrderService` protiv prave baze, pozvan kao što će ga zvati pozadinski posao (sopstveni scope, firma postavljena eksplicitno). Prodaja i stanje, duplirani događaj, otkazivanje sa povratom, dodata stavka i izmenjena količina, stariji događaj, nepovezana stavka, stanje jednako zbiru kretanja posle niza događaja, pet istovremenih događaja za istu porudžbinu, pet istovremenih događaja za novu porudžbinu (roba skinuta jednom, bez greške) i izolacija: kanal druge firme se odbija. Prodavnicu sa dva povezana proizvoda pravi `Infrastructure/LinkedShop.cs`, zajednički za ove testove i testove webhookova.
 
-**`Zalihe.IntegrationTests/Channels/ChannelsTests.cs`**: povezivanje (Basic autentifikacija sa pravim ključevima), ključevi u bazi nisu čitljivi, svaki odgovor prodavnice daje svoj kod i ništa se ne čuva, loš unos se odbija pre poziva prodavnice, druga prodavnica, opozvani ključevi pa zamena, i izolacija firmi. **Prava prodavnica se nikad ne poziva**: `Infrastructure/FakeShopHandler.cs` zamenjuje mrežu za HTTP klijent „WooCommerce”, a svaki test određuje kako lažna prodavnica odgovara (`RespondWith`) i proverava šta joj je poslato (`Requests`).
+**`Zalihe.IntegrationTests/Webhooks/WebhooksTests.cs`**: ceo put webhooka, sa pravim Hangfire serverom u test hostu (test čeka dok se događaj ne obradi): stanje pada u pozadini, u bazi nema podataka kupca, otkazivanje vraća robu, ista isporuka dvaput skida robu jednom, pogrešan ili nedostajući potpis i telo izmenjeno posle potpisivanja daju 401, tajna druge firme daje 401 (izolacija), ping daje 200 i za nepoznat kanal, nepoznat kanal 404, druge teme i nepotpune porudžbine 200 bez upisa.
+
+**`Zalihe.Application.Tests/Webhooks/WebhookSignatureTests.cs`**: provera potpisa protiv vrednosti izračunate nezavisno (`openssl dgst -sha256 -hmac`), izmenjeno telo, druga tajna, loš base64. **`Zalihe.Domain.Tests/Channels/WebhookEventTests.cs`**: obrada briše grešku, predugačka greška se skraćuje.
+
+**`Zalihe.IntegrationTests/Channels/ChannelsTests.cs`**: povezivanje (Basic autentifikacija sa pravim ključevima), ključevi u bazi nisu čitljivi, svaki odgovor prodavnice daje svoj kod i ništa se ne čuva, loš unos se odbija pre poziva prodavnice, druga prodavnica, opozvani ključevi pa zamena, i izolacija firmi. **Prava prodavnica se nikad ne poziva**: `Infrastructure/FakeShopHandler.cs` zamenjuje mrežu za HTTP klijent „WooCommerce”, a svaki test određuje kako lažna prodavnica odgovara (`RespondWith`) i proverava šta joj je poslato (`Requests`, a tela u `Bodies`, pročitana pri slanju, jer klijent posle zatvori zahtev). Registracija webhookova: dva webhooka sa adresom i tajnom kanala, postojeći se ažuriraju umesto da se dupliraju (tuđi se ne diraju), a ključevi samo za čitanje daju `channel.unauthorized` i ništa se ne čuva.
 
 ## 5. Jedan zahtev kroz ceo sistem: registracija
 
@@ -629,6 +659,37 @@ Zašto ovakav redosled:
 - **Application ne zna za HTTP ni za šifrovanje**: zna samo za `ISalesChannelFactory` i `ICredentialProtector`. U testovima se zato menja samo mreža (`FakeShopHandler`), a sve ostalo radi kao u produkciji.
 
 ---
+
+### Webhook: od porudžbine u prodavnici do stanja
+
+```
+Kupac naruči → WooCommerce: POST {Webhooks:BaseUrl}/webhooks/woo/{channelId}
+  │   X-WC-Webhook-Topic: order.created
+  │   X-WC-Webhook-Signature: base64(HMAC-SHA256(telo, tajna kanala))
+  ▼
+WooCommerceWebhooksController   (bez prijave i antiforgery tokena)
+  │   ping? → 200
+  │   FindChannelTenantAsync(channelId) → TenantContext.Set(firma)    └─ nema kanala → 404
+  ▼
+WebhookService.ReceiveAsync
+  │   potpis ispravan?                                                └─ ne → 401
+  │   order.created / order.updated i telo je porudžbina?            └─ ne → 200, ništa se ne čuva
+  │   INSERT WebhookEvents (samo broj, status, vreme i stavke)
+  │   IBackgroundJobs.ProcessWebhookEvent(firma, događaj)  → red u šemi hangfire + NOTIFY
+  ▼
+200 OK   (prodavnica dobija odgovor odmah)
+
+… u pozadini, Hangfire server u istom procesu:
+WebhookEventJob.RunAsync(firma, događaj)
+  │   TenantContext.Set(firma)
+  ▼
+WebhookService.ProcessAsync → OrderService.ProcessAsync   (vidi „Porudžbine: primenjuje se samo razlika”)
+  │   └─ izuzetak → razlog na događaj, Hangfire pokuša ponovo kasnije
+  ▼
+WebhookEvent.ProcessedAt = sada
+```
+
+Ako webhook ne stigne (server ne radi, prodavnica isključi webhook), porudžbinu će pokupiti usklađivanje (SPEC 7.4), sledeći korak.
 
 ## 6. Kako se dodaje nova funkcionalnost
 

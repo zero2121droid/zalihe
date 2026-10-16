@@ -27,13 +27,15 @@ public record ChannelResult(SalesChannelDto? Channel, IReadOnlyList<AppError> Er
 
 /// <summary>
 /// Connecting online shops. The connection is checked against the shop before anything is
-/// saved, so a stored channel always had working credentials at the time it was saved.
+/// saved, so a stored channel always had working credentials at the time it was saved. Every
+/// check also makes sure the shop sends its orders to this application (webhooks).
 /// </summary>
 public class ChannelService(
     IAppDbContext db,
     ITenantContext tenant,
     ICredentialProtector protector,
     ISalesChannelFactory channels,
+    WebhookSettings webhooks,
     TimeProvider timeProvider)
 {
     public async Task<IReadOnlyList<SalesChannelDto>> ListAsync(CancellationToken ct) =>
@@ -57,15 +59,17 @@ public class ChannelService(
             return ChannelResult.Failed("channel.already_connected");
         }
 
-        if (await CheckAsync(url, credentials, ct) is { } error)
-        {
-            return ChannelResult.Failed(error);
-        }
-
+        // Created before the shop is called, because the webhooks point to the channel's ID; saved only if the shop accepts.
         var channel = new SalesChannel(tenant.TenantId, SalesChannelType.WooCommerce, url,
             protector.Protect(JsonSerializer.Serialize(credentials)),
             protector.Protect(NewWebhookSecret()),
             timeProvider.GetUtcNow());
+
+        if (await SetUpShopAsync(channel, credentials, ct) is { } error)
+        {
+            return ChannelResult.Failed(error);
+        }
+
         db.SalesChannels.Add(channel);
         await db.SaveChangesAsync(ct);
         return new ChannelResult(ToDto(channel), []);
@@ -81,7 +85,7 @@ public class ChannelService(
         }
 
         var credentials = JsonSerializer.Deserialize<WooCommerceCredentials>(protector.Unprotect(channel.EncryptedCredentials))!;
-        if (await CheckAsync(channel.BaseUrl, credentials, ct) is { } error) channel.MarkFailed(error);
+        if (await SetUpShopAsync(channel, credentials, ct) is { } error) channel.MarkFailed(error);
         else channel.MarkConnected();
 
         await db.SaveChangesAsync(ct);
@@ -102,7 +106,7 @@ public class ChannelService(
             return ChannelResult.Failed("channel.keys_invalid", "consumerKey");
         }
 
-        if (await CheckAsync(channel.BaseUrl, credentials, ct) is { } error)
+        if (await SetUpShopAsync(channel, credentials, ct) is { } error)
         {
             return ChannelResult.Failed(error);
         }
@@ -123,11 +127,18 @@ public class ChannelService(
             : null;
     }
 
-    private async Task<string?> CheckAsync(string baseUrl, WooCommerceCredentials credentials, CancellationToken ct)
+    /// <summary>
+    /// Checks the credentials, then makes sure the shop sends its orders here. Returns the shop's
+    /// error code, or null when both worked. Read-only keys pass the check but can't create webhooks.
+    /// </summary>
+    private async Task<string?> SetUpShopAsync(SalesChannel channel, WooCommerceCredentials credentials, CancellationToken ct)
     {
         try
         {
-            await channels.Create(SalesChannelType.WooCommerce, baseUrl, credentials).CheckConnectionAsync(ct);
+            var shop = channels.Create(channel.Type, channel.BaseUrl, credentials);
+            await shop.CheckConnectionAsync(ct);
+            await shop.EnsureWebhooksAsync(webhooks.WooCommerceDeliveryUrl(channel.Id),
+                protector.Unprotect(channel.EncryptedWebhookSecret), ct);
             return null;
         }
         catch (SalesChannelException e)

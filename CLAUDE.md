@@ -100,6 +100,7 @@ Posle v1 planirana je React Native (Expo) aplikacija koja koristi isti API. Zato
 docker compose up -d --wait                                # Postgres (localhost:5433), WordPress (localhost:8080)
 dotnet run --project src/Zalihe.Web --launch-profile http  # API na http://localhost:5131
 cd src/web && npm run dev                                  # React na http://localhost:5173, /api ide na backend
+cd src/web && npm run dev:slow                             # isto, ali svaki API zahtev kasni 1,5 s (da se vide loaderi i animacije)
 dotnet test                                                # svi .NET testovi
 cd src/web && npm test                                     # frontend testovi (Vitest)
 cd src/web && npm run build && npm run lint                # frontend build i lint
@@ -108,6 +109,11 @@ cd src/web && npm run api                                  # osveži openapi.jso
 # WooCommerce test prodavnica (http://localhost:8080, admin / admin): instalira WordPress,
 # WooCommerce i test proizvode, i ispiše nov API ključ za Zalihe. Može da se pokrene ponovo.
 docker compose run --rm wpcli bash /scripts/setup.sh
+# još 60 proizvoda, za proveru većeg uvoza (posle setup.sh; može ponovo); broj serije (2, 3…) dodaje novih 60
+docker compose run --rm wpcli bash /scripts/more-products.sh
+# demo prodavnica odeće "Nit" za pokazivanje klijentima (posle setup.sh; može ponovo): srpski, slike,
+# početna strana, dostava i pouzeće. Test proizvodi ostaju, ali su sakriveni iz prodavnice.
+docker compose run --rm wpcli bash /scripts/demo.sh
 
 # migracije
 dotnet ef migrations add NazivPromene -p src/Zalihe.Infrastructure -s src/Zalihe.Web -o Persistence/Migrations

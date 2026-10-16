@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Uvoz proizvoda iz prodavnice” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Obrada porudžbina” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -88,6 +88,32 @@ COMMIT
 - **Stanje sme u minus**, jer porudžbine sa sajta stižu bez obzira na stanje. Forma za ručnu prodaju samo upozori.
 - **Status** (`StockStatusRules`): ≤ 0 je „Nema na stanju”, ≤ minimuma je „Ispod minimuma”, ostalo „Na stanju”. Isti uslovi se koriste kao SQL filter u listi.
 
+### Porudžbine: primenjuje se samo razlika
+
+Prodavnica za istu porudžbinu šalje mnogo događaja: duplirane, zakasnele, van redosleda. Zato se ne obrađuje svaki prelaz statusa („otkazana” → vrati robu), već se svaki put izračuna **koliko robe porudžbina treba da drži sada** i primeni samo razlika prema onome što već drži (SPEC 6).
+
+```
+OrderService.ProcessAsync(kanal, porudžbina iz prodavnice)
+  │
+BEGIN TRANSACTION
+  SELECT porudžbina ... FOR UPDATE           ← drugi događaj za istu porudžbinu čeka ovde
+  SELECT stavke porudžbine                   (posebnim upitom, posle zaključavanja)
+  ExternalOrder.Apply(status, vreme, stavke) → spisak razlika po artiklu
+      stariji događaj od poslednjeg?  → ništa
+      za svaku stavku: željeno = aktivan status ? naručeno : 0
+                       razlika = željeno − već primenjeno
+  za svaku razliku (artikli uvek istim redom):
+      zaključaj stanje artikla, Sale ili Return sa ExternalRef = broj porudžbine
+  SaveChanges
+COMMIT
+```
+
+- **Aktivni statusi** su `processing`, `on-hold` i `completed`. Sve ostalo (`pending`, `cancelled`, `refunded`, `failed`...) drži 0, pa otkazivanje samo vraća robu.
+- **Stavka koje više nema** u porudžbini tretira se kao naručeno 0.
+- **Nepovezan proizvod** (nema artikal u Zalihama) se čuva kao stavka bez artikla i ništa ne skida. Kad se proizvod poveže, isti događaj ponovo obrađen skida robu (`Apply` sa istim vremenom je dozvoljen).
+- **Roba se vraća istom artiklu** sa kog je skinuta, čak i ako je proizvod u međuvremenu povezan sa drugim artiklom.
+- **Dva događaja za novu porudžbinu u istom trenutku**: oba pokušaju da je upišu, jedan padne na jedinstvenom indeksu `(ChannelId, ExternalId)`. Pozadinski posao ga ponovi, i tada ne menja ništa.
+
 ## 3. Folder struktura
 
 ```
@@ -163,6 +189,10 @@ zalihe/
 
 **`Channels/ItemChannelMapping.cs`**: veza artikla sa proizvodom u prodavnici: `ExternalId` je ID prostog proizvoda ili varijacije, a `ParentExternalId` ID varijabilnog proizvoda (za varijacije). Konstruktor odbija artikal i prodavnicu različitih firmi. U bazi su dva jedinstvena indeksa: proizvod pripada jednom artiklu `(ChannelId, ExternalId)`, a artikal jednom proizvodu po prodavnici `(ChannelId, ItemId)`.
 
+**`Orders/ExternalOrder.cs`**: porudžbina iz prodavnice, samo broj, status, vreme poslednje izmene i stavke, **bez podataka kupca**. `Apply(status, modifiedAt, stavke)` je cela logika iz SPEC 6 (vidi „Porudžbine: primenjuje se samo razlika”): vraća spisak `OrderStockChange` (artikal i promena stanja, negativna za prodaju), a za događaj stariji od poslednjeg vraća prazan spisak i ništa ne menja. Ista šifra proizvoda u više redova se sabira. `OrderLineSnapshot` je stavka onako kako je prodavnica šalje sada, sa artiklom sa kojim je proizvod povezan.
+
+**`Orders/ExternalOrderLine.cs`**: stavka porudžbine. `OrderedQuantity` je koliko porudžbina sada traži, a `AppliedQuantity` koliko je već skinuto sa stanja, pa novi događaj primenjuje samo razliku. `ItemId` je `null` dok proizvod nije povezan; kad je roba jednom skinuta, artikal stavke se više ne menja. Stavke pravi samo porudžbina (`internal` konstruktor).
+
 ### Zalihe.Application
 
 **`Common/AppError.cs`**: jedna greška koja ide klijentu: `Code` (npr. `auth.email_taken`), `Field` (koje polje forme) i `Params` (npr. `{min: 8}`). Na ovom tipu počiva cela i18n priča: API šalje kod, a frontend ga prevodi preko `errors.auth.email_taken` i ubacuje parametre u rečenicu „Lozinka mora imati najmanje {{min}} znakova”. Ista greška radi na oba jezika i u mobilnoj aplikaciji.
@@ -200,7 +230,7 @@ zalihe/
 
 **`Common/ICredentialProtector.cs`**: `Protect()` i `Unprotect()` za tajne. Application zna samo za interfejs, a šifrovanje radi Infrastructure.
 
-**`Channels/ISalesChannel.cs`**: ugovor sa prodavnicom (SPEC 5): `CheckConnectionAsync()` i `FetchProductsAsync()`, koji vraća proizvode koji imaju stanje (`ExternalProduct`): proste proizvode i varijacije, a varijabilni proizvod je samo njihova grupa. Porudžbine i slanje stanja dolaze u sledećim koracima. `ISalesChannelFactory` pravi klijenta za adresu i ključeve kanala. Kad prodavnica odbije zahtev, klijent baca `SalesChannelException` sa kodom koji frontend prevodi (`channel.unreachable`, `channel.unauthorized`, `channel.not_woocommerce`, `channel.unexpected_response`).
+**`Channels/ISalesChannel.cs`**: ugovor sa prodavnicom (SPEC 5): `CheckConnectionAsync()` i `FetchProductsAsync()`, koji vraća proizvode koji imaju stanje (`ExternalProduct`): proste proizvode i varijacije, a varijabilni proizvod je samo njihova grupa. Čitanje porudžbina i slanje stanja dolaze u sledećim koracima. `ISalesChannelFactory` pravi klijenta za adresu i ključeve kanala. Kad prodavnica odbije zahtev, klijent baca `SalesChannelException` sa kodom koji frontend prevodi (`channel.unreachable`, `channel.unauthorized`, `channel.not_woocommerce`, `channel.unexpected_response`).
 
 **`Channels/ChannelService.cs`**: povezivanje prodavnice.
 - `ConnectWooCommerceAsync()`: proveri adresu (`channel.url_invalid`) i oblik ključeva (`ck_…`, `cs_…`; `channel.keys_invalid`), proveri da firma već nema prodavnicu (`channel.already_connected`), a zatim **pozove prodavnicu pre čuvanja**. Ako ključevi ne rade, ništa se ne upisuje. Ključevi se čuvaju šifrovani kao JSON, uz nasumičnu tajnu od 32 bajta za buduće webhookove.
@@ -216,6 +246,10 @@ zalihe/
 - Najviše 5000 proizvoda (`channel.too_many_products`). Greška prodavnice se vraća kao kod, isto kao pri povezivanju.
 
 **`Channels/SalesChannelFactoryExtensions.cs`**: `Create(channel, protector)` pravi klijenta za sačuvanu prodavnicu, a ključeve dešifruje samo za taj poziv.
+
+**`ShopOrder` i `ShopOrderLine`** (u `Channels/ISalesChannel.cs`): porudžbina kako je pročita webhook ili usklađivanje: broj, status, vreme izmene i stavke (ID proizvoda ili varijacije i količina). Ime nije `ExternalOrder`, da se ne bi mešalo sa entitetom.
+
+**`Orders/OrderService.cs`**: `ProcessAsync(channelId, porudžbina)` u jednoj transakciji zaključa porudžbinu, poveže stavke sa artiklima preko `ItemChannelMappings` te prodavnice, pozove `ExternalOrder.Apply()` i za svaku razliku upiše `Sale` ili `Return` (izvor `WooCommerce`, `ExternalRef` = broj porudžbine, vreme = vreme izmene porudžbine, bez korisnika) i ažurira stanje. Stanja artikala zaključava uvek istim redom (po ID-ju), da se dve porudžbine sa istim artiklima ne bi zaglavile (deadlock). Vraća `ProcessOrderResult`: da li je događaj zanemaren kao stariji, broj kretanja i broj nepovezanih stavki. Firma mora biti postavljena pre poziva; tuđi kanal baca izuzetak. Za sada ga pozivaju samo testovi, a pozivaće ga webhook i usklađivanje.
 
 ### Zalihe.Infrastructure
 
@@ -279,6 +313,8 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 - `FetchProductsAsync()` čita `/products` po 100 (`per_page=100&page=N`, dok strana nije puna), a za svaki varijabilni proizvod i `/products/{id}/variations`. `_fields` traži samo potrebna polja. Naziv varijacije je naziv proizvoda sa opcijama („Majica basic – M, Siva”), a grupa je naziv proizvoda. Grupisani i spoljni proizvodi nemaju sopstveno stanje i preskaču se. Cena je `regular_price` (tekst, npr. `"1250.00"`), a ako je nema, `price`. `stock_quantity` je `null` kad prodavnica ne prati stanje. Kategorija je prva kategorija proizvoda, osim WooCommerce-ove podrazumevane „Uncategorized” (slug `uncategorized`). HTML entiteti u nazivima se dekodiraju (`&amp;` → `&`). Polje neočekivanog tipa daje `unexpected_response`, nikad 500.
 
 **Uvoz proizvoda u `AppDbContext.cs`**: tabela `ItemChannelMappings` sa jedinstvenim indeksima iz `ItemChannelMapping`, migracija `AddItemChannelMappings`.
+
+**Porudžbine u `AppDbContext.cs`**: tabele `ExternalOrders` (jedinstven indeks `(ChannelId, ExternalId)`) i `ExternalOrderLines` (jedinstven indeks `(ExternalOrderId, ExternalProductId)`), migracija `AddExternalOrders`. ID stavke je `ValueGeneratedNever`: stavku pravi domen sa već postavljenim ID-jem, pa EF novu stavku na učitanoj porudžbini upiše kao novi red, a ne kao izmenu. `LockExternalOrderAsync()` radi u dva upita: prvi zaključa red porudžbine (`FOR UPDATE`), a drugi učita stavke. Kad bi stavke bile u istom upitu, upit koji je čekao na zaključavanje bi ih čitao onakve kakve su bile pre čekanja i primenio istu razliku dvaput. Tu grešku je otkrio test `Process_ConcurrentEventsForStoredOrder_AppliesTheDifferenceOnce`.
 
 **Izmene u `AppDbContext.cs` i `DependencyInjection.cs`**: tabela `SalesChannels` (tip i status kao tekst, jedinstven indeks `(TenantId, Type)`), migracija `AddSalesChannels`; registracija Data Protection-a, imenovanog HTTP klijenta i servisa. Infrastructure sada referencira `Microsoft.AspNetCore.App` (deo .NET-a, ne NuGet paket), zbog Data Protection-a.
 
@@ -522,6 +558,10 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 **`Zalihe.Domain.Tests/Channels/ItemChannelMappingTests.cs`** i **`Zalihe.Application.Tests/Channels/ProductImportRulesTests.cs`**: veza artikla i proizvoda, i razvrstavanje proizvoda (šifra postoji, nova, već povezan, bez šifre, predugačka, ista šifra dvaput, artikal već povezan sa drugim proizvodom).
 
 **`Zalihe.IntegrationTests/Channels/ProductImportTests.cs`**: lažna prodavnica odgovara po adresi (proizvodi, varijacije, strane). Pregled razvrstava proizvode i ništa ne upisuje; uvoz pravi izabrane artikle sa stanjem iz prodavnice i povezuje postojeće bez izmene; ponovni pregled i ponovni uvoz ne dupliraju ništa; čitanje više strana; greška prodavnice ne upisuje ništa; izolacija firmi (šifra druge firme se ne računa, tuđi kanal je 404); varijacija čuva ID roditelja. Test sa `stock_quantity: null` je otkrio grešku pre prvog pokretanja na pravoj prodavnici.
+
+**`Zalihe.Domain.Tests/Orders/ExternalOrderTests.cs`**: svih sedam slučajeva iz SPEC 6 (nova porudžbina, duplirani događaj, otkazivanje, ponovno aktiviranje, izmena količine, uklonjena stavka, događaji van redosleda), plus status koji još ne skida robu, ista šifra u dva reda, nepovezan proizvod, proizvod povezan kasnije i vraćanje robe istom artiklu posle promene veze.
+
+**`Zalihe.IntegrationTests/Orders/OrderProcessingTests.cs`**: `OrderService` protiv prave baze, pozvan kao što će ga zvati pozadinski posao (sopstveni scope, firma postavljena eksplicitno). Prodaja i stanje, duplirani događaj, otkazivanje sa povratom, dodata stavka i izmenjena količina, stariji događaj, nepovezana stavka, stanje jednako zbiru kretanja posle niza događaja, pet istovremenih događaja za istu porudžbinu, dva istovremena događaja za novu porudžbinu (jedan pada i ponavlja se) i izolacija: kanal druge firme se odbija.
 
 **`Zalihe.IntegrationTests/Channels/ChannelsTests.cs`**: povezivanje (Basic autentifikacija sa pravim ključevima), ključevi u bazi nisu čitljivi, svaki odgovor prodavnice daje svoj kod i ništa se ne čuva, loš unos se odbija pre poziva prodavnice, druga prodavnica, opozvani ključevi pa zamena, i izolacija firmi. **Prava prodavnica se nikad ne poziva**: `Infrastructure/FakeShopHandler.cs` zamenjuje mrežu za HTTP klijent „WooCommerce”, a svaki test određuje kako lažna prodavnica odgovara (`RespondWith`) i proverava šta joj je poslato (`Requests`).
 

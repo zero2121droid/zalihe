@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Channels;
 using Zalihe.Domain.Items;
+using Zalihe.Domain.Orders;
 using Zalihe.Domain.Stock;
 using Zalihe.Domain.Tenants;
 using Zalihe.Domain.Users;
@@ -22,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<StockLevel> StockLevels => Set<StockLevel>();
     public DbSet<SalesChannel> SalesChannels => Set<SalesChannel>();
     public DbSet<ItemChannelMapping> ItemChannelMappings => Set<ItemChannelMapping>();
+    public DbSet<ExternalOrder> ExternalOrders => Set<ExternalOrder>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -131,6 +133,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             mapping.HasIndex(m => m.TenantId);
         });
 
+        builder.Entity<ExternalOrder>(order =>
+        {
+            order.Property(o => o.ExternalId).HasMaxLength(ExternalOrder.ExternalIdMaxLength);
+            order.Property(o => o.Status).HasMaxLength(ExternalOrder.StatusMaxLength);
+            order.HasMany(o => o.Lines).WithOne().HasForeignKey(l => l.ExternalOrderId).OnDelete(DeleteBehavior.Cascade);
+            order.HasOne<SalesChannel>().WithMany().HasForeignKey(o => o.ChannelId).OnDelete(DeleteBehavior.Restrict);
+            order.HasOne<Tenant>().WithMany().HasForeignKey(o => o.TenantId).OnDelete(DeleteBehavior.Restrict);
+            // A shop sends many events for one order; they all update the same row.
+            order.HasIndex(o => new { o.ChannelId, o.ExternalId }).IsUnique();
+            order.HasIndex(o => o.TenantId);
+        });
+
+        builder.Entity<ExternalOrderLine>(line =>
+        {
+            line.ToTable("ExternalOrderLines");
+            // The order creates its lines with their IDs, so a new line found on a loaded order is an insert, not an update.
+            line.Property(l => l.Id).ValueGeneratedNever();
+            line.Property(l => l.ExternalProductId).HasMaxLength(ItemChannelMapping.ExternalIdMaxLength);
+            line.Property(l => l.OrderedQuantity).HasPrecision(18, 3);
+            line.Property(l => l.AppliedQuantity).HasPrecision(18, 3);
+            line.HasOne<Item>().WithMany().HasForeignKey(l => l.ItemId).OnDelete(DeleteBehavior.Restrict);
+            line.HasOne<Tenant>().WithMany().HasForeignKey(l => l.TenantId).OnDelete(DeleteBehavior.Restrict);
+            line.HasIndex(l => new { l.ExternalOrderId, l.ExternalProductId }).IsUnique();
+            line.HasIndex(l => l.TenantId);
+        });
+
         ApplyTenantFilters(builder);
     }
 
@@ -157,6 +185,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         StockLevels
             .FromSql($"""SELECT *, xmin FROM "StockLevels" WHERE "ItemId" = {itemId} FOR UPDATE""")
             .SingleOrDefaultAsync(ct);
+
+    public async Task<ExternalOrder?> LockExternalOrderAsync(Guid channelId, string externalId, CancellationToken ct)
+    {
+        // Locks only the order row; its lines are changed only while the order is locked. The lines
+        // must be read by a second statement: a statement that waited for the lock sees the latest
+        // locked row, but reads every other table as it was when the statement started, so lines read
+        // in the same statement could miss what the transaction holding the lock just applied.
+        var id = await ExternalOrders
+            .FromSql($"""SELECT * FROM "ExternalOrders" WHERE "ChannelId" = {channelId} AND "ExternalId" = {externalId} FOR UPDATE""")
+            .Select(o => (Guid?)o.Id)
+            .SingleOrDefaultAsync(ct);
+
+        return id is null ? null : await ExternalOrders.Include(o => o.Lines).SingleAsync(o => o.Id == id, ct);
+    }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {

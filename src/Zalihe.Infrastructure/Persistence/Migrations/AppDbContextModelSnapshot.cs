@@ -342,6 +342,82 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.ToTable("ItemChanges");
                 });
 
+            modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChannelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("LastModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("ChannelId", "ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("ExternalOrders");
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrderLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("AppliedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("ExternalOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ExternalProductId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid?>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("OrderedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("ExternalOrderId", "ExternalProductId")
+                        .IsUnique();
+
+                    b.ToTable("ExternalOrderLines", (string)null);
+                });
+
             modelBuilder.Entity("Zalihe.Domain.Stock.StockLevel", b =>
                 {
                     b.Property<Guid>("ItemId")
@@ -659,6 +735,41 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.Navigation("Changes");
                 });
 
+            modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrder", b =>
+                {
+                    b.HasOne("Zalihe.Domain.Channels.SalesChannel", null)
+                        .WithMany()
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrderLine", b =>
+                {
+                    b.HasOne("Zalihe.Domain.Orders.ExternalOrder", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ExternalOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Zalihe.Domain.Items.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Zalihe.Domain.Stock.StockLevel", b =>
                 {
                     b.HasOne("Zalihe.Domain.Items.Item", null)
@@ -701,6 +812,11 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrder", b =>
+                {
+                    b.Navigation("Lines");
                 });
 #pragma warning restore 612, 618
         }

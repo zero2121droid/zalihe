@@ -10,6 +10,7 @@ using Zalihe.Application.Common;
 using Zalihe.Application.Dashboard;
 using Zalihe.Application.Imports;
 using Zalihe.Application.Items;
+using Zalihe.Application.Orders;
 using Zalihe.Application.Stock;
 using Zalihe.Infrastructure.Channels.WooCommerce;
 using Zalihe.Infrastructure.Identity;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ChannelService>();
         services.AddScoped<ProductImportService>();
+        services.AddScoped<OrderService>();
 
         // Shop API keys are encrypted with Data Protection. Its key ring must persist across
         // restarts and deployments (see DataProtection:KeysPath), or stored keys can't be read.

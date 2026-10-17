@@ -10,6 +10,7 @@ import { ImportPage } from './pages/items/ImportPage'
 import { ItemDetailPage } from './pages/items/ItemDetailPage'
 import { ItemsPage } from './pages/items/ItemsPage'
 import { LoginPage } from './pages/LoginPage'
+import { OrdersPage } from './pages/orders/OrdersPage'
 import { RegisterPage } from './pages/RegisterPage'
 
 export const routes: RouteObject[] = [
@@ -36,6 +37,7 @@ export const routes: RouteObject[] = [
           { path: '/items', element: <ItemsPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/import', element: <ImportPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/:id', element: <ItemDetailPage />, handle: { width: 'wide' } satisfies RouteHandle },
+          { path: '/orders', element: <OrdersPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/channels', element: <ChannelsPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/channels/:id/import', element: <ProductImportPage />, handle: { width: 'wide' } satisfies RouteHandle },
         ],

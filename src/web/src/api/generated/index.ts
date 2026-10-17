@@ -4,4 +4,5 @@ export * from './dashboard/dashboard';
 export * from './health/health';
 export * from './imports/imports';
 export * from './items/items';
+export * from './orders/orders';
 export * from './stock/stock';

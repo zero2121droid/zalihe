@@ -8,7 +8,8 @@ namespace Zalihe.Domain.Orders;
 /// </summary>
 /// <param name="ExternalProductId">The product's ID in the shop, or the variation's ID for a variation.</param>
 /// <param name="ItemId">The linked item; null when the product isn't linked to any item.</param>
-public record OrderLineSnapshot(string ExternalProductId, Guid? ItemId, decimal Quantity);
+/// <param name="Name">The product's name in the shop, for showing the line; null when the shop didn't send it.</param>
+public record OrderLineSnapshot(string ExternalProductId, Guid? ItemId, decimal Quantity, string? Name = null);
 
 /// <summary>A change of an item's stock caused by an order. Negative takes from stock (sale), positive returns it.</summary>
 public record OrderStockChange(Guid ItemId, decimal Quantity);
@@ -48,11 +49,15 @@ public class ExternalOrder : ITenantOwned
     /// <summary>When the shop last changed the order; older events are ignored.</summary>
     public DateTimeOffset? LastModifiedAt { get; private set; }
 
+    /// <summary>When the customer placed the order in the shop.</summary>
+    public DateTimeOffset PlacedAt { get; private set; }
+
+    /// <summary>When the order first reached this application.</summary>
     public DateTimeOffset CreatedAt { get; private set; }
 
     public IReadOnlyList<ExternalOrderLine> Lines => _lines;
 
-    public ExternalOrder(SalesChannel channel, string externalId, DateTimeOffset createdAt)
+    public ExternalOrder(SalesChannel channel, string externalId, DateTimeOffset placedAt, DateTimeOffset createdAt)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(externalId);
         externalId = externalId.Trim();
@@ -62,6 +67,7 @@ public class ExternalOrder : ITenantOwned
         TenantId = channel.TenantId;
         ChannelId = channel.Id;
         ExternalId = externalId;
+        PlacedAt = placedAt;
         CreatedAt = createdAt;
     }
 
@@ -96,7 +102,10 @@ public class ExternalOrder : ITenantOwned
             .GroupBy(l => l.ExternalProductId.Trim(), StringComparer.Ordinal)
             .ToDictionary(
                 g => g.Key,
-                g => (ItemId: g.Select(l => l.ItemId).FirstOrDefault(id => id is not null), Quantity: g.Sum(l => l.Quantity)),
+                g => (
+                    ItemId: g.Select(l => l.ItemId).FirstOrDefault(id => id is not null),
+                    Quantity: g.Sum(l => l.Quantity),
+                    Name: g.Select(l => l.Name).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n))),
                 StringComparer.Ordinal);
 
         var changes = new List<OrderStockChange>();
@@ -104,16 +113,16 @@ public class ExternalOrder : ITenantOwned
         {
             if (!current.Remove(line.ExternalProductId, out var now))
             {
-                now = (null, 0);
+                now = (null, 0, null);
             }
 
-            line.Update(now.ItemId, now.Quantity);
+            line.Update(now.ItemId, now.Quantity, now.Name);
             AddChange(changes, line.Settle(isActive));
         }
 
         foreach (var (productId, now) in current)
         {
-            var line = new ExternalOrderLine(this, productId, now.ItemId, now.Quantity);
+            var line = new ExternalOrderLine(this, productId, now.ItemId, now.Quantity, now.Name);
             _lines.Add(line);
             AddChange(changes, line.Settle(isActive));
         }

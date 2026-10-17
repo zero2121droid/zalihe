@@ -53,7 +53,7 @@ public class WooCommerceOrderReader : IShopOrderReader
                 return null;
             }
 
-            lines.Add(new ShopOrderLine(productId.ToString(CultureInfo.InvariantCulture), value));
+            lines.Add(new ShopOrderLine(productId.ToString(CultureInfo.InvariantCulture), value, Text(item, "name")));
         }
 
         return new ShopOrder(id.ToString(CultureInfo.InvariantCulture), status, createdAt, modifiedAt, lines);

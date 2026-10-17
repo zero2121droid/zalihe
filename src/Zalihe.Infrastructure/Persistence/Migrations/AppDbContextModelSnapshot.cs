@@ -410,6 +410,9 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset>("PlacedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Status")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
@@ -423,6 +426,8 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ChannelId", "ExternalId")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "PlacedAt");
 
                     b.ToTable("ExternalOrders");
                 });
@@ -446,6 +451,10 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid?>("ItemId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<decimal>("OrderedQuantity")
                         .HasPrecision(18, 3)

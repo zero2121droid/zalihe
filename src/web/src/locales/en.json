@@ -12,6 +12,7 @@
       "home": "Home",
       "openMenu": "Open menu",
       "items": "Items",
+      "orders": "Orders",
       "channels": "Sales channels"
     },
     "logout": "Sign out",
@@ -271,6 +272,70 @@
         "again": "New import"
       },
       "back": "Back"
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "privacy": "From orders we keep only the number, date, status and products. Customer data is never taken.",
+    "search": "Search orders",
+    "searchPlaceholder": "Order number or product name",
+    "searching": "Searching…",
+    "filters": {
+      "label": "Order filters",
+      "all": "All",
+      "unlinked": "Unlinked products",
+      "status": "Status",
+      "anyStatus": "All statuses"
+    },
+    "columns": {
+      "order": "Order",
+      "placedAt": "Date",
+      "status": "Status",
+      "products": "Products"
+    },
+    "status": {
+      "pending": "Pending payment",
+      "processing": "Processing",
+      "on-hold": "On hold",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "failed": "Failed",
+      "checkout-draft": "Draft"
+    },
+    "takesStock": "Takes stock",
+    "doesNotTakeStock": "Takes no stock",
+    "number": "#{{number}}",
+    "open": "Open order {{number}}",
+    "productWithId": "Product #{{id}}",
+    "moreProducts_one": "{{count}} more product",
+    "moreProducts_few": "{{count}} more products",
+    "moreProducts_other": "{{count}} more products",
+    "unlinkedCount_one": "{{count}} unlinked",
+    "unlinkedCount_few": "{{count}} unlinked",
+    "unlinkedCount_other": "{{count}} unlinked",
+    "lineState": {
+      "unlinked": "Not linked",
+      "linkedAfterOrder": "Linked after the order"
+    },
+    "detail": {
+      "title": "Order #{{number}}",
+      "placedAt": "Placed {{date}}",
+      "shopProduct": "Product in the shop",
+      "item": "Item in Zalihe",
+      "ordered": "Ordered",
+      "applied": "Taken from stock",
+      "inactive": "In this status the order holds no goods, so nothing is taken from stock (or it was returned).",
+      "unlinked": "Products not linked to an item don't change stock. Link them in the product import from the shop.",
+      "linkUnlinked": "Link products",
+      "linkedAfterOrder": "The order was placed before the product was linked, so it doesn't change stock: the stock at linking already included it."
+    },
+    "noResults": "No orders for “{{search}}”.",
+    "noFilterResults": "No orders match the selected filters.",
+    "empty": {
+      "title": "No orders yet",
+      "description": "Orders arrive on their own from connected shops as soon as a customer orders.",
+      "channels": "Sales channels"
     }
   },
   "stock": {

@@ -141,6 +141,103 @@
         }
       }
     },
+    "/api/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "operationId": "ListOrders",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "maxLength": 32,
+              "type": "string"
+            }
+          },
+          {
+            "name": "unlinkedOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOrderDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOrderDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfOrderDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/items": {
       "get": {
         "tags": [
@@ -2297,6 +2394,133 @@
           null
         ]
       },
+      "OrderDto": {
+        "required": [
+          "id",
+          "number",
+          "channelId",
+          "shopUrl",
+          "status",
+          "takesStock",
+          "placedAt",
+          "unlinkedLineCount",
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "channelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopUrl": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "takesStock": {
+            "type": "boolean"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unlinkedLineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLineDto"
+            }
+          }
+        }
+      },
+      "OrderLineDto": {
+        "required": [
+          "externalProductId",
+          "name",
+          "state",
+          "item",
+          "orderedQuantity",
+          "appliedQuantity"
+        ],
+        "type": "object",
+        "properties": {
+          "externalProductId": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/OrderLineState"
+          },
+          "item": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrderLineItemDto"
+              }
+            ]
+          },
+          "orderedQuantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "appliedQuantity": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "OrderLineItemDto": {
+        "required": [
+          "id",
+          "name",
+          "sku",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          }
+        }
+      },
+      "OrderLineState": {
+        "enum": [
+          "linked",
+          "unlinked",
+          "linkedAfterOrder"
+        ]
+      },
       "PagedResultOfItemDto": {
         "required": [
           "items",
@@ -2339,6 +2563,35 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ItemHistoryEntryDto"
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfOrderDto": {
+        "required": [
+          "items",
+          "totalCount",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderDto"
             }
           },
           "totalCount": {
@@ -2891,6 +3144,9 @@
   "tags": [
     {
       "name": "Stock"
+    },
+    {
+      "name": "Orders"
     },
     {
       "name": "Items"

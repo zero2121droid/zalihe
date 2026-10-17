@@ -14,8 +14,16 @@ public class ExternalOrderLine : ITenantOwned
     public Guid TenantId { get; private set; }
     public Guid ExternalOrderId { get; private set; }
 
+    public const int NameMaxLength = Item.NameMaxLength;
+
     /// <summary>The product's (or variation's) ID in the shop.</summary>
     public string ExternalProductId { get; private set; }
+
+    /// <summary>
+    /// The product's name in the shop when the order last arrived, e.g. "Duks sa kapuljačom - Plavi, L".
+    /// Shown for lines whose product isn't linked; null for orders that arrived before names were kept.
+    /// </summary>
+    public string? Name { get; private set; }
 
     /// <summary>The linked item; null while the product isn't linked, and nothing is taken from stock.</summary>
     public Guid? ItemId { get; private set; }
@@ -28,7 +36,7 @@ public class ExternalOrderLine : ITenantOwned
 
     public bool IsLinked => ItemId is not null;
 
-    internal ExternalOrderLine(ExternalOrder order, string externalProductId, Guid? itemId, decimal quantity)
+    internal ExternalOrderLine(ExternalOrder order, string externalProductId, Guid? itemId, decimal quantity, string? name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(externalProductId);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(externalProductId.Length, ItemChannelMapping.ExternalIdMaxLength, nameof(externalProductId));
@@ -37,7 +45,7 @@ public class ExternalOrderLine : ITenantOwned
         TenantId = order.TenantId;
         ExternalOrderId = order.Id;
         ExternalProductId = externalProductId;
-        Update(itemId, quantity);
+        Update(itemId, quantity, name);
     }
 
     // For EF Core.
@@ -46,7 +54,7 @@ public class ExternalOrderLine : ITenantOwned
         ExternalProductId = null!;
     }
 
-    internal void Update(Guid? itemId, decimal quantity)
+    internal void Update(Guid? itemId, decimal quantity, string? name)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(quantity);
         if (!Item.HasAtMostDecimals(quantity, Item.QuantityDecimals))
@@ -55,6 +63,12 @@ public class ExternalOrderLine : ITenantOwned
         }
 
         OrderedQuantity = quantity;
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            name = name.Trim();
+            Name = name.Length > NameMaxLength ? name[..NameMaxLength] : name;
+        }
+
         // Stock already taken stays with the item it was taken from, so it is returned to the same item.
         if (AppliedQuantity == 0)
         {

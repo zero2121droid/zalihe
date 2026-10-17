@@ -12,6 +12,7 @@
       "home": "Početna",
       "openMenu": "Otvori meni",
       "items": "Artikli",
+      "orders": "Porudžbine",
       "channels": "Kanali prodaje"
     },
     "logout": "Odjavi se",
@@ -271,6 +272,70 @@
         "again": "Novi uvoz"
       },
       "back": "Nazad"
+    }
+  },
+  "orders": {
+    "title": "Porudžbine",
+    "privacy": "Iz porudžbina čuvamo samo broj, datum, status i proizvode. Podatke kupaca ne preuzimamo.",
+    "search": "Pretraga porudžbina",
+    "searchPlaceholder": "Broj porudžbine ili naziv proizvoda",
+    "searching": "Pretraga…",
+    "filters": {
+      "label": "Filteri porudžbina",
+      "all": "Sve",
+      "unlinked": "Nepovezani proizvodi",
+      "status": "Status",
+      "anyStatus": "Svi statusi"
+    },
+    "columns": {
+      "order": "Porudžbina",
+      "placedAt": "Datum",
+      "status": "Status",
+      "products": "Proizvodi"
+    },
+    "status": {
+      "pending": "Čeka uplatu",
+      "processing": "U obradi",
+      "on-hold": "Na čekanju",
+      "completed": "Završena",
+      "cancelled": "Otkazana",
+      "refunded": "Refundirana",
+      "failed": "Neuspela",
+      "checkout-draft": "Nacrt"
+    },
+    "takesStock": "Skida sa stanja",
+    "doesNotTakeStock": "Ne skida sa stanja",
+    "number": "#{{number}}",
+    "open": "Otvori porudžbinu {{number}}",
+    "productWithId": "Proizvod #{{id}}",
+    "moreProducts_one": "još {{count}} proizvod",
+    "moreProducts_few": "još {{count}} proizvoda",
+    "moreProducts_other": "još {{count}} proizvoda",
+    "unlinkedCount_one": "{{count}} nepovezan",
+    "unlinkedCount_few": "{{count}} nepovezana",
+    "unlinkedCount_other": "{{count}} nepovezanih",
+    "lineState": {
+      "unlinked": "Nije povezan",
+      "linkedAfterOrder": "Povezan posle porudžbine"
+    },
+    "detail": {
+      "title": "Porudžbina #{{number}}",
+      "placedAt": "Naručeno {{date}}",
+      "shopProduct": "Proizvod u prodavnici",
+      "item": "Artikal u Zalihama",
+      "ordered": "Naručeno",
+      "applied": "Skinuto sa stanja",
+      "inactive": "U ovom statusu porudžbina ne drži robu, pa ništa nije skinuto sa stanja (ili je vraćeno).",
+      "unlinked": "Proizvodi koji nisu povezani sa artiklom ne menjaju stanje. Poveži ih u uvozu proizvoda iz prodavnice.",
+      "linkUnlinked": "Poveži proizvode",
+      "linkedAfterOrder": "Porudžbina je naručena pre nego što je proizvod povezan, pa ne menja stanje: stanje pri povezivanju ju je već uračunalo."
+    },
+    "noResults": "Nema porudžbina za „{{search}}”.",
+    "noFilterResults": "Nema porudžbina za izabrane filtere.",
+    "empty": {
+      "title": "Još nema porudžbina",
+      "description": "Porudžbine stižu same iz povezanih prodavnica, čim kupac naruči.",
+      "channels": "Kanali prodaje"
     }
   },
   "stock": {

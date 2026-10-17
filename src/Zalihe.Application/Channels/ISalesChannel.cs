@@ -84,7 +84,8 @@ public record ExternalProduct(
 public record ShopOrder(string ExternalId, string Status, DateTimeOffset CreatedAt, DateTimeOffset ModifiedAt, IReadOnlyList<ShopOrderLine> Lines);
 
 /// <param name="ExternalProductId">The product's ID, or the variation's ID for a variation (as in <see cref="ExternalProduct.ExternalId"/>).</param>
-public record ShopOrderLine(string ExternalProductId, decimal Quantity);
+/// <param name="Name">The product's name as the order shows it; null when the shop didn't send one.</param>
+public record ShopOrderLine(string ExternalProductId, decimal Quantity, string? Name = null);
 
 public record WooCommerceCredentials(string ConsumerKey, string ConsumerSecret);
 

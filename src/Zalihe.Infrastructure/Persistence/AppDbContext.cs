@@ -144,6 +144,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             // A shop sends many events for one order; they all update the same row.
             order.HasIndex(o => new { o.ChannelId, o.ExternalId }).IsUnique();
             order.HasIndex(o => o.TenantId);
+            // The orders list shows the newest first.
+            order.HasIndex(o => new { o.TenantId, o.PlacedAt });
         });
 
         builder.Entity<ExternalOrderLine>(line =>
@@ -152,6 +154,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             // The order creates its lines with their IDs, so a new line found on a loaded order is an insert, not an update.
             line.Property(l => l.Id).ValueGeneratedNever();
             line.Property(l => l.ExternalProductId).HasMaxLength(ItemChannelMapping.ExternalIdMaxLength);
+            line.Property(l => l.Name).HasMaxLength(ExternalOrderLine.NameMaxLength);
             line.Property(l => l.OrderedQuantity).HasPrecision(18, 3);
             line.Property(l => l.AppliedQuantity).HasPrecision(18, 3);
             line.HasOne<Item>().WithMany().HasForeignKey(l => l.ItemId).OnDelete(DeleteBehavior.Restrict);
@@ -207,8 +210,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         // When two events for a new order arrive together, the second insert waits for the first
         // transaction and then does nothing, instead of failing on the unique index.
         await Database.ExecuteSqlAsync($"""
-            INSERT INTO "ExternalOrders" ("Id", "TenantId", "ChannelId", "ExternalId", "CreatedAt")
-            VALUES ({candidate.Id}, {candidate.TenantId}, {candidate.ChannelId}, {candidate.ExternalId}, {candidate.CreatedAt})
+            INSERT INTO "ExternalOrders" ("Id", "TenantId", "ChannelId", "ExternalId", "PlacedAt", "CreatedAt")
+            VALUES ({candidate.Id}, {candidate.TenantId}, {candidate.ChannelId}, {candidate.ExternalId}, {candidate.PlacedAt}, {candidate.CreatedAt})
             ON CONFLICT ("ChannelId", "ExternalId") DO NOTHING
             """, ct);
 

@@ -15,7 +15,7 @@ public class ExternalOrderTests
     private static ExternalOrder NewOrder()
     {
         var channel = new SalesChannel(Guid.NewGuid(), SalesChannelType.WooCommerce, "https://zrno.rs", "enc", "enc", T1);
-        return new ExternalOrder(channel, " 1041 ", T1);
+        return new ExternalOrder(channel, " 1041 ", T1, T1);
     }
 
     private static OrderLineSnapshot CoffeeLine(decimal quantity) => new("10", Coffee, quantity);
@@ -270,6 +270,34 @@ public class ExternalOrderTests
     }
 
     [Fact]
+    public void Apply_ProductNames_KeepsLatestAndKeepsOldWhenNoneSent()
+    {
+        // Arrange
+        var order = NewOrder();
+        order.Apply("processing", T1, [new OrderLineSnapshot("99", null, 1, "Duks - L")]);
+        order.Apply("processing", T2, [new OrderLineSnapshot("99", null, 1, " Duks sa kapuljačom - L ")]);
+
+        // Act
+        order.Apply("processing", T3, [new OrderLineSnapshot("99", null, 1)]);
+
+        // Assert
+        order.Lines.ShouldHaveSingleItem().Name.ShouldBe("Duks sa kapuljačom - L");
+    }
+
+    [Fact]
+    public void Apply_VeryLongProductName_IsShortened()
+    {
+        // Arrange
+        var order = NewOrder();
+
+        // Act
+        order.Apply("processing", T1, [new OrderLineSnapshot("99", null, 1, new string('a', 300))]);
+
+        // Assert
+        order.Lines.ShouldHaveSingleItem().Name!.Length.ShouldBe(ExternalOrderLine.NameMaxLength);
+    }
+
+    [Fact]
     public void Apply_NegativeQuantity_Throws()
     {
         Should.Throw<ArgumentOutOfRangeException>(() => NewOrder().Apply("processing", T1, [CoffeeLine(-1)]));
@@ -290,7 +318,7 @@ public class ExternalOrderTests
         var channel = new SalesChannel(Guid.NewGuid(), SalesChannelType.WooCommerce, "https://zrno.rs", "enc", "enc", T1);
 
         // Act
-        var order = new ExternalOrder(channel, "1041", T1);
+        var order = new ExternalOrder(channel, "1041", T1, T1);
         order.Apply("processing", T1, [CoffeeLine(1)]);
 
         // Assert

@@ -29,7 +29,7 @@ public class OrderService(IAppDbContext db, StockPushService stockPush, TimeProv
             ?? throw new InvalidOperationException($"Sales channel {channelId} was not found for the current company.");
 
         // Waits while another event for this order is being processed, then reads what it applied.
-        var stored = await db.LockOrAddExternalOrderAsync(new ExternalOrder(channel, order.ExternalId, timeProvider.GetUtcNow()), ct);
+        var stored = await db.LockOrAddExternalOrderAsync(new ExternalOrder(channel, order.ExternalId, order.CreatedAt, timeProvider.GetUtcNow()), ct);
 
         var ignored = stored.LastModifiedAt > order.ModifiedAt;
         var changes = stored.Apply(order.Status, order.ModifiedAt, await SnapshotAsync(channelId, order, ct));
@@ -79,7 +79,8 @@ public class OrderService(IAppDbContext db, StockPushService stockPush, TimeProv
             .Select(l => new OrderLineSnapshot(
                 l.ExternalProductId.Trim(),
                 linked.TryGetValue(l.ExternalProductId.Trim(), out var link) && order.CreatedAt >= link.LinkedAt ? link.ItemId : null,
-                l.Quantity))
+                l.Quantity,
+                l.Name))
             .ToList();
     }
 }

@@ -27,6 +27,7 @@ Uvoz artikala sa početnim stanjem. Korisnik mapira kolone, vidi pregled pre uvo
 - Uvoz proizvoda i varijacija, sa povezivanjem po SKU-u
 - Automatsko skidanje sa stanja kad stigne porudžbina i vraćanje kad se otkaže
 - Slanje stanja nazad u shop
+- Ekran „Porudžbine”: porudžbine iz prodavnica (broj, datum, status, proizvodi, koliko je skinuto sa stanja), pretraga, filter po statusu i „nepovezani proizvodi”, sa putem do povezivanja. Bez podataka kupca.
 
 ### 2.5 Upozorenja
 Kad stanje padne na minimalnu zalihu ili ispod: oznaka u aplikaciji i email (najviše jedan email dnevno po firmi, sa spiskom).
@@ -70,8 +71,8 @@ Aplikacija je od prvog dana dvojezična: srpski latinica (glavni) i engleski. Fr
 | `StockLevel` | ItemId (PK), TenantId, Quantity, UpdatedAt, RowVersion | Keš, ažurira se u istoj transakciji |
 | `SalesChannel` | Id, TenantId, Type, BaseUrl, EncryptedCredentials, WebhookSecret, Status, LastSyncedAt | |
 | `ItemChannelMapping` | Id, TenantId, ItemId, ChannelId, ExternalId, ParentExternalId | ParentExternalId za varijacije |
-| `ExternalOrder` | Id, TenantId, ChannelId, ExternalId, Status, LastModifiedAt | Unique (ChannelId, ExternalId) |
-| `ExternalOrderLine` | Id, ExternalOrderId, ItemId, OrderedQuantity, AppliedQuantity | AppliedQuantity = koliko je već skinuto |
+| `ExternalOrder` | Id, TenantId, ChannelId, ExternalId, Status, PlacedAt, LastModifiedAt | Unique (ChannelId, ExternalId); PlacedAt = kad je naručena |
+| `ExternalOrderLine` | Id, ExternalOrderId, ExternalProductId, Name, ItemId, OrderedQuantity, AppliedQuantity | AppliedQuantity = koliko je već skinuto; Name = naziv proizvoda u prodavnici |
 | `WebhookEvent` | Id, ChannelId, ReceivedAt, Payload, ProcessedAt, Error | Sirovi događaji (inbox) |
 
 `StockLevel` mora uvek biti jednak zbiru kretanja. Postoji administrativna akcija za ponovni obračun.
@@ -108,7 +109,7 @@ za porudžbinu (u transakciji, sa zaključavanjem reda ExternalOrder):
   stavke koje su nestale iz porudžbine tretiraju se kao desired = 0
 ```
 
-Stavke bez mapiranog artikla se čuvaju kao nepovezane i prikazuju korisniku da ih poveže. Po povezivanju se porudžbina ponovo obrađuje.
+Stavke bez mapiranog artikla se čuvaju kao nepovezane i prikazuju korisniku na ekranu „Porudžbine” da ih poveže. Veza važi za porudžbine naručene posle povezivanja: stanje artikla u trenutku povezivanja već sadrži ranije porudžbine (preuzeto iz prodavnice ili izbrojano), pa ih ponovna obrada ne skida drugi put.
 
 Unit testovi moraju pokriti: novu porudžbinu, duplirani događaj, otkazivanje, ponovno aktiviranje posle otkazivanja, izmenu količine, uklonjenu stavku, događaje van redosleda.
 
@@ -118,7 +119,7 @@ Unit testovi moraju pokriti: novu porudžbinu, duplirani događaj, otkazivanje, 
 Preusmeravanje korisnika na `{shop}/wc-auth/v1/authorize` sa `app_name`, `scope=read_write`, `user_id` (ID kanala), `return_url` i `callback_url`. WooCommerce šalje ključeve POST-om na `callback_url` (mora biti HTTPS). U lokalnom razvoju ključevi se unose ručno.
 
 ### 7.2 Početni uvoz
-`GET /wp-json/wc/v3/products` (stranično, `per_page=100`) i za varijabilne proizvode `GET /products/{id}/variations`. Povezivanje sa postojećim artiklima po SKU-u, a ostali se nude za kreiranje.
+`GET /wp-json/wc/v3/products` (stranično, `per_page=100`) i za varijabilne proizvode `GET /products/{id}/variations`. Povezivanje sa postojećim artiklima po SKU-u, a ostali se nude za kreiranje. Nabavna cena novog artikla se uzima iz WooCommerce polja „Cost of goods sold” (`cost_of_goods_sold.total_value`; varijacija bez svoje cene nasleđuje cenu proizvoda). Ako je funkcija u prodavnici isključena ili je cena 0, nabavne cene nema.
 
 ### 7.3 Webhookovi
 Registracija preko API-ja za `order.created` i `order.updated`, sa adresom `/webhooks/woo/{channelId}`.
@@ -136,7 +137,7 @@ Posle promene stanja mapiranog artikla zakazuje se slanje sa kratkim odlaganjem 
 Retry sa rastućim razmakom (Hangfire). Posle ponovljenih neuspeha kanal dobija status greške i vlasnik se obaveštava (npr. sigurnosni plugin blokira API ili su ključevi opozvani).
 
 ## 8. Bezbednost i privatnost
-- Iz porudžbina se čuvaju samo ID, status, datumi, stavke i količine. Sirovi `WebhookEvent.Payload` se pre čuvanja čisti od podataka kupca (billing, shipping, customer polja) i briše posle 30 dana.
+- Iz porudžbina se čuvaju samo ID, status, datumi, stavke (proizvod i njegov naziv) i količine. Sirovi `WebhookEvent.Payload` se pre čuvanja čisti od podataka kupca (billing, shipping, customer polja) i briše posle 30 dana.
 - API ključevi šifrovani preko ASP.NET Data Protection
 - Svi zahtevi preko HTTPS-a, antiforgery zaštita za cookie autentifikaciju
 

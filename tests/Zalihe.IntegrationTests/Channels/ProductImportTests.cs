@@ -21,7 +21,7 @@ public partial class ProductImportTests(ZaliheApiFactory factory)
     private const string Products = """
         [
           {"id":10,"name":"Kafa Etiopija","type":"simple","sku":"KF-ETI-250","regular_price":"1250","price":"1250","stock_quantity":24,"categories":[{"id":1,"name":"Kafa","slug":"kafa"}]},
-          {"id":11,"name":"Proizvod &amp; poklon","type":"simple","sku":"WOO-ONLY-1","regular_price":"500.50","price":"450","stock_quantity":3,"categories":[{"id":15,"name":"Uncategorized","slug":"uncategorized"},{"id":2,"name":"Pokloni","slug":"pokloni"}]},
+          {"id":11,"name":"Proizvod &amp; poklon","type":"simple","sku":"WOO-ONLY-1","regular_price":"500.50","price":"450","stock_quantity":3,"cost_of_goods_sold":{"values":[{"defined_value":210.5,"effective_value":210.5}],"total_value":210.5},"categories":[{"id":15,"name":"Uncategorized","slug":"uncategorized"},{"id":2,"name":"Pokloni","slug":"pokloni"}]},
           {"id":12,"name":"Bez šifre","type":"simple","sku":"","regular_price":"","price":"","stock_quantity":null,"categories":[{"id":15,"name":"Uncategorized","slug":"uncategorized"}]},
           {"id":50,"name":"Majica basic","type":"variable","sku":"MAJ-BASIC","regular_price":"","price":"1990","stock_quantity":null,"categories":[{"id":3,"name":"Odeća","slug":"odeca"}]},
           {"id":60,"name":"Paket","type":"grouped","sku":"PAKET","regular_price":"","price":"","stock_quantity":null,"categories":[]}
@@ -30,8 +30,8 @@ public partial class ProductImportTests(ZaliheApiFactory factory)
 
     private const string Variations = """
         [
-          {"id":51,"sku":"MAJ-M-SI","regular_price":"1990","price":"1990","stock_quantity":5,"attributes":[{"name":"Veličina","option":"M"},{"name":"Boja","option":"Siva"}]},
-          {"id":52,"sku":"MAJ-M-BE","regular_price":"1990","price":"1990","stock_quantity":0,"attributes":[{"name":"Veličina","option":"M"},{"name":"Boja","option":"Bela"}]}
+          {"id":51,"sku":"MAJ-M-SI","regular_price":"1990","price":"1990","stock_quantity":5,"cost_of_goods_sold":{"values":[{"defined_value":null,"effective_value":0}],"total_value":800,"defined_value_is_additive":false},"attributes":[{"name":"Veličina","option":"M"},{"name":"Boja","option":"Siva"}]},
+          {"id":52,"sku":"MAJ-M-BE","regular_price":"1990","price":"1990","stock_quantity":0,"cost_of_goods_sold":{"values":[{"defined_value":null,"effective_value":0}],"total_value":0,"defined_value_is_additive":false},"attributes":[{"name":"Veličina","option":"M"},{"name":"Boja","option":"Bela"}]}
         ]
         """;
 
@@ -161,6 +161,24 @@ public partial class ProductImportTests(ZaliheApiFactory factory)
         existing.GetProperty("stock").GetDecimal().ShouldBe(0);
 
         (await client.GetFromJsonAsync<JsonElement>("/api/items")).GetProperty("totalCount").GetInt32().ShouldBe(3);
+    }
+
+    [Fact]
+    public async Task Import_ShopCostOfGoods_BecomesPurchasePriceOfNewItems()
+    {
+        // Arrange: 11 has its own cost, variation 51 its product's, 52 none (WooCommerce sends 0)
+        var (client, channelId) = await ConnectedShopAsync();
+        ShopHas(Products);
+
+        // Act
+        (await ImportAsync(client, channelId, "10", "11", "51", "52")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // Assert
+        (await FindItemAsync(client, "WOO-ONLY-1")).GetProperty("purchasePrice").GetDecimal().ShouldBe(210.50m);
+        (await FindItemAsync(client, "MAJ-M-SI")).GetProperty("purchasePrice").GetDecimal().ShouldBe(800m);
+        (await FindItemAsync(client, "MAJ-M-BE")).GetProperty("purchasePrice").ValueKind.ShouldBe(JsonValueKind.Null);
+        // A shop with the feature off has no field at all.
+        (await FindItemAsync(client, "KF-ETI-250")).GetProperty("purchasePrice").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     [Fact]

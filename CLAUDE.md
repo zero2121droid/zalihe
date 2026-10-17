@@ -112,7 +112,7 @@ docker compose run --rm wpcli bash /scripts/setup.sh
 # još 60 proizvoda, za proveru većeg uvoza (posle setup.sh; može ponovo); broj serije (2, 3…) dodaje novih 60
 docker compose run --rm wpcli bash /scripts/more-products.sh
 # demo prodavnica odeće "Nit" za pokazivanje klijentima (posle setup.sh; može ponovo): srpski, slike,
-# početna strana, dostava i pouzeće. Test proizvodi ostaju, ali su sakriveni iz prodavnice.
+# početna strana, dostava, pouzeće i nabavne cene ("Cost of goods sold"). Test proizvodi ostaju, ali su sakriveni iz prodavnice.
 docker compose run --rm wpcli bash /scripts/demo.sh
 
 # migracije

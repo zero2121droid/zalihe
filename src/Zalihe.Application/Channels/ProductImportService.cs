@@ -29,7 +29,7 @@ public record ProductImportResult<T>(T? Value, AppError? Error, bool NotFound = 
 
 /// <summary>
 /// Imports a shop's products: links them to items with the same SKU and creates the new ones the
-/// user picked, with the shop's stock as opening stock. Like the CSV import it reads the source
+/// user picked, with the shop's stock as opening stock and its cost as purchase price. Like the CSV import it reads the source
 /// again on import, so nothing is kept between preview and import. Existing items never change.
 /// </summary>
 public class ProductImportService(
@@ -92,7 +92,8 @@ public class ProductImportService(
         {
             var data = ToCreate(row);
             var item = new Item(tenant.TenantId, data.Name, data.Sku, Unit.Kom, 0, now,
-                category: data.Category, groupName: data.GroupName, salePrice: data.Price);
+                category: data.Category, groupName: data.GroupName,
+                purchasePrice: ProductImportRules.Price(row.Product.Cost), salePrice: data.Price);
             var level = new StockLevel(item, now);
             db.Items.Add(item);
             db.StockLevels.Add(level);

@@ -8,7 +8,7 @@ public class ProductImportRulesTests
     private static readonly Dictionary<string, Guid> NothingLinked = [];
 
     private static ExternalProduct Product(string id, string? sku, string name = "Kafa", decimal? stock = 5) =>
-        new(id, null, name, null, sku, null, 1250m, stock);
+        new(id, null, name, null, sku, null, 1250m, null, stock);
 
     [Fact]
     public void Classify_SkuOfExistingItem_LinksToThatItem()

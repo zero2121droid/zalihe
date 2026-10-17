@@ -22,6 +22,8 @@ wp option update timezone_string Europe/Belgrade >/dev/null
 # "1.990 RSD" instead of "RSD1.990,00", as Serbian shops show prices.
 wp option update woocommerce_currency_pos right_space >/dev/null
 wp option update woocommerce_price_num_decimals 0 >/dev/null
+# Purchase prices ("Cost of goods sold"), which Zalihe imports as items' purchase price.
+wp option update woocommerce_feature_cost_of_goods_sold_enabled yes >/dev/null
 
 mkdir -p wp-content/mu-plugins
 cp /scripts/nit-demo.php wp-content/mu-plugins/

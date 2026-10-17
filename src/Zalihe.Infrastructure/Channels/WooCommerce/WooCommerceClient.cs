@@ -16,8 +16,8 @@ namespace Zalihe.Infrastructure.Channels.WooCommerce;
 public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCredentials credentials) : ISalesChannel
 {
     private const int PageSize = 100;
-    private const string ProductFields = "id,name,type,sku,regular_price,price,stock_quantity,categories";
-    private const string VariationFields = "id,sku,regular_price,price,stock_quantity,attributes";
+    private const string ProductFields = "id,name,type,sku,regular_price,price,stock_quantity,cost_of_goods_sold,categories";
+    private const string VariationFields = "id,sku,regular_price,price,stock_quantity,cost_of_goods_sold,attributes";
 
     /// <summary>Only what stock needs: the shop doesn't even send the customer's data.</summary>
     private const string OrderFields = "id,status,date_created_gmt,date_modified_gmt,line_items";
@@ -48,13 +48,13 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
             switch (Text(product, "type"))
             {
                 case "simple":
-                    Add(new ExternalProduct(id, null, name, null, Text(product, "sku"), Category(product), Price(product), Stock(product)));
+                    Add(new ExternalProduct(id, null, name, null, Text(product, "sku"), Category(product), Price(product), Cost(product), Stock(product)));
                     break;
                 case "variable":
                     await foreach (var variation in PagesAsync($"products/{id}/variations?orderby=id&order=asc&_fields={VariationFields}", ct))
                     {
                         Add(new ExternalProduct(Id(variation), id, VariationName(name, variation), name,
-                            Text(variation, "sku"), Category(product), Price(variation), Stock(variation)));
+                            Text(variation, "sku"), Category(product), Price(variation), Cost(variation), Stock(variation)));
                     }
                     break;
                 // Grouped and external products hold no stock of their own.
@@ -159,6 +159,17 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
     /// <summary>The regular price, or the current price when there is none. Prices are strings ("1250.00", or "").</summary>
     private static decimal? Price(JsonElement element) =>
         Decimal(Text(element, "regular_price")) ?? Decimal(Text(element, "price"));
+
+    /// <summary>
+    /// The "Cost of goods sold" total; a variation without its own cost has its product's. Null when the
+    /// shop has the feature off (no field) or no cost is set: WooCommerce reports that as 0.
+    /// </summary>
+    private static decimal? Cost(JsonElement element) =>
+        element.TryGetProperty("cost_of_goods_sold", out var cogs) && cogs.ValueKind == JsonValueKind.Object
+        && cogs.TryGetProperty("total_value", out var total) && total.ValueKind == JsonValueKind.Number
+        && total.TryGetDecimal(out var value) && value > 0
+            ? value
+            : null;
 
     private static decimal? Decimal(string? text) =>
         decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value) ? value : null;

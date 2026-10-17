@@ -64,6 +64,7 @@ public record WebhookSettings(string BaseUrl)
 /// <param name="Name">For a variation: the product name with its options, e.g. "Majica basic – M, Siva".</param>
 /// <param name="GroupName">For a variation: the variable product's name; null for a simple product.</param>
 /// <param name="Price">Regular price; null when the shop has none.</param>
+/// <param name="Cost">What the shop owner paid for it (WooCommerce "Cost of goods sold"); null when the shop has none.</param>
 /// <param name="Stock">Stock quantity; null when the shop doesn't track stock for the product.</param>
 public record ExternalProduct(
     string ExternalId,
@@ -73,6 +74,7 @@ public record ExternalProduct(
     string? Sku,
     string? Category,
     decimal? Price,
+    decimal? Cost,
     decimal? Stock);
 
 /// <summary>

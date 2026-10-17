@@ -155,6 +155,14 @@ foreach ($products as [$sku, $name, $category, $price, $photo, $featured, $attri
     WP_CLI::log("  + $name ($sku, " . count($combinations) . " variations)");
 }
 
+// Purchase price: about 45% of the sale price, rounded to tens. Set on existing products too;
+// variations without their own cost use their product's.
+foreach ($products as [$sku, , , $price]) {
+    $product = wc_get_product(wc_get_product_id_by_sku($sku));
+    $product->set_cogs_value(round($price * 0.45, -1));
+    $product->save();
+}
+
 // The test products from setup.sh and more-products.sh stay (Zalihe can still import them),
 // but are hidden from the shop so it looks like one clothing brand.
 $hidden = 0;

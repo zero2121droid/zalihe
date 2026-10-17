@@ -54,14 +54,65 @@ public class SalesChannelTests
         var channel = Create();
 
         // Act & Assert
-        channel.MarkFailed("channel.unauthorized");
+        channel.MarkFailed("channel.unauthorized", Now);
         channel.Status.ShouldBe(SalesChannelStatus.Error);
         channel.LastErrorCode.ShouldBe("channel.unauthorized");
+        channel.FailingSince.ShouldBe(Now);
 
         channel.ReplaceCredentials("new-enc-credentials");
         channel.Status.ShouldBe(SalesChannelStatus.Connected);
         channel.LastErrorCode.ShouldBeNull();
+        channel.FailingSince.ShouldBeNull();
         channel.EncryptedCredentials.ShouldBe("new-enc-credentials");
+    }
+
+    [Fact]
+    public void RecordFailure_ShortOutage_StaysConnectedButKeepsReason()
+    {
+        // Arrange
+        var channel = Create();
+
+        // Act
+        channel.RecordFailure("channel.unreachable", Now);
+        channel.RecordFailure("channel.unreachable", Now + SalesChannel.ErrorAfter - TimeSpan.FromSeconds(1));
+
+        // Assert
+        channel.Status.ShouldBe(SalesChannelStatus.Connected);
+        channel.LastErrorCode.ShouldBe("channel.unreachable");
+        channel.FailingSince.ShouldBe(Now);
+    }
+
+    [Fact]
+    public void RecordFailure_FailingForErrorAfter_ShowsErrorWithLatestReason()
+    {
+        // Arrange
+        var channel = Create();
+        channel.RecordFailure("channel.unreachable", Now);
+
+        // Act
+        channel.RecordFailure("channel.unauthorized", Now + SalesChannel.ErrorAfter);
+
+        // Assert
+        channel.Status.ShouldBe(SalesChannelStatus.Error);
+        channel.LastErrorCode.ShouldBe("channel.unauthorized");
+        channel.FailingSince.ShouldBe(Now);
+    }
+
+    [Fact]
+    public void MarkConnected_AfterFailures_StartsCountingAgainOnNextFailure()
+    {
+        // Arrange
+        var channel = Create();
+        channel.RecordFailure("channel.unreachable", Now);
+        channel.RecordFailure("channel.unreachable", Now + SalesChannel.ErrorAfter);
+
+        // Act
+        channel.MarkConnected();
+        channel.RecordFailure("channel.unreachable", Now + TimeSpan.FromHours(2));
+
+        // Assert
+        channel.Status.ShouldBe(SalesChannelStatus.Connected);
+        channel.FailingSince.ShouldBe(Now + TimeSpan.FromHours(2));
     }
 
     [Fact]

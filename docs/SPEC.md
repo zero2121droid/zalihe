@@ -134,7 +134,7 @@ Hangfire posao na svakih 15-30 minuta: `GET /orders?modified_after={LastSyncedAt
 Posle promene stanja mapiranog artikla zakazuje se slanje sa kratkim odlaganjem (npr. 30 s) radi grupisanja. Proste proizvode šalje `POST /products/batch`, a varijacije `POST /products/{parentId}/variations/batch`, sa `manage_stock: true` i `stock_quantity`. WooCommerce stanje je ceo broj, pa se šalje zaokruženo naniže. Aplikacija je izvor istine za stanje, a shop samo prikazuje.
 
 ### 7.6 Greške
-Retry sa rastućim razmakom (Hangfire). Posle ponovljenih neuspeha kanal dobija status greške i vlasnik se obaveštava (npr. sigurnosni plugin blokira API ili su ključevi opozvani).
+Retry sa rastućim razmakom (Hangfire). Posle ponovljenih neuspeha kanal dobija status greške i vlasnik se obaveštava (npr. sigurnosni plugin blokira API ili su ključevi opozvani). Kanal pamti od kada prodavnica ne radi, a status greške dobija kad ne radi bar 30 minuta (jedan neuspeh je često prolazan); prvi uspešan kontakt ga vraća. Vlasnik vidi traku sa razlogom iznad svakog ekrana aplikacije; email ide uz upozorenja (2.5), kad se uvede slanje emailova.
 
 ## 8. Bezbednost i privatnost
 - Iz porudžbina se čuvaju samo ID, status, datumi, stavke (proizvod i njegov naziv) i količine. Sirovi `WebhookEvent.Payload` se pre čuvanja čisti od podataka kupca (billing, shipping, customer polja) i briše posle 30 dana.

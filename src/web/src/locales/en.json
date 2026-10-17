@@ -436,7 +436,8 @@
       "checkedAt": "Checked {{date}}",
       "check": "Check connection",
       "replaceKeys": "Change keys",
-      "importProducts": "Import products"
+      "importProducts": "Import products",
+      "failingSince": "Not working since {{date}}"
     },
     "replace": {
       "title": "Change keys",
@@ -485,6 +486,12 @@
         "toItems": "Go to items",
         "toChannels": "Back to channels"
       }
+    },
+    "alert": {
+      "title": "The connection to {{shop}} is not working",
+      "titleSince": "The connection to {{shop}} has not been working since {{date}}",
+      "impact": "Until it is fixed, stock from Zalihe doesn't reach the shop, so it may sell what is gone.",
+      "open": "Open channels"
     }
   }
 }

@@ -2964,6 +2964,7 @@
           "baseUrl",
           "status",
           "lastErrorCode",
+          "failingSince",
           "lastSyncedAt",
           "createdAt"
         ],
@@ -2987,6 +2988,13 @@
               "null",
               "string"
             ]
+          },
+          "failingSince": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "lastSyncedAt": {
             "type": [

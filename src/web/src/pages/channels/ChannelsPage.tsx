@@ -189,6 +189,11 @@ function ChannelCard({ channel }: { channel: SalesChannelDto }) {
               {t(`errors.${channel.lastErrorCode}`, { defaultValue: t('errors.common.unexpected') })}
             </Text>
           )}
+          {channel.status === 'error' && channel.failingSince && (
+            <Text fz="xs" c="dimmed">
+              {t('channels.card.failingSince', { date: formatDateTime(channel.failingSince, i18n.language) })}
+            </Text>
+          )}
           {checkedAt && (
             <Text fz="xs" c="dimmed">
               {t('channels.card.checkedAt', { date: formatDateTime(checkedAt, i18n.language) })}

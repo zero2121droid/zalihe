@@ -29,7 +29,8 @@ public class OrderSyncService(
 
     /// <summary>
     /// Applies the orders changed since the last sync. Throws <see cref="SalesChannelException"/> when the
-    /// shop can't be read; the last sync time then stays, so the next run asks for the same orders again.
+    /// shop can't be read; the failure is recorded on the channel (SPEC 7.6) and the last sync time stays,
+    /// so the next run asks for the same orders again.
     /// </summary>
     public async Task<OrderSyncResult> SyncAsync(Guid channelId, CancellationToken ct)
     {
@@ -42,7 +43,19 @@ public class OrderSyncService(
         var startedAt = timeProvider.GetUtcNow();
         // The first sync starts at connecting: older orders are already in the stock taken over at import.
         var since = channel.LastSyncedAt is { } last ? last - Overlap : channel.CreatedAt;
-        var changed = await channels.Create(channel, protector).FetchOrdersModifiedSinceAsync(since, ct);
+        IReadOnlyList<ShopOrder> changed;
+        try
+        {
+            changed = await channels.Create(channel, protector).FetchOrdersModifiedSinceAsync(since, ct);
+        }
+        catch (SalesChannelException e)
+        {
+            channel.RecordFailure(e.Code, timeProvider.GetUtcNow());
+            await db.SaveChangesAsync(ct);
+            throw;
+        }
+
+        channel.MarkConnected();
 
         var movements = 0;
         foreach (var order in changed)

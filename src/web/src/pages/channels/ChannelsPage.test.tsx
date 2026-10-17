@@ -10,6 +10,7 @@ const channel = {
   baseUrl: 'https://zrno.rs',
   status: 'connected',
   lastErrorCode: null,
+  failingSince: null,
   lastSyncedAt: null,
   createdAt: '2026-10-02T08:00:00Z',
 }
@@ -89,7 +90,7 @@ describe('ChannelsPage', () => {
       'GET /api/channels': { status: 200, body: [channel] },
       'POST /api/channels/c1/check': {
         status: 200,
-        body: { ...channel, status: 'error', lastErrorCode: 'channel.unauthorized' },
+        body: { ...channel, status: 'error', lastErrorCode: 'channel.unauthorized', failingSince: '2026-10-17T12:00:00Z' },
       },
     })
     await renderPage(<ChannelsPage />, '/channels')
@@ -100,6 +101,7 @@ describe('ChannelsPage', () => {
     // Assert
     expect(await screen.findByText('Veza ne radi')).toBeInTheDocument()
     expect(screen.getByText(/Prodavnica je odbila ključeve/)).toBeInTheDocument()
+    expect(screen.getByText(/^Ne radi od 17\. 10\. 2026\./)).toBeInTheDocument()
     expect(screen.getByText(/^Provereno/)).toBeInTheDocument()
   })
 

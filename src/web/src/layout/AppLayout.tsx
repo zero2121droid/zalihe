@@ -10,6 +10,7 @@ import { useCurrentUser } from '../auth/useCurrentUser'
 import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import classes from './AppLayout.module.css'
+import { ChannelAlert } from './ChannelAlert'
 import { usePageWidth } from './pageWidth'
 
 interface NavItem {
@@ -103,6 +104,7 @@ export function AppLayout() {
 
       <AppShell.Main>
         <Box className={classes.main} data-width={pageWidth}>
+          <ChannelAlert />
           <Outlet />
         </Box>
       </AppShell.Main>

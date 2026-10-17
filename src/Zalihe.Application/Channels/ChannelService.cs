@@ -13,6 +13,7 @@ public record SalesChannelDto(
     string BaseUrl,
     SalesChannelStatus Status,
     string? LastErrorCode,
+    DateTimeOffset? FailingSince,
     DateTimeOffset? LastSyncedAt,
     DateTimeOffset CreatedAt);
 
@@ -85,7 +86,7 @@ public class ChannelService(
         }
 
         var credentials = JsonSerializer.Deserialize<WooCommerceCredentials>(protector.Unprotect(channel.EncryptedCredentials))!;
-        if (await SetUpShopAsync(channel, credentials, ct) is { } error) channel.MarkFailed(error);
+        if (await SetUpShopAsync(channel, credentials, ct) is { } error) channel.MarkFailed(error, timeProvider.GetUtcNow());
         else channel.MarkConnected();
 
         await db.SaveChangesAsync(ct);
@@ -150,5 +151,5 @@ public class ChannelService(
     private static string NewWebhookSecret() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
     private static SalesChannelDto ToDto(SalesChannel c) =>
-        new(c.Id, c.Type, c.BaseUrl, c.Status, c.LastErrorCode, c.LastSyncedAt, c.CreatedAt);
+        new(c.Id, c.Type, c.BaseUrl, c.Status, c.LastErrorCode, c.FailingSince, c.LastSyncedAt, c.CreatedAt);
 }

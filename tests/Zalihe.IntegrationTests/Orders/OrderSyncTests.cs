@@ -164,9 +164,40 @@ public class OrderSyncTests(ZaliheApiFactory factory)
         // Act
         var error = await Should.ThrowAsync<SalesChannelException>(() => SyncAsync(channelId));
 
-        // Assert
+        // Assert: one failure is recorded, but doesn't alarm the owner yet (SPEC 7.6).
         error.Code.ShouldBe(SalesChannelException.Unauthorized);
-        (await ChannelAsync(channelId)).LastSyncedAt.ShouldBeNull();
+        var channel = await ChannelAsync(channelId);
+        channel.LastSyncedAt.ShouldBeNull();
+        channel.LastErrorCode.ShouldBe(SalesChannelException.Unauthorized);
+        channel.FailingSince.ShouldNotBeNull();
+        channel.Status.ShouldBe(SalesChannelStatus.Connected);
+    }
+
+    [Fact]
+    public async Task Sync_ShopWorksAgainAfterError_ChannelIsConnected()
+    {
+        // Arrange: the shop has been failing long enough to show an error.
+        var (_, channelId) = await LinkedShop.CreateAsync(factory);
+        factory.Shop.RespondWith(_ => throw new HttpRequestException("Connection refused"));
+        await Should.ThrowAsync<SalesChannelException>(() => SyncAsync(channelId));
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var stored = await db.SalesChannels.IgnoreQueryFilters().SingleAsync(c => c.Id == channelId);
+            stored.RecordFailure(SalesChannelException.Unreachable, stored.FailingSince!.Value + SalesChannel.ErrorAfter);
+            await db.SaveChangesAsync();
+        }
+        (await ChannelAsync(channelId)).Status.ShouldBe(SalesChannelStatus.Error);
+        ShopHasOrders("[]");
+
+        // Act
+        await SyncAsync(channelId);
+
+        // Assert
+        var channel = await ChannelAsync(channelId);
+        channel.Status.ShouldBe(SalesChannelStatus.Connected);
+        channel.LastErrorCode.ShouldBeNull();
+        channel.FailingSince.ShouldBeNull();
     }
 
     [Fact]

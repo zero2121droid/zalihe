@@ -15,6 +15,8 @@ export interface SalesChannelDto {
   /** @nullable */
   lastErrorCode: string | null;
   /** @nullable */
+  failingSince: string | null;
+  /** @nullable */
   lastSyncedAt: string | null;
   createdAt: string;
 }

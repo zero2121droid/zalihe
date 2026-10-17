@@ -44,6 +44,13 @@ public class StockPushTests(ZaliheApiFactory factory)
             .ToDictionaryAsync(m => m.ExternalId);
     }
 
+    private async Task<SalesChannel> ChannelAsync(Guid channelId)
+    {
+        using var scope = factory.Services.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().SalesChannels
+            .IgnoreQueryFilters().AsNoTracking().SingleAsync(c => c.Id == channelId);
+    }
+
     private async Task<Guid> TenantOfAsync(Guid channelId)
     {
         using var scope = factory.Services.CreateScope();
@@ -179,6 +186,28 @@ public class StockPushTests(ZaliheApiFactory factory)
         // Assert
         error.Code.ShouldBe(SalesChannelException.Unreachable);
         (await MappingsAsync(channelId))["10"].StockChangedAt.ShouldNotBeNull();
+        var channel = await ChannelAsync(channelId);
+        channel.LastErrorCode.ShouldBe(SalesChannelException.Unreachable);
+        channel.FailingSince.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Push_ShopAnswersAfterFailure_ClearsFailure()
+    {
+        // Arrange
+        var (client, channelId) = await LinkedShop.CreateAsync(factory);
+        await MoveAsync(client, "KF-ETI-250", "receipt", 3);
+        factory.Shop.RespondWith(_ => throw new HttpRequestException("Connection refused"));
+        await Should.ThrowAsync<SalesChannelException>(() => PushAsync(channelId));
+        ShopAcceptsAll();
+
+        // Act
+        await PushAsync(channelId);
+
+        // Assert
+        var channel = await ChannelAsync(channelId);
+        channel.LastErrorCode.ShouldBeNull();
+        channel.FailingSince.ShouldBeNull();
     }
 
     [Fact]

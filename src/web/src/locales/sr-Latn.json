@@ -436,7 +436,8 @@
       "checkedAt": "Provereno {{date}}",
       "check": "Proveri vezu",
       "replaceKeys": "Promeni ključeve",
-      "importProducts": "Uvezi proizvode"
+      "importProducts": "Uvezi proizvode",
+      "failingSince": "Ne radi od {{date}}"
     },
     "replace": {
       "title": "Promeni ključeve",
@@ -485,6 +486,12 @@
         "toItems": "Idi na artikle",
         "toChannels": "Nazad na kanale"
       }
+    },
+    "alert": {
+      "title": "Veza sa prodavnicom {{shop}} ne radi",
+      "titleSince": "Veza sa prodavnicom {{shop}} ne radi od {{date}}",
+      "impact": "Dok se ne popravi, stanje iz Zaliha ne stiže u prodavnicu, pa ona može da proda ono čega nema.",
+      "open": "Otvori kanale"
     }
   }
 }

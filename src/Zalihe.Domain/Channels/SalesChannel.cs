@@ -37,8 +37,17 @@ public class SalesChannel : ITenantOwned
 
     public SalesChannelStatus Status { get; private set; }
 
-    /// <summary>Error code of the last failed contact (e.g. "channel.unauthorized"); null when connected.</summary>
+    /// <summary>
+    /// How long the shop may keep failing in the background before the channel shows an error: one
+    /// failed sync or push is often a passing hiccup (a restart, a slow host), not a reason to alarm the owner.
+    /// </summary>
+    public static readonly TimeSpan ErrorAfter = TimeSpan.FromMinutes(30);
+
+    /// <summary>Error code of the last failed contact (e.g. "channel.unauthorized"); null when the last contact worked.</summary>
     public string? LastErrorCode { get; private set; }
+
+    /// <summary>When the shop started failing, counting from the first of the failed contacts in a row; null when the last contact worked.</summary>
+    public DateTimeOffset? FailingSince { get; private set; }
 
     /// <summary>When the last order sync started; the next one asks the shop for orders changed since then.</summary>
     public DateTimeOffset? LastSyncedAt { get; private set; }
@@ -80,6 +89,7 @@ public class SalesChannel : ITenantOwned
     {
         Status = SalesChannelStatus.Connected;
         LastErrorCode = null;
+        FailingSince = null;
     }
 
     /// <param name="startedAt">When the sync started, so orders changed while it ran are read again next time.</param>
@@ -89,11 +99,26 @@ public class SalesChannel : ITenantOwned
         LastSyncedAt = startedAt;
     }
 
-    public void MarkFailed(string errorCode)
+    /// <summary>A check the user asked for failed: the channel shows the error right away.</summary>
+    public void MarkFailed(string errorCode, DateTimeOffset at)
+    {
+        RecordFailure(errorCode, at);
+        Status = SalesChannelStatus.Error;
+    }
+
+    /// <summary>
+    /// A background contact (sync, stock push) failed. The channel shows an error once the shop has
+    /// been failing for <see cref="ErrorAfter"/>; any contact that works brings it back (<see cref="MarkConnected"/>).
+    /// </summary>
+    public void RecordFailure(string errorCode, DateTimeOffset at)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(errorCode);
-        Status = SalesChannelStatus.Error;
         LastErrorCode = errorCode;
+        FailingSince ??= at;
+        if (at - FailingSince >= ErrorAfter)
+        {
+            Status = SalesChannelStatus.Error;
+        }
     }
 
     /// <summary>

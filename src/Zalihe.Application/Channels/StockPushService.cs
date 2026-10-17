@@ -53,11 +53,12 @@ public class StockPushService(
     /// <summary>
     /// Sends the current stock of every changed product to the shop and clears its mark. A product changed
     /// again while this ran keeps its mark (its new change is sent next time); one the shop rejects keeps it too.
-    /// Throws <see cref="SalesChannelException"/> when the shop can't be reached; all marks then stay.
+    /// Throws <see cref="SalesChannelException"/> when the shop can't be reached; all marks then stay and
+    /// the failure is recorded on the channel (SPEC 7.6).
     /// </summary>
     public async Task<StockPushResult> PushAsync(Guid channelId, CancellationToken ct)
     {
-        var channel = await db.SalesChannels.AsNoTracking().SingleOrDefaultAsync(c => c.Id == channelId, ct);
+        var channel = await db.SalesChannels.SingleOrDefaultAsync(c => c.Id == channelId, ct);
         if (channel is null)
         {
             return new StockPushResult(0, 0, 0); // removed after the job was scheduled
@@ -73,10 +74,25 @@ public class StockPushService(
         var unchanged = changed.Where(c => c.PushedStock == ItemChannelMapping.ShopStock(c.Stock)).ToList();
         var toSend = changed.Except(unchanged).ToList();
 
-        var accepted = toSend.Count == 0
-            ? new HashSet<string>()
-            : await channels.Create(channel, protector).UpdateStockAsync(
-                toSend.Select(c => new ShopStockUpdate(c.ExternalId, c.ParentExternalId, ItemChannelMapping.ShopStock(c.Stock))).ToList(), ct);
+        IReadOnlySet<string> accepted = new HashSet<string>();
+        if (toSend.Count > 0)
+        {
+            try
+            {
+                accepted = await channels.Create(channel, protector).UpdateStockAsync(
+                    toSend.Select(c => new ShopStockUpdate(c.ExternalId, c.ParentExternalId, ItemChannelMapping.ShopStock(c.Stock))).ToList(), ct);
+            }
+            catch (SalesChannelException e)
+            {
+                channel.RecordFailure(e.Code, timeProvider.GetUtcNow());
+                await db.SaveChangesAsync(ct);
+                throw;
+            }
+
+            // The shop answered; products it rejected are its own matter, not a broken connection.
+            channel.MarkConnected();
+            await db.SaveChangesAsync(ct);
+        }
 
         var sent = toSend.Where(c => accepted.Contains(c.ExternalId)).ToList();
         foreach (var done in unchanged.Concat(sent))

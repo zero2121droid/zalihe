@@ -1,0 +1,59 @@
+/*
+ * Search in a list: while the new results are on their way, rows of the current page that no
+ * longer match fold away and the typed text is marked in the rest. Under reduced motion rows
+ * simply disappear.
+ */
+
+.match {
+  background: var(--z-selected);
+  color: var(--z-accent-text);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* Mantine draws the row border on the row and the spacing on its cells; both fold with it. */
+.row,
+.row > td {
+  transition:
+    padding-block 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Each cell's content sits in a .cell, which is what folds. 80 px is above any row's content. */
+.cell {
+  max-height: 80px;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.25s ease;
+}
+
+/*
+ * Clipped only while typing (rows fold and unfold then), so a stock change can still float
+ * above its number the rest of the time.
+ */
+.narrowing .cell {
+  overflow: hidden;
+}
+
+.hidden {
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.hidden > td {
+  padding-block: 0;
+  border-color: transparent;
+}
+
+.hidden .cell {
+  max-height: 0;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .row > td,
+  .cell {
+    transition: none;
+  }
+}

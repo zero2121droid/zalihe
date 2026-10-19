@@ -12,9 +12,11 @@ import { useGetStockSummary } from '../../api/generated/stock/stock'
 import { FilterPill } from '../../components/FilterPill'
 import { EmptyBox, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
+import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
 import { StockQuantity, StockStatusLabel } from '../../components/stock'
 import { formatMoney, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
+import { matchesSearch } from '../../lib/search'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { ItemModal } from './ItemModal'
 
@@ -145,7 +147,7 @@ export function ItemsPage() {
         ) : (
           <>
             <Table.ScrollContainer minWidth={900}>
-              <ItemsTable items={data!.items} />
+              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} />
             </Table.ScrollContainer>
             <Pager
               page={state.page}
@@ -173,7 +175,11 @@ function PillCount({ color, value }: { color: string; value: number | undefined 
   )
 }
 
-function ItemsTable({ items }: { items: ItemDto[] }) {
+/**
+ * `search` is the text in the field right now: while the server looks for it (`narrowing`), rows
+ * of this page that can't match fold away, and the typed text is marked in names and SKUs.
+ */
+function ItemsTable({ items, search, narrowing }: { items: ItemDto[]; search: string; narrowing: boolean }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const number = { ff: 'monospace', fz: 'sm', style: { fontVariantNumeric: 'tabular-nums' } } as const
@@ -191,63 +197,86 @@ function ItemsTable({ items }: { items: ItemDto[] }) {
           <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
         </Table.Tr>
       </Table.Thead>
-      <Table.Tbody>
-        {items.map((item) => (
-          // The whole row opens the item for mouse users; the name is the real link for keyboards.
-          <Table.Tr key={item.id} onClick={() => void navigate(`/items/${item.id}`)} style={{ cursor: 'pointer' }}>
-            <Table.Td>
-              <Group gap="xs" wrap="nowrap">
-                <Anchor
-                  component={Link}
-                  to={`/items/${item.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label={t('items.open', { name: item.name })}
-                  fw={500}
-                  c={item.isActive ? 'var(--z-text)' : 'dimmed'}
-                  truncate
-                  maw={420}
-                >
-                  {item.name}
-                </Anchor>
-                {!item.isActive && (
-                  <Badge size="sm" color="gray" c="dimmed">
-                    {t('items.inactive')}
-                  </Badge>
-                )}
-              </Group>
-              {item.category && (
-                <Text fz="xs" c="dimmed">
-                  {item.category}
-                </Text>
-              )}
-            </Table.Td>
-            <Table.Td>
-              <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                {item.sku}
-              </Text>
-            </Table.Td>
-            <Table.Td ta="right">
-              <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} animate />
-            </Table.Td>
-            <Table.Td ta="right">
-              <Text {...number} c="dimmed">
-                {formatNumber(item.minStock, i18n.language)}
-              </Text>
-            </Table.Td>
-            <Table.Td>
-              <StockStatusLabel status={item.status} />
-            </Table.Td>
-            <Table.Td ta="right">
-              <Text {...number}>{formatNumber(item.sold30Days, i18n.language)}</Text>
-            </Table.Td>
-            <Table.Td ta="right">
-              <Text {...number} c="var(--z-text-2)">
-                {item.stockValue === null ? '' : formatMoney(item.stockValue, i18n.language)}
-              </Text>
-            </Table.Td>
-          </Table.Tr>
-        ))}
-      </Table.Tbody>
+      <SearchBody narrowing={narrowing}>
+        {items.map((item) => {
+          const hidden = !matchesSearch(search, item.name, item.sku, item.barcode)
+          return (
+            // The whole row opens the item for mouse users; the name is the real link for keyboards.
+            <SearchRow
+              key={item.id}
+              hidden={hidden}
+              onClick={() => void navigate(`/items/${item.id}`)}
+              style={{ cursor: 'pointer' }}
+            >
+              <Table.Td>
+                <SearchCell>
+                  <Group gap="xs" wrap="nowrap">
+                    <Anchor
+                      component={Link}
+                      to={`/items/${item.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      tabIndex={hidden ? -1 : undefined}
+                      aria-label={t('items.open', { name: item.name })}
+                      fw={500}
+                      c={item.isActive ? 'var(--z-text)' : 'dimmed'}
+                      truncate
+                      maw={420}
+                    >
+                      <SearchMatch text={item.name} term={search} />
+                    </Anchor>
+                    {!item.isActive && (
+                      <Badge size="sm" color="gray" c="dimmed">
+                        {t('items.inactive')}
+                      </Badge>
+                    )}
+                  </Group>
+                  {item.category && (
+                    <Text fz="xs" c="dimmed">
+                      {item.category}
+                    </Text>
+                  )}
+                </SearchCell>
+              </Table.Td>
+              <Table.Td>
+                <SearchCell>
+                  <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                    <SearchMatch text={item.sku} term={search} />
+                  </Text>
+                </SearchCell>
+              </Table.Td>
+              <Table.Td ta="right">
+                <SearchCell>
+                  <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} animate />
+                </SearchCell>
+              </Table.Td>
+              <Table.Td ta="right">
+                <SearchCell>
+                  <Text {...number} c="dimmed">
+                    {formatNumber(item.minStock, i18n.language)}
+                  </Text>
+                </SearchCell>
+              </Table.Td>
+              <Table.Td>
+                <SearchCell>
+                  <StockStatusLabel status={item.status} />
+                </SearchCell>
+              </Table.Td>
+              <Table.Td ta="right">
+                <SearchCell>
+                  <Text {...number}>{formatNumber(item.sold30Days, i18n.language)}</Text>
+                </SearchCell>
+              </Table.Td>
+              <Table.Td ta="right">
+                <SearchCell>
+                  <Text {...number} c="var(--z-text-2)">
+                    {item.stockValue === null ? '' : formatMoney(item.stockValue, i18n.language)}
+                  </Text>
+                </SearchCell>
+              </Table.Td>
+            </SearchRow>
+          )
+        })}
+      </SearchBody>
     </Table>
   )
 }

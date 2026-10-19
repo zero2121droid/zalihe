@@ -119,8 +119,40 @@ describe('ItemsPage', () => {
 
     // Assert
     expect(screen.getByRole('status', { name: 'Tražim artikle…' })).toBeInTheDocument()
-    expect(screen.getByText('Kafa Etiopija 250 g')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Otvori artikal Kafa Etiopija 250 g' })).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('status', { name: 'Tražim artikle…' })).not.toBeInTheDocument())
+  })
+
+  it('Search_Typing_FoldsRowsThatDontMatchAndMarksTheMatch', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/stock/summary': summary,
+      'GET /api/items?': page([item(), item({ name: 'Espresso', sku: 'KF-ESP-1000', barcode: '8600123' })]),
+    })
+    await renderRoutes(routes, '/items')
+    await screen.findByText('Espresso')
+
+    // Act
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Pretraga artikala' }), 'ETIOP')
+
+    // Assert
+    expect(screen.getByText('Espresso').closest('tr')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByText('Etiop', { selector: 'mark' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Otvori artikal Kafa Etiopija 250 g' }).closest('tr')).not.toHaveAttribute('aria-hidden')
+  })
+
+  it('Search_TypingBarcode_KeepsRowWithoutMark', async () => {
+    // Arrange
+    mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item({ barcode: '8600123' })]) })
+    await renderRoutes(routes, '/items')
+    await screen.findByText('Kafa Etiopija 250 g')
+
+    // Act
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Pretraga artikala' }), '8600')
+
+    // Assert
+    expect(screen.getByText('Kafa Etiopija 250 g').closest('tr')).not.toHaveAttribute('aria-hidden')
+    expect(document.querySelector('mark')).toBeNull()
   })
 
   it('Render_InactiveItem_ShowsInactiveLabel', async () => {

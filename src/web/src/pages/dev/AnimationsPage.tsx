@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next'
 import type { StockStatus } from '../../api/generated/model'
 import { Eyebrow } from '../../components/Eyebrow'
 import { SaveButton } from '../../components/feedback'
+import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
 import { BoxLoader, EmptyBox, PageLoader, ShopImportAnimation, SkeletonRows } from '../../components/loaders'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
 import stockClasses from '../../components/stock.module.css'
 import { useArrivals } from '../../lib/useArrivals'
+import { matchesSearch } from '../../lib/search'
 import { useSaved } from '../../lib/useSaved'
 import { useShake } from '../../lib/useShake'
 
@@ -88,6 +90,52 @@ function StockChangeDemo() {
   )
 }
 
+// Sample data, not UI text.
+const SEARCH_ITEMS = [
+  ['Čarape, sive, 39–42', 'CAR-SIV-39'],
+  ['Kapa zimska, teget', 'KAP-TEG-U'],
+  ['Majica pamuk, crna, M', 'MAJ-CRN-M'],
+  ['Majica pamuk, bela, L', 'MAJ-BEL-L'],
+  ['Ranac platneni, zeleni', 'RAN-ZEL-U'],
+  ['Kapa letnja, bež', 'KAP-BEZ-U'],
+]
+
+function SearchDemo() {
+  const { t } = useTranslation()
+  const [search, setSearch] = useState('')
+  return (
+    <Stack gap="sm">
+      <TextInput
+        type="search"
+        aria-label={t('items.search')}
+        placeholder={t('items.searchPlaceholder')}
+        value={search}
+        onChange={(e) => setSearch(e.currentTarget.value)}
+      />
+      <Table>
+        <SearchBody narrowing>
+          {SEARCH_ITEMS.map(([name, sku]) => (
+            <SearchRow key={sku} hidden={!matchesSearch(search, name, sku)}>
+              <Table.Td>
+                <SearchCell>
+                  <SearchMatch text={name} term={search} />
+                </SearchCell>
+              </Table.Td>
+              <Table.Td>
+                <SearchCell>
+                  <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                    <SearchMatch text={sku} term={search} />
+                  </Text>
+                </SearchCell>
+              </Table.Td>
+            </SearchRow>
+          ))}
+        </SearchBody>
+      </Table>
+    </Stack>
+  )
+}
+
 function SavedDemo() {
   const { t } = useTranslation()
   const saved = useSaved()
@@ -158,6 +206,9 @@ export function AnimationsPage() {
                 {t('channels.import.importingNote')}
               </Text>
             </Stack>
+          </Specimen>
+          <Specimen name="S · SearchMatch, SearchRow">
+            <SearchDemo />
           </Specimen>
           <Specimen name="H · SaveButton, useSaved">
             <SavedDemo />

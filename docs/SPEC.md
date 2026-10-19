@@ -193,5 +193,11 @@ Namena: rad u magacinu, odnosno prijem robe, popis i skeniranje barkoda kamerom 
 - Tokeni se čuvaju u sigurnom skladištu uređaja (`expo-secure-store`), nikad u `AsyncStorage`-u
 - Pretpostavke u v1 koje ovo omogućavaju: pravila u odeljku "API spreman za mobilnu aplikaciju" u `CLAUDE.md`
 
-### 11.4 Ostalo
+### 11.4 Izgled po firmi
+Vlasnik da oseti aplikaciju kao svoju, bez kvarenja čitljivosti i statusa zaliha.
+- Logo firme u meniju, pored ili umesto naziva (podešavanja firme).
+- Jedna boja naglaska (dugmad, aktivna stavka menija, linkovi) po izboru iz 5–6 unapred spremljenih boja. Svaka prolazi kontrast iz DESIGN.md u obe teme i jasno se razlikuje od statusnih boja. Statusne boje i ostatak palete se ne menjaju.
+- Boje se ne preuzimaju iz WordPress-a: WooCommerce ključevi ne daju pristup izgledu sajta, teme i graditelji stranica čuvaju boje svako na svoj način, a proizvoljna boja može da ruši kontrast ili da liči na upozorenje.
+
+### 11.5 Ostalo
 Shopify, porudžbenice dobavljačima, više magacina, naplata pretplate, SEF/e-fakture za B2B distributere.

@@ -5,4 +5,5 @@ export * from './health/health';
 export * from './imports/imports';
 export * from './items/items';
 export * from './orders/orders';
+export * from './reports/reports';
 export * from './stock/stock';

@@ -13,7 +13,8 @@
       "openMenu": "Open menu",
       "items": "Items",
       "orders": "Orders",
-      "channels": "Sales channels"
+      "channels": "Sales channels",
+      "reports": "Reports"
     },
     "logout": "Sign out",
     "cancel": "Cancel",
@@ -492,6 +493,60 @@
       "titleSince": "The connection to {{shop}} has not been working since {{date}}",
       "impact": "Until it is fixed, stock from Zalihe doesn't reach the shop, so it may sell what is gone.",
       "open": "Open channels"
+    }
+  },
+  "reports": {
+    "title": "Reports",
+    "description": "What sells best, what sits on the shelf, and what the stock is worth. Only active items count.",
+    "figures": {
+      "label": "Stock overview",
+      "stockValue": "Stock value",
+      "stockValueHint": "at purchase price",
+      "withoutPrice": "No purchase price",
+      "withoutPriceHint": "in stock, missing from the value",
+      "slowMovers": "No sale in {{days}}+ days",
+      "slowMoversHint": "items in stock",
+      "slowMoverValue": "Tied up in idle stock",
+      "slowMoverValueHint": "at purchase price"
+    },
+    "choose": "Report",
+    "search": "Search items in the report",
+    "searchPlaceholder": "Name or SKU",
+    "searching": "Searching items…",
+    "category": "Category",
+    "anyCategory": "All categories",
+    "noResults": "No items for “{{search}}”.",
+    "noCategoryResults": "No items in the category “{{category}}”.",
+    "columns": {
+      "rank": "#",
+      "sold": "Sold",
+      "lastSold": "Last sale",
+      "category": "Category",
+      "items": "Items",
+      "share": "Share"
+    },
+    "topSellers": {
+      "tab": "Top sellers",
+      "title": "Top sellers in the last {{days}} days",
+      "description": "Sold less returns, so cancelled orders don't count.",
+      "none": "Nothing was sold in the last {{days}} days."
+    },
+    "slowMovers": {
+      "tab": "Idle stock",
+      "title": "No sale in {{days}}+ days",
+      "description": "Items in stock that haven't sold in {{days}} days, the most money tied up first. Items added in that time are left out.",
+      "none": "Everything in stock has sold in the last {{days}} days.",
+      "neverSold": "Never"
+    },
+    "stockValue": {
+      "tab": "Value by category",
+      "title": "Stock value by category",
+      "description": "Stock at purchase price, the most valuable categories first.",
+      "none": "No items yet.",
+      "noCategory": "No category",
+      "withoutPrice_one": "{{count}} item without a purchase price",
+      "withoutPrice_few": "{{count}} items without a purchase price",
+      "withoutPrice_other": "{{count}} items without a purchase price"
     }
   }
 }

@@ -13,7 +13,8 @@
       "openMenu": "Otvori meni",
       "items": "Artikli",
       "orders": "Porudžbine",
-      "channels": "Kanali prodaje"
+      "channels": "Kanali prodaje",
+      "reports": "Izveštaji"
     },
     "logout": "Odjavi se",
     "cancel": "Otkaži",
@@ -492,6 +493,60 @@
       "titleSince": "Veza sa prodavnicom {{shop}} ne radi od {{date}}",
       "impact": "Dok se ne popravi, stanje iz Zaliha ne stiže u prodavnicu, pa ona može da proda ono čega nema.",
       "open": "Otvori kanale"
+    }
+  },
+  "reports": {
+    "title": "Izveštaji",
+    "description": "Šta se najviše prodaje, šta stoji i koliko vredi roba na stanju. Računaju se samo aktivni artikli.",
+    "figures": {
+      "label": "Pregled zaliha",
+      "stockValue": "Vrednost zaliha",
+      "stockValueHint": "po nabavnoj ceni",
+      "withoutPrice": "Bez nabavne cene",
+      "withoutPriceHint": "na stanju, a nisu u vrednosti",
+      "slowMovers": "Bez prodaje {{days}}+ dana",
+      "slowMoversHint": "artikala na stanju",
+      "slowMoverValue": "Vezano u robi koja stoji",
+      "slowMoverValueHint": "po nabavnoj ceni"
+    },
+    "choose": "Izveštaj",
+    "search": "Pretraga artikala u izveštaju",
+    "searchPlaceholder": "Naziv ili šifra",
+    "searching": "Tražim artikle…",
+    "category": "Kategorija",
+    "anyCategory": "Sve kategorije",
+    "noResults": "Nema artikala za „{{search}}”.",
+    "noCategoryResults": "Nema artikala u kategoriji „{{category}}”.",
+    "columns": {
+      "rank": "#",
+      "sold": "Prodato",
+      "lastSold": "Poslednja prodaja",
+      "category": "Kategorija",
+      "items": "Artikala",
+      "share": "Udeo"
+    },
+    "topSellers": {
+      "tab": "Najprodavaniji",
+      "title": "Najprodavaniji u poslednjih {{days}} dana",
+      "description": "Prodato umanjeno za povraćaj, pa se otkazane porudžbine ne računaju.",
+      "none": "Nije bilo prodaje u poslednjih {{days}} dana."
+    },
+    "slowMovers": {
+      "tab": "Roba koja stoji",
+      "title": "Bez prodaje {{days}}+ dana",
+      "description": "Artikli na stanju koji se nisu prodali {{days}} dana, prvo oni u koje je uloženo najviše. Artikli dodati u tom periodu se ne računaju.",
+      "none": "Sve što je na stanju prodavalo se u poslednjih {{days}} dana.",
+      "neverSold": "Nikad"
+    },
+    "stockValue": {
+      "tab": "Vrednost po kategoriji",
+      "title": "Vrednost zaliha po kategoriji",
+      "description": "Stanje po nabavnoj ceni, prvo najvrednije kategorije.",
+      "none": "Još nema artikala.",
+      "noCategory": "Bez kategorije",
+      "withoutPrice_one": "{{count}} artikal bez nabavne cene",
+      "withoutPrice_few": "{{count}} artikla bez nabavne cene",
+      "withoutPrice_other": "{{count}} artikala bez nabavne cene"
     }
   }
 }

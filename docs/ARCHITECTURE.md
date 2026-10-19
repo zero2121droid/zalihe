@@ -1,6 +1,6 @@
 # Arhitektura i način rada
 
-Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Greške kanala” i dopunjuje se posle svakog većeg koraka.
+Ovaj dokument objašnjava kako je projekat organizovan, zašto postoji svaki fajl i kako se dodaje nova funkcionalnost. Opisuje stanje posle koraka „Izveštaji” i dopunjuje se posle svakog većeg koraka.
 
 Pravila projekta su u [`CLAUDE.md`](../CLAUDE.md), a specifikacija v1 u [`SPEC.md`](SPEC.md).
 
@@ -224,6 +224,8 @@ zalihe/
 
 **`Dashboard/DashboardService.cs`**: pregled za Početnu u nekoliko upita: vrednost zaliha (aktivni artikli, pozitivno stanje × nabavna cena), broj aktivnih artikala, ispod minimuma i bez zaliha, pet artikala koje najhitnije treba naručiti (prvo bez zaliha, pa oni sa najmanjim delom minimuma) i šest poslednjih kretanja u firmi.
 
+**`Reports/ReportService.cs`**: izveštaji (SPEC 2.6), samo za aktivne artikle. **Prodato** je prodaja umanjena za povraćaj, pa se otkazana porudžbina (`Sale` pa `Return`) ne računa kao prodata; isto važi za „prodato 30 dana” u `ItemService`. `GetSummaryAsync`: vrednost zaliha, broj artikala na stanju bez nabavne cene (nisu u vrednosti), broj i vrednost robe koja stoji. `ListTopSellersAsync`: najviše prodato u poslednjih 30 dana (grupisanje kretanja po artiklu u SQL-u). `ListSlowMoversAsync`: na stanju, bez nijedne prodaje 60 dana; artikli dodati u tom periodu se preskaču jer nisu ni imali priliku da se prodaju. Prvo najviše uloženog novca, artikli bez cene na kraju, uz datum poslednje prodaje. `ListCategoryValuesAsync`: vrednost po kategoriji, artikli bez kategorije su jedna grupa. Liste imaju pretragu (naziv, šifra), filter po kategoriji i paginaciju.
+
 **`Imports/CsvFile.cs`** (`CsvParser`): čita CSV onako kako ga snimaju tabele u Srbiji i regionu: UTF-8 ili Windows-1250 (srpski Excel), sa `;`, `,` ili tabom (prepoznaje se iz prvog reda), sa navodnicima i prelomima reda u ćeliji. Brojevi redova odgovaraju Excel-u (zaglavlje je red 1). `UsesDecimalComma`: fajl sa `;` koristi decimalni zarez.
 
 **`Imports/ItemImportRules.cs`**: čista pravila uvoza, bez baze: `SuggestMapping()` (prepoznaje kolone po nazivima, na srpskom i engleskom, bez obzira na kvačice), `ParseUnit()` („kom.”, „komada”, „pcs” → kom), `ParseDecimal()` i `ReadRow()` (red → podaci artikla ili greške po polju). **Brojevi:** nedvosmisleni oblici rade uvek („12,5”, „1.284,50”); jedini dvosmisleni oblik, jedan separator i tačno tri cifre („2.000”), prati konvenciju fajla, pa je u srpskom fajlu „2.000” dve hiljade.
@@ -422,6 +424,8 @@ Primer odgovora sa greškom:
 
 **`Dashboard/DashboardController.cs`**: `GET /api/dashboard`.
 
+**`Reports/ReportsController.cs`**: `GET /api/reports/summary`, `top-sellers`, `slow-movers` i `stock-value`.
+
 **`Imports/ImportsController.cs`**: `POST /api/imports/items/analyze`, `/preview` i `/api/imports/items`, sve kao `multipart/form-data` (fajl + broj kolone za svako polje, `ItemImportForm`). Fajl se šalje u svakom koraku, pa server ne čuva stanje između koraka. Najveći fajl je 5 MB.
 
 **`Stock/StockController.cs`**: `POST /api/items/{id}/movements` i `GET /api/stock/summary`. Istorija je u `GET /api/items/{id}/history` (`ItemsController`), zajedno sa izmenama artikla. Namerno nema endpointa za izmenu ili brisanje kretanja.
@@ -548,6 +552,8 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`pages/orders/OrdersPage.tsx`**: „Porudžbine” (`/orders`): naslov sa brojem i napomenom da se podaci kupaca ne preuzimaju, pretraga, pilule „Sve” i „Nepovezani proizvodi” (`?unlinked=1`), izbor statusa (`?status=`), tabela (broj, datum, status i da li skida sa stanja, prva dva proizvoda sa količinom, „još N” i broj nepovezanih) i paginacija. Adresa prodavnice se prikazuje samo kad su na strani porudžbine više prodavnica. Klik na red otvara `OrderModal.tsx`: proizvod u prodavnici, artikal u Zalihama (link) ili „Nije povezan”, naručeno i skinuto sa stanja, i objašnjenje kad porudžbina ne skida robu (status, nepovezan proizvod sa dugmetom „Poveži proizvode” na uvoz iz prodavnice, ili proizvod povezan posle porudžbine). Prozor koristi podatke iz reda liste, bez posebnog zahteva. `orderText.ts`: prevod statusa (nepoznat status iz dodatka prodavnice se prikazuje kao kod), naziv stavke i adresa bez `https://`.
 
+**`pages/reports/ReportsPage.tsx`**: „Izveštaji” (`/reports`): traka sa četiri brojke, pilule za izveštaj (`?r=slowMovers`, `?r=stockValue`; najprodavaniji su podrazumevani), pretraga i kategorija (`?cat=`), pa tabela sa paginacijom. Učitava se samo izabrani izveštaj. Vrednost po kategoriji nema pretragu ni filter, a udeo računa od ukupne vrednosti (`formatPercent()`).
+
 **`pages/channels/ProductImportPage.tsx`**: „Uvoz proizvoda iz prodavnice” (`/channels/{id}/import`, dugme „Uvezi proizvode” na kartici kanala). Traka sa četiri brojke (novi, postoje u Zalihama, već povezano, preskočeno), tabela novih proizvoda sa izborom (svi su izabrani, korisnik isključuje ono što ne želi; zaglavlje ima „izaberi sve”), tabela povezivanja (link na postojeći artikal) i preskočeni sa prevedenim razlogom. Pregled se ne učitava ponovo pri povratku na prozor (`staleTime: Infinity`, `refetchOnWindowFocus: false`), jer je čitanje prodavnice sporo i opterećuje je. Posle uvoza se osvežavaju artikli, brojke i Početna, a pregled se briše iz keša.
 
 **Frontend testovi** (`*.test.ts(x)`, Vitest + React Testing Library):
@@ -561,6 +567,7 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `ImportPage.test.tsx`: ceo tok uvoza (predložene kolone, poslata polja, prevedeni problemi, uvoz), Excel fajl, onemogućena provera bez obaveznih kolona;
 - `ProductImportPage.test.tsx`: brojke, novi, povezivanje i preskočeni sa razlogom; isključen proizvod se ne šalje; „izaberi sve”; greška prodavnice sa „Pokušaj ponovo”; sve već povezano;
 - `OrdersPage.test.tsx`: statusi, proizvodi i „još N”, broj nepovezanih, filter i pretraga idu na server, prozor sa stavkama i linkom na povezivanje, objašnjenje za proizvod povezan posle porudžbine;
+- `ReportsPage.test.tsx`: redni broj na drugoj strani, prelaz na robu koja stoji („Nikad”), udeo kategorije bez pretrage;
 - `ChannelsPage.test.tsx`: povezivanje (poslata polja, kartica posle uspeha), prevedena greška prodavnice i greška ispod polja za adresu, provera veze koja otkrije opozvane ključeve, zamena ključeva;
 - `ThemeToggle.test.tsx`: tamna tema na početku, klik prebacuje na svetlu i pamti izbor;
 - `ItemsPage.test.tsx`, `ItemModal.test.tsx`: izmena (popunjena polja, `PUT`), deaktivacija, oznaka i filter neaktivnih, redovi i paginacija, prazno stanje, pretraga ide na server, decimale sa zarezom se šalju kao brojevi, greška „šifra već postoji” stoji ispod polja.
@@ -605,6 +612,8 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 **`Zalihe.IntegrationTests/Imports/ItemImportTests.cs`**: analiza, pregled, uvoz sa početnim stanjem, preskakanje postojećih šifri, Windows-1250 fajl, loši fajlovi, antiforgery i izolacija: šifra druge firme se ne računa kao postojeća.
 
 **`Zalihe.IntegrationTests/Dashboard/DashboardTests.cs`**: vrednost i brojke (neaktivni se ne računaju), redosled hitnosti, poslednja kretanja, prazna firma i izolacija firmi.
+
+**`Zalihe.IntegrationTests/Reports/ReportsTests.cs`**: prodato umanjeno za povraćaj i bez starih prodaja, pretraga, kategorija i neaktivni, roba koja stoji (redosled po vrednosti, novi artikli i stare prodaje), vrednost po kategoriji, izolacija firmi. API sve beleži kao „sada”, pa testovi datume pomeraju unazad SQL-om.
 
 **`Zalihe.IntegrationTests/Tenancy/TenantFilterTests.cs`**: svaki entitet sa kolonom `TenantId` mora da implementira `ITenantOwned` i da ima filter, a upit bez postavljene firme mora da baci izuzetak.
 

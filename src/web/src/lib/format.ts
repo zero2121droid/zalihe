@@ -26,6 +26,11 @@ export function formatMoney(value: number, language: string): string {
   return withTrueMinus(new Intl.NumberFormat(language, { minimumFractionDigits: 0, maximumFractionDigits: 2 }), value)
 }
 
+/** A share (0.42) as a whole percent: "42%". */
+export function formatPercent(share: number, language: string): string {
+  return new Intl.NumberFormat(language, { style: 'percent', maximumFractionDigits: 0 }).format(share)
+}
+
 /** "četvrtak, 1. oktobar" / "Thursday, October 1". */
 export function formatLongDate(date: Date, language: string): string {
   return new Intl.DateTimeFormat(language, { weekday: 'long', day: 'numeric', month: 'long' }).format(date)

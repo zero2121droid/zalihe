@@ -275,7 +275,7 @@ public class StockTests(ZaliheApiFactory factory)
 
         // Assert
         item.GetProperty("stock").GetDecimal().ShouldBe(7.5m);
-        item.GetProperty("sold30Days").GetDecimal().ShouldBe(3.5m);
+        item.GetProperty("sold30Days").GetDecimal().ShouldBe(2.5m); // 3.5 sold, 1 came back
         item.GetProperty("stockValue").GetDecimal().ShouldBe(6753.75m);
     }
 }

@@ -13,6 +13,7 @@ using Zalihe.Application.Dashboard;
 using Zalihe.Application.Imports;
 using Zalihe.Application.Items;
 using Zalihe.Application.Orders;
+using Zalihe.Application.Reports;
 using Zalihe.Application.Webhooks;
 using Zalihe.Infrastructure.Jobs;
 using Zalihe.Application.Stock;
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<ItemHistoryService>();
         services.AddScoped<StockService>();
         services.AddScoped<DashboardService>();
+        services.AddScoped<ReportService>();
         services.AddScoped<ItemImportService>();
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<ChannelService>();

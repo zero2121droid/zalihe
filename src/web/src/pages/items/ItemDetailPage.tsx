@@ -9,6 +9,7 @@ import { ApiError, formErrorMessage } from '../../api/errors'
 import { useGetItem, useGetItemHistory } from '../../api/generated/items/items'
 import type { ItemDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
 import { FilterPill } from '../../components/FilterPill'
+import { ItemImage } from '../../components/ItemImage'
 import { BoxLoader, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
@@ -69,24 +70,27 @@ function ItemDetail({ item }: { item: ItemDto }) {
       <Stack gap="xs">
         <BackLink />
         <Group justify="space-between" align="flex-end" gap="md">
-          <Stack gap={4} miw={0}>
-            <Group gap="sm">
-              <Title order={1} lts="-0.01em">
-                {item.name}
-              </Title>
-              {!item.isActive && (
-                <Badge color="gray" c="dimmed">
-                  {t('items.inactive')}
-                </Badge>
-              )}
-            </Group>
-            <Text fz="sm" c="dimmed">
-              <Text component="span" ff="monospace" fz="sm">
-                {item.sku}
+          <Group gap="md" wrap="nowrap" miw={0}>
+            <ItemImage url={item.imageUrl} size={72} />
+            <Stack gap={4} miw={0}>
+              <Group gap="sm">
+                <Title order={1} lts="-0.01em">
+                  {item.name}
+                </Title>
+                {!item.isActive && (
+                  <Badge color="gray" c="dimmed">
+                    {t('items.inactive')}
+                  </Badge>
+                )}
+              </Group>
+              <Text fz="sm" c="dimmed">
+                <Text component="span" ff="monospace" fz="sm">
+                  {item.sku}
+                </Text>
+                {item.category && ` · ${item.category}`}
               </Text>
-              {item.category && ` · ${item.category}`}
-            </Text>
-          </Stack>
+            </Stack>
+          </Group>
           <Group gap="sm">
             <Button variant="default" onClick={() => setEditing(true)}>
               {t('items.detail.edit')}

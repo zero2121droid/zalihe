@@ -10,6 +10,7 @@ namespace Zalihe.Domain.Channels;
 public class ItemChannelMapping : ITenantOwned
 {
     public const int ExternalIdMaxLength = 64;
+    public const int ImageUrlMaxLength = 2048;
 
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
@@ -23,6 +24,12 @@ public class ItemChannelMapping : ITenantOwned
     public string? ParentExternalId { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
+
+    /// <summary>
+    /// The product's image in the shop, shown by the shop's own address (not copied); null without one.
+    /// Refreshed on every product import. An image the user adds to the item takes precedence.
+    /// </summary>
+    public string? ImageUrl { get; private set; }
 
     /// <summary>
     /// When the item's stock last changed without the shop having it yet; null when the shop is up to date.
@@ -45,6 +52,17 @@ public class ItemChannelMapping : ITenantOwned
         ParentExternalId = string.IsNullOrWhiteSpace(parentExternalId) ? null : Required(parentExternalId, nameof(parentExternalId));
         CreatedAt = createdAt;
     }
+
+    /// <summary>
+    /// Sets the shop's image of the product. Shop data is not trusted: anything other than an absolute
+    /// http(s) address of a sensible length counts as no image, so a broken product never fails an import.
+    /// </summary>
+    public void SetImageUrl(string? url) =>
+        ImageUrl = Uri.TryCreate(url?.Trim(), UriKind.Absolute, out var uri)
+                   && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
+                   && uri.AbsoluteUri.Length <= ImageUrlMaxLength
+            ? uri.AbsoluteUri
+            : null;
 
     /// <summary>The item's stock changed and must be sent to the shop.</summary>
     public void MarkStockChanged(DateTimeOffset at) => StockChangedAt = at;

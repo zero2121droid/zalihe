@@ -20,7 +20,8 @@ public record ProductImportPreviewDto(
     IReadOnlyList<ProductToCreateDto> ToCreate,
     IReadOnlyList<SkippedProductDto> Skipped);
 
-public record ProductImportResultDto(int LinkedCount, int CreatedCount, int SkippedCount);
+/// <param name="ImageCount">Products linked to items that have an image in the shop, after the import.</param>
+public record ProductImportResultDto(int LinkedCount, int CreatedCount, int SkippedCount, int ImageCount);
 
 public record ProductImportResult<T>(T? Value, AppError? Error, bool NotFound = false)
 {
@@ -30,7 +31,8 @@ public record ProductImportResult<T>(T? Value, AppError? Error, bool NotFound = 
 /// <summary>
 /// Imports a shop's products: links them to items with the same SKU and creates the new ones the
 /// user picked, with the shop's stock as opening stock and its cost as purchase price. Like the CSV import it reads the source
-/// again on import, so nothing is kept between preview and import. Existing items never change.
+/// again on import, so nothing is kept between preview and import. Existing items never change; the
+/// shop's product images are kept on the links, and every import refreshes them.
 /// </summary>
 public class ProductImportService(
     IAppDbContext db,
@@ -87,6 +89,18 @@ public class ProductImportService(
             db.ItemChannelMappings.Add(mapping);
         }
 
+        // Already linked products only get their current image from the shop.
+        var linkedImages = rows.Where(r => r.Kind == ProductImportKind.Linked)
+            .ToDictionary(r => r.Product.ExternalId, r => r.Product.ImageUrl, StringComparer.Ordinal);
+        var linkedExternalIds = linkedImages.Keys.ToList();
+        var linkedMappings = await db.ItemChannelMappings
+            .Where(m => m.ChannelId == channel.Id && linkedExternalIds.Contains(m.ExternalId))
+            .ToListAsync(ct);
+        foreach (var mapping in linkedMappings)
+        {
+            mapping.SetImageUrl(linkedImages[mapping.ExternalId]);
+        }
+
         var toCreate = rows.Where(r => r.Kind == ProductImportKind.New && selected.Contains(r.Product.ExternalId)).ToList();
         foreach (var row in toCreate)
         {
@@ -113,7 +127,8 @@ public class ProductImportService(
         await db.SaveChangesAsync(ct);
         if (matches.Count > 0) stockPush.Schedule([channel.Id]);
         var skipped = rows.Count(r => r.Kind == ProductImportKind.Skipped);
-        return new(new ProductImportResultDto(matches.Count, toCreate.Count, skipped), null);
+        var images = await db.ItemChannelMappings.CountAsync(m => m.ChannelId == channel.Id && m.ImageUrl != null, ct);
+        return new(new ProductImportResultDto(matches.Count, toCreate.Count, skipped, images), null);
     }
 
     private sealed record ShopProducts(SalesChannel Channel, IReadOnlyList<ProductImportRow> Rows);
@@ -161,6 +176,10 @@ public class ProductImportService(
         ProductImportRules.Price(row.Product.Price),
         ProductImportRules.OpeningStock(row.Product.Stock));
 
-    private static ItemChannelMapping Mapping(Item item, SalesChannel channel, ExternalProduct product, DateTimeOffset now) =>
-        new(item, channel, product.ExternalId, product.ParentExternalId, now);
+    private static ItemChannelMapping Mapping(Item item, SalesChannel channel, ExternalProduct product, DateTimeOffset now)
+    {
+        var mapping = new ItemChannelMapping(item, channel, product.ExternalId, product.ParentExternalId, now);
+        mapping.SetImageUrl(product.ImageUrl);
+        return mapping;
+    }
 }

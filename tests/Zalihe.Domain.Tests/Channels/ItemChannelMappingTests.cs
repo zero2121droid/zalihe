@@ -81,4 +81,53 @@ public class ItemChannelMappingTests
         mapping.StockChangedAt.ShouldBe(Now.AddMinutes(1));
         mapping.PushedStock.ShouldBeNull();
     }
+
+    [Theory]
+    [InlineData("https://zrno.rs/wp-content/uploads/kafa.jpeg", "https://zrno.rs/wp-content/uploads/kafa.jpeg")]
+    [InlineData(" http://localhost:8080/wp-content/uploads/majica.jpeg ", "http://localhost:8080/wp-content/uploads/majica.jpeg")]
+    [InlineData("https://zrno.rs/uploads/šolja 1.jpg", "https://zrno.rs/uploads/%C5%A1olja%201.jpg")]
+    public void SetImageUrl_ShopAddress_KeepsIt(string url, string expected)
+    {
+        // Arrange
+        var tenantId = Guid.NewGuid();
+        var mapping = new ItemChannelMapping(Item(tenantId), Channel(tenantId), "12", null, Now);
+
+        // Act
+        mapping.SetImageUrl(url);
+
+        // Assert
+        mapping.ImageUrl.ShouldBe(expected);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("/wp-content/uploads/kafa.jpeg")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:image/png;base64,AAAA")]
+    [InlineData("ftp://zrno.rs/kafa.jpeg")]
+    public void SetImageUrl_NotAnHttpAddress_ClearsTheImage(string? url)
+    {
+        // Arrange
+        var tenantId = Guid.NewGuid();
+        var mapping = new ItemChannelMapping(Item(tenantId), Channel(tenantId), "12", null, Now);
+        mapping.SetImageUrl("https://zrno.rs/kafa.jpeg");
+
+        // Act
+        mapping.SetImageUrl(url);
+
+        // Assert
+        mapping.ImageUrl.ShouldBeNull();
+    }
+
+    [Fact]
+    public void SetImageUrl_TooLong_ClearsTheImage()
+    {
+        var tenantId = Guid.NewGuid();
+        var mapping = new ItemChannelMapping(Item(tenantId), Channel(tenantId), "12", null, Now);
+
+        mapping.SetImageUrl("https://zrno.rs/" + new string('a', ItemChannelMapping.ImageUrlMaxLength));
+
+        mapping.ImageUrl.ShouldBeNull();
+    }
 }

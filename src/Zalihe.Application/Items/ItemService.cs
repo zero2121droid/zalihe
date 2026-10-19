@@ -20,7 +20,8 @@ public record ItemDto(
     decimal Stock,
     StockStatus Status,
     decimal? StockValue, // stock (when positive) times purchase price; null without a purchase price
-    decimal Sold30Days); // quantity sold in the last 30 days, less returns
+    decimal Sold30Days, // quantity sold in the last 30 days, less returns
+    string? ImageUrl); // the item's image: the product's image in the linked shop; null without one
 
 public record ItemListQuery(
     string? Search,
@@ -239,10 +240,11 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
         public required Item Item { get; init; }
         public decimal Stock { get; init; }
         public decimal Sold30Days { get; init; }
+        public string? ShopImageUrl { get; init; }
     }
 
     /// <summary>
-    /// Joins each item with its stock and its sales of the last 30 days, in one query. Sales less
+    /// Joins each item with its stock, its sales of the last 30 days and its shop image, in one query. Sales less
     /// returns, as in ReportService, so a cancelled order doesn't count as sold.
     /// </summary>
     private IQueryable<ItemWithStock> WithStock(IQueryable<Item> items)
@@ -260,6 +262,11 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
                         && (m.Type == StockMovementType.Sale || m.Type == StockMovementType.Return)
                         && m.OccurredAt >= since)
                     .Sum(m => m.Quantity),
+                ShopImageUrl = db.ItemChannelMappings
+                    .Where(m => m.ItemId == item.Id && m.ImageUrl != null)
+                    .OrderBy(m => m.CreatedAt)
+                    .Select(m => m.ImageUrl)
+                    .FirstOrDefault(),
             };
     }
 
@@ -270,6 +277,7 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
         return new ItemDto(
             i.Id, i.Name, i.Sku, i.Barcode, i.Unit, i.Category, i.GroupName, i.PurchasePrice, i.SalePrice,
             i.MinStock, i.IsActive, row.Stock, StockStatusRules.For(row.Stock, i.MinStock), value,
-            Math.Max(row.Sold30Days, 0)); // a return of an older sale can outweigh the recent ones
+            Math.Max(row.Sold30Days, 0), // a return of an older sale can outweigh the recent ones
+            row.ShopImageUrl);
     }
 }

@@ -50,6 +50,11 @@ export function ProductImportPage() {
     },
   })
 
+  // When everything is linked, importing again only takes the shop's current images, without the overlay.
+  const refreshImages = useImportProducts({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }) },
+  })
+
   return (
     <Stack gap="lg">
       <Stack gap="xs">
@@ -87,6 +92,12 @@ export function ProductImportPage() {
           onCloseResult={() => setOverlayClosed(true)}
           error={formErrorMessage(t, runImport.error)}
           onImport={(create) => runImport.mutate({ id, data: { createExternalIds: create } })}
+          images={{
+            refreshing: refreshImages.isPending,
+            count: refreshImages.data?.imageCount ?? null,
+            error: formErrorMessage(t, refreshImages.error),
+            onRefresh: () => refreshImages.mutate({ id, data: { createExternalIds: [] } }),
+          }}
         />
       )}
     </Stack>
@@ -116,9 +127,11 @@ interface PreviewProps {
   onCloseResult: () => void
   error: string | null
   onImport: (createExternalIds: string[]) => void
+  /** Taking the shop's current images for products that are all linked already. */
+  images: { refreshing: boolean; count: number | null; error: string | null; onRefresh: () => void }
 }
 
-function Preview({ preview, importing, result, onCloseResult, error, onImport }: PreviewProps) {
+function Preview({ preview, importing, result, onCloseResult, error, onImport, images }: PreviewProps) {
   const { t, i18n } = useTranslation()
   // Every new product starts checked; the user unchecks what shouldn't become an item.
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set())
@@ -315,8 +328,28 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport }:
             {error}
           </Text>
         )}
-        {nothingToDo ? (
-          <Text c="dimmed">{preview.linkedCount > 0 ? t('channels.import.allLinked') : t('channels.import.nothing')}</Text>
+        {nothingToDo && preview.linkedCount > 0 ? (
+          <Group justify="space-between" gap="md">
+            <Stack gap={2}>
+              <Text c="dimmed">{t('channels.import.allLinked')}</Text>
+              {images.error ? (
+                <Text role="alert" c="var(--mantine-color-error)" fz="sm">
+                  {images.error}
+                </Text>
+              ) : (
+                images.count !== null && (
+                  <Text role="status" fz="sm" c="var(--z-accent-text)">
+                    {t('channels.import.imagesRefreshed', { count: images.count })}
+                  </Text>
+                )
+              )}
+            </Stack>
+            <Button variant="default" onClick={images.onRefresh} loading={images.refreshing}>
+              {t('channels.import.refreshImages')}
+            </Button>
+          </Group>
+        ) : nothingToDo ? (
+          <Text c="dimmed">{t('channels.import.nothing')}</Text>
         ) : (
           <Group justify="flex-end" gap="md">
             <Text fz="sm" c="dimmed">

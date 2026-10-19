@@ -9,4 +9,5 @@ export interface ProductImportResultDto {
   linkedCount: number;
   createdCount: number;
   skippedCount: number;
+  imageCount: number;
 }

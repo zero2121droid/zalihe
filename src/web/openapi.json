@@ -2477,7 +2477,8 @@
           "stock",
           "status",
           "stockValue",
-          "sold30Days"
+          "sold30Days",
+          "imageUrl"
         ],
         "type": "object",
         "properties": {
@@ -2550,6 +2551,12 @@
           "sold30Days": {
             "type": "number",
             "format": "double"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3096,7 +3103,8 @@
         "required": [
           "linkedCount",
           "createdCount",
-          "skippedCount"
+          "skippedCount",
+          "imageCount"
         ],
         "type": "object",
         "properties": {
@@ -3109,6 +3117,10 @@
             "format": "int32"
           },
           "skippedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "imageCount": {
             "type": "integer",
             "format": "int32"
           }

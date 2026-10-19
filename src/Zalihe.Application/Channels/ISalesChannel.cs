@@ -66,6 +66,7 @@ public record WebhookSettings(string BaseUrl)
 /// <param name="Price">Regular price; null when the shop has none.</param>
 /// <param name="Cost">What the shop owner paid for it (WooCommerce "Cost of goods sold"); null when the shop has none.</param>
 /// <param name="Stock">Stock quantity; null when the shop doesn't track stock for the product.</param>
+/// <param name="ImageUrl">The product's main image (a variation's own, or its product's); null without one.</param>
 public record ExternalProduct(
     string ExternalId,
     string? ParentExternalId,
@@ -75,7 +76,8 @@ public record ExternalProduct(
     string? Category,
     decimal? Price,
     decimal? Cost,
-    decimal? Stock);
+    decimal? Stock,
+    string? ImageUrl = null);
 
 /// <summary>
 /// An order as read from a shop (webhook or sync), with only what stock needs: no customer data.

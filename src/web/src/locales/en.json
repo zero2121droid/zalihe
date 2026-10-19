@@ -479,6 +479,10 @@
       "submit": "Import",
       "allLinked": "All products from the shop are already linked.",
       "nothing": "The shop has no products to import.",
+      "refreshImages": "Refresh images from the shop",
+      "imagesRefreshed_one": "Images refreshed: {{count}} product has an image.",
+      "imagesRefreshed_few": "Images refreshed: {{count}} products have an image.",
+      "imagesRefreshed_other": "Images refreshed: {{count}} products have an image.",
       "done": {
         "title": "Import finished",
         "created": "New items created: {{count}}",

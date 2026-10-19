@@ -148,4 +148,24 @@ describe('ProductImportPage', () => {
     expect(await screen.findByText('Svi proizvodi iz prodavnice su već povezani.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Uvezi' })).not.toBeInTheDocument()
   })
+
+  it('RefreshImages_EverythingLinked_ImportsNothingNewAndSaysHowManyHaveImages', async () => {
+    // Arrange
+    const fetchMock = mockApi({
+      'GET /api/channels/c1/products/preview': { status: 200, body: { linkedCount: 9, toLink: [], toCreate: [], skipped: [] } },
+      'POST /api/channels/c1/products/import': {
+        status: 200,
+        body: { linkedCount: 0, createdCount: 0, skippedCount: 0, imageCount: 7 },
+      },
+    })
+    await render()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Osveži slike iz prodavnice' }))
+
+    // Assert
+    expect(await screen.findByRole('status')).toHaveTextContent('Slike su osvežene: 7 proizvoda ima sliku.')
+    const [, init] = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/products/import'))!
+    expect(JSON.parse(String(init!.body))).toEqual({ createExternalIds: [] })
+  })
 })

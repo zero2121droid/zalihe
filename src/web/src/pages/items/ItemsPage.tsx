@@ -10,6 +10,7 @@ import { useListItems } from '../../api/generated/items/items'
 import type { ItemDto } from '../../api/generated/model'
 import { useGetStockSummary } from '../../api/generated/stock/stock'
 import { FilterPill } from '../../components/FilterPill'
+import { ItemImage } from '../../components/ItemImage'
 import { EmptyBox, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
 import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
@@ -210,31 +211,36 @@ function ItemsTable({ items, search, narrowing }: { items: ItemDto[]; search: st
             >
               <Table.Td>
                 <SearchCell>
-                  <Group gap="xs" wrap="nowrap">
-                    <Anchor
-                      component={Link}
-                      to={`/items/${item.id}`}
-                      onClick={(e) => e.stopPropagation()}
-                      tabIndex={hidden ? -1 : undefined}
-                      aria-label={t('items.open', { name: item.name })}
-                      fw={500}
-                      c={item.isActive ? 'var(--z-text)' : 'dimmed'}
-                      truncate
-                      maw={420}
-                    >
-                      <SearchMatch text={item.name} term={search} />
-                    </Anchor>
-                    {!item.isActive && (
-                      <Badge size="sm" color="gray" c="dimmed">
-                        {t('items.inactive')}
-                      </Badge>
-                    )}
+                  <Group gap="sm" wrap="nowrap">
+                    <ItemImage url={item.imageUrl} size={36} />
+                    <Box miw={0}>
+                      <Group gap="xs" wrap="nowrap">
+                        <Anchor
+                          component={Link}
+                          to={`/items/${item.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          tabIndex={hidden ? -1 : undefined}
+                          aria-label={t('items.open', { name: item.name })}
+                          fw={500}
+                          c={item.isActive ? 'var(--z-text)' : 'dimmed'}
+                          truncate
+                          maw={420}
+                        >
+                          <SearchMatch text={item.name} term={search} />
+                        </Anchor>
+                        {!item.isActive && (
+                          <Badge size="sm" color="gray" c="dimmed">
+                            {t('items.inactive')}
+                          </Badge>
+                        )}
+                      </Group>
+                      {item.category && (
+                        <Text fz="xs" c="dimmed">
+                          {item.category}
+                        </Text>
+                      )}
+                    </Box>
                   </Group>
-                  {item.category && (
-                    <Text fz="xs" c="dimmed">
-                      {item.category}
-                    </Text>
-                  )}
                 </SearchCell>
               </Table.Td>
               <Table.Td>

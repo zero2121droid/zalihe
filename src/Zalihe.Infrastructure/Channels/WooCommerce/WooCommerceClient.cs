@@ -16,8 +16,8 @@ namespace Zalihe.Infrastructure.Channels.WooCommerce;
 public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCredentials credentials) : ISalesChannel
 {
     private const int PageSize = 100;
-    private const string ProductFields = "id,name,type,sku,regular_price,price,stock_quantity,cost_of_goods_sold,categories";
-    private const string VariationFields = "id,sku,regular_price,price,stock_quantity,cost_of_goods_sold,attributes";
+    private const string ProductFields = "id,name,type,sku,regular_price,price,stock_quantity,cost_of_goods_sold,categories,images";
+    private const string VariationFields = "id,sku,regular_price,price,stock_quantity,cost_of_goods_sold,attributes,image";
 
     /// <summary>Only what stock needs: the shop doesn't even send the customer's data.</summary>
     private const string OrderFields = "id,status,date_created_gmt,date_modified_gmt,line_items";
@@ -48,13 +48,15 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
             switch (Text(product, "type"))
             {
                 case "simple":
-                    Add(new ExternalProduct(id, null, name, null, Text(product, "sku"), Category(product), Price(product), Cost(product), Stock(product)));
+                    Add(new ExternalProduct(id, null, name, null, Text(product, "sku"), Category(product), Price(product), Cost(product), Stock(product),
+                        ProductImage(product)));
                     break;
                 case "variable":
                     await foreach (var variation in PagesAsync($"products/{id}/variations?orderby=id&order=asc&_fields={VariationFields}", ct))
                     {
                         Add(new ExternalProduct(Id(variation), id, VariationName(name, variation), name,
-                            Text(variation, "sku"), Category(product), Price(variation), Cost(variation), Stock(variation)));
+                            Text(variation, "sku"), Category(product), Price(variation), Cost(variation), Stock(variation),
+                            VariationImage(variation) ?? ProductImage(product)));
                     }
                     break;
                 // Grouped and external products hold no stock of their own.
@@ -192,6 +194,16 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
                 .Select(c => Text(c, "name"))
                 .FirstOrDefault(n => n is not null)
             : null;
+
+    /// <summary>The address of the product's first (main) image.</summary>
+    private static string? ProductImage(JsonElement product) =>
+        product.TryGetProperty("images", out var images) && images.ValueKind == JsonValueKind.Array
+            ? images.EnumerateArray().Select(i => Text(i, "src")).FirstOrDefault(src => src is not null)
+            : null;
+
+    /// <summary>The variation's own image; WooCommerce usually reports the product's when it has none.</summary>
+    private static string? VariationImage(JsonElement variation) =>
+        variation.TryGetProperty("image", out var image) ? Text(image, "src") : null;
 
     /// <summary>"Majica basic – M, Siva": the product name with the variation's options.</summary>
     private static string VariationName(string productName, JsonElement variation)

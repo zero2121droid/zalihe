@@ -340,4 +340,62 @@ public partial class ProductImportTests(ZaliheApiFactory factory)
         mapping.ExternalId.ShouldBe("51");
         mapping.ParentExternalId.ShouldBe("50");
     }
+
+    /// <summary>A simple product with an image, and a variable one whose second variation has no image of its own.</summary>
+    private const string ProductsWithImages = """
+        [
+          {"id":10,"name":"Kafa Etiopija","type":"simple","sku":"KF-ETI-250","regular_price":"1250","price":"1250","stock_quantity":24,"categories":[],"images":[{"id":7,"src":"https://zrno.rs/wp-content/uploads/etiopija.jpeg"},{"id":8,"src":"https://zrno.rs/wp-content/uploads/etiopija-2.jpeg"}]},
+          {"id":11,"name":"Bez slike","type":"simple","sku":"BEZ-SLIKE","regular_price":"","price":"","stock_quantity":1,"categories":[],"images":[]},
+          {"id":50,"name":"Majica basic","type":"variable","sku":"MAJ-BASIC","regular_price":"","price":"1990","stock_quantity":null,"categories":[],"images":[{"id":9,"src":"https://zrno.rs/wp-content/uploads/majica.jpeg"}]}
+        ]
+        """;
+
+    private const string VariationsWithImages = """
+        [
+          {"id":51,"sku":"MAJ-M-SI","regular_price":"1990","price":"1990","stock_quantity":5,"attributes":[{"name":"Boja","option":"Siva"}],"image":{"id":10,"src":"https://zrno.rs/wp-content/uploads/majica-siva.jpeg"}},
+          {"id":52,"sku":"MAJ-M-BE","regular_price":"1990","price":"1990","stock_quantity":0,"attributes":[{"name":"Boja","option":"Bela"}],"image":null}
+        ]
+        """;
+
+    [Fact]
+    public async Task Import_ProductsWithImages_ItemsShowTheShopsMainImage()
+    {
+        // Arrange
+        var (client, channelId) = await ConnectedShopAsync();
+        ShopHas(ProductsWithImages, VariationsWithImages);
+
+        // Act
+        var response = await ImportAsync(client, channelId, "10", "11", "51", "52");
+
+        // Assert
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+        result.GetProperty("imageCount").GetInt32().ShouldBe(3);
+        (await FindItemAsync(client, "KF-ETI-250")).GetProperty("imageUrl").GetString().ShouldBe("https://zrno.rs/wp-content/uploads/etiopija.jpeg");
+        (await FindItemAsync(client, "MAJ-M-SI")).GetProperty("imageUrl").GetString().ShouldBe("https://zrno.rs/wp-content/uploads/majica-siva.jpeg");
+        (await FindItemAsync(client, "MAJ-M-BE")).GetProperty("imageUrl").GetString().ShouldBe("https://zrno.rs/wp-content/uploads/majica.jpeg");
+        (await FindItemAsync(client, "BEZ-SLIKE")).GetProperty("imageUrl").ValueKind.ShouldBe(JsonValueKind.Null);
+        factory.Shop.Requests.ShouldContain(r => r.RequestUri!.Query.Contains("images"));
+    }
+
+    [Fact]
+    public async Task Import_AgainAfterTheShopChangedImages_RefreshesThemForLinkedProducts()
+    {
+        // Arrange
+        var (client, channelId) = await ConnectedShopAsync();
+        ShopHas(ProductsWithImages, VariationsWithImages);
+        await ImportAsync(client, channelId, "10", "11");
+        ShopHas(ProductsWithImages
+            .Replace("etiopija.jpeg", "etiopija-nova.jpeg")
+            .Replace("\"images\":[]", "\"images\":[{\"id\":11,\"src\":\"https://zrno.rs/wp-content/uploads/nova.jpeg\"}]"), VariationsWithImages);
+
+        // Act: everything is linked already, so nothing is created or linked; only images change.
+        var response = await ImportAsync(client, channelId);
+
+        // Assert
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+        result.GetProperty("createdCount").GetInt32().ShouldBe(0);
+        result.GetProperty("imageCount").GetInt32().ShouldBe(2);
+        (await FindItemAsync(client, "KF-ETI-250")).GetProperty("imageUrl").GetString().ShouldBe("https://zrno.rs/wp-content/uploads/etiopija-nova.jpeg");
+        (await FindItemAsync(client, "BEZ-SLIKE")).GetProperty("imageUrl").GetString().ShouldBe("https://zrno.rs/wp-content/uploads/nova.jpeg");
+    }
 }

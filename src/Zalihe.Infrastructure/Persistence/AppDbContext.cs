@@ -125,6 +125,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         {
             mapping.Property(m => m.ExternalId).HasMaxLength(ItemChannelMapping.ExternalIdMaxLength);
             mapping.Property(m => m.ParentExternalId).HasMaxLength(ItemChannelMapping.ExternalIdMaxLength);
+            mapping.Property(m => m.ImageUrl).HasMaxLength(ItemChannelMapping.ImageUrlMaxLength);
             mapping.HasOne<Item>().WithMany().HasForeignKey(m => m.ItemId).OnDelete(DeleteBehavior.Restrict);
             mapping.HasOne<SalesChannel>().WithMany().HasForeignKey(m => m.ChannelId).OnDelete(DeleteBehavior.Restrict);
             mapping.HasOne<Tenant>().WithMany().HasForeignKey(m => m.TenantId).OnDelete(DeleteBehavior.Restrict);

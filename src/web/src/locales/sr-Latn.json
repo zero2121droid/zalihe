@@ -479,6 +479,10 @@
       "submit": "Uvezi",
       "allLinked": "Svi proizvodi iz prodavnice su već povezani.",
       "nothing": "U prodavnici nema proizvoda za uvoz.",
+      "refreshImages": "Osveži slike iz prodavnice",
+      "imagesRefreshed_one": "Slike su osvežene: {{count}} proizvod ima sliku.",
+      "imagesRefreshed_few": "Slike su osvežene: {{count}} proizvoda imaju sliku.",
+      "imagesRefreshed_other": "Slike su osvežene: {{count}} proizvoda ima sliku.",
       "done": {
         "title": "Uvoz je završen",
         "created": "Napravljeno novih artikala: {{count}}",

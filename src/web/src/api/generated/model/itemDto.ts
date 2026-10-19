@@ -29,4 +29,6 @@ export interface ItemDto {
   /** @nullable */
   stockValue: number | null;
   sold30Days: number;
+  /** @nullable */
+  imageUrl: string | null;
 }

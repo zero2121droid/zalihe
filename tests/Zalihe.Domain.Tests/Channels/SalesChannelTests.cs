@@ -141,4 +141,70 @@ public class SalesChannelTests
         // Assert
         channel.LastSyncedAt.ShouldBe(Now);
     }
+
+    [Fact]
+    public void RecordFailure_TheFailureThatShowsTheError_ReturnsTrueOnlyOnce()
+    {
+        // Arrange
+        var channel = Create();
+
+        // Act
+        var first = channel.RecordFailure("channel.unreachable", Now);
+        var turning = channel.RecordFailure("channel.unreachable", Now + SalesChannel.ErrorAfter);
+        var later = channel.RecordFailure("channel.unreachable", Now + TimeSpan.FromHours(3));
+
+        // Assert
+        (first, turning, later).ShouldBe((false, true, false));
+        channel.NeedsErrorEmail.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void NeedsErrorEmail_AfterEmailAndUntilTheShopWorks_IsFalse()
+    {
+        // Arrange
+        var channel = Create();
+        channel.RecordFailure("channel.unreachable", Now);
+        channel.RecordFailure("channel.unreachable", Now + SalesChannel.ErrorAfter);
+
+        // Act
+        channel.MarkErrorEmailed(Now + SalesChannel.ErrorAfter);
+
+        // Assert
+        channel.NeedsErrorEmail.ShouldBeFalse();
+        channel.ErrorEmailedAt.ShouldBe(Now + SalesChannel.ErrorAfter);
+    }
+
+    [Fact]
+    public void MarkConnected_AfterAnEmailedFailure_LetsTheNextFailureEmailAgain()
+    {
+        // Arrange
+        var channel = Create();
+        channel.RecordFailure("channel.unreachable", Now);
+        channel.RecordFailure("channel.unreachable", Now + SalesChannel.ErrorAfter);
+        channel.MarkErrorEmailed(Now + SalesChannel.ErrorAfter);
+        channel.MarkConnected();
+
+        // Act
+        channel.RecordFailure("channel.unauthorized", Now + TimeSpan.FromDays(1));
+        var turning = channel.RecordFailure("channel.unauthorized", Now + TimeSpan.FromDays(1) + SalesChannel.ErrorAfter);
+
+        // Assert
+        turning.ShouldBeTrue();
+        channel.ErrorEmailedAt.ShouldBeNull();
+        channel.NeedsErrorEmail.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void RecordFailure_AfterACheckTheUserRan_DoesNotAskForAnEmail()
+    {
+        // Arrange: the user saw the failure on screen.
+        var channel = Create();
+        channel.MarkFailed("channel.unauthorized", Now);
+
+        // Act
+        var turning = channel.RecordFailure("channel.unauthorized", Now + SalesChannel.ErrorAfter);
+
+        // Assert
+        turning.ShouldBeFalse();
+    }
 }

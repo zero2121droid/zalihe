@@ -227,6 +227,9 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("ErrorEmailedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset?>("FailingSince")
                         .HasColumnType("timestamp with time zone");
 

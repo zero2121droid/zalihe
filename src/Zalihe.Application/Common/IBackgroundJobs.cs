@@ -13,4 +13,7 @@ public interface IBackgroundJobs
     /// together (an order with several lines, a quick series of receipts) go in one request.
     /// </summary>
     void PushStock(Guid tenantId, Guid channelId);
+
+    /// <summary>Emails the company's users that the shop stopped working (SPEC 7.6); retried until it goes out.</summary>
+    void EmailChannelFailure(Guid tenantId, Guid channelId);
 }

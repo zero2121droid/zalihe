@@ -140,7 +140,7 @@ public class ItemsController(ItemService itemService, ItemHistoryService history
         Response.Headers.CacheControl = "private, max-age=31536000, immutable";
         Response.Headers.XContentTypeOptions = "nosniff";
         Response.Headers.ContentSecurityPolicy = "default-src 'none'; sandbox";
-        return File(image.Data, image.ContentType, lastModified: image.UpdatedAt, entityTag: null);
+        return new FileContentResult(image.Data, image.ContentType) { LastModified = image.UpdatedAt };
     }
 
     /// <summary>Removes the picture the user added; the shop's product image shows again, if there is one.</summary>

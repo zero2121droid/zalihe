@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Zalihe.Application.Alerts;
 using Zalihe.Application.Channels;
 using Zalihe.Application.Common;
 using Zalihe.Application.Webhooks;
@@ -24,6 +25,22 @@ public class HangfireBackgroundJobs(IBackgroundJobClient client, IConfiguration 
     {
         if (!int.TryParse(configuration["Jobs:StockPushDelaySeconds"], out var seconds)) return;
         client.Schedule<StockPushJob>(job => job.RunAsync(tenantId, channelId, CancellationToken.None), TimeSpan.FromSeconds(seconds));
+    }
+
+    public void EmailChannelFailure(Guid tenantId, Guid channelId) =>
+        client.Enqueue<ChannelFailureEmailJob>(job => job.RunAsync(tenantId, channelId, CancellationToken.None));
+}
+
+/// <summary>
+/// Emails that a shop stopped working. A mail server that is down fails the job and Hangfire tries
+/// again with growing pauses; the channel remembers a sent email, so a retry never sends it twice.
+/// </summary>
+public class ChannelFailureEmailJob(TenantContext tenant, ChannelFailureAlertService alerts)
+{
+    public async Task RunAsync(Guid tenantId, Guid channelId, CancellationToken ct)
+    {
+        tenant.Set(tenantId);
+        await alerts.SendAsync(channelId, ct);
     }
 }
 

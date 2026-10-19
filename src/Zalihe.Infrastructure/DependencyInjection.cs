@@ -56,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<OrderListService>();
         services.AddScoped<StockPushService>();
         services.AddScoped<LowStockAlertService>();
+        services.AddScoped<ChannelFailureAlertService>();
 
         // Emails: SMTP settings from "Email" (Mailpit locally), texts from resx in the user's language.
         services.AddOptions<EmailOptions>().BindConfiguration(EmailOptions.Section);

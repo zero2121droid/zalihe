@@ -25,7 +25,14 @@ public class AlertEmails(
     IStringLocalizer<AlertEmailTexts> texts,
     IOptions<EmailOptions> options) : IAlertEmails
 {
-    public async Task SendLowStockAsync(IReadOnlyList<LowStockEmailItem> items, CancellationToken ct)
+    public Task SendLowStockAsync(IReadOnlyList<LowStockEmailItem> items, CancellationToken ct) =>
+        SendToCompanyAsync((company, culture) => LowStock(company, items, culture), ct);
+
+    public Task SendChannelFailureAsync(ChannelFailureEmail email, CancellationToken ct) =>
+        SendToCompanyAsync((company, culture) => ChannelFailure(company, email, culture), ct);
+
+    /// <summary>Writes the email for each user of the current company in the user's language and sends it.</summary>
+    private async Task SendToCompanyAsync(Func<string, CultureInfo, EmailMessage> write, CancellationToken ct)
     {
         var company = await db.Tenants.Where(t => t.Id == tenant.TenantId).Select(t => t.Name).SingleAsync(ct);
         // Users have no global query filter, so they are limited to the current company here.
@@ -37,21 +44,30 @@ public class AlertEmails(
 
         foreach (var user in users)
         {
-            var message = InLanguage(user.Language, culture => LowStock(company, items, culture));
+            var message = InLanguage(user.Language, culture => write(company, culture));
             await sender.SendAsync(message with { To = user.Email, ToName = user.Name }, ct);
         }
     }
 
+    private EmailMessage ChannelFailure(string company, ChannelFailureEmail email, CultureInfo culture)
+    {
+        var shop = new Uri(email.ShopUrl).Host;
+        var since = TimeZoneInfo.ConvertTime(email.FailingSince, LowStockAlertService.Zone).ToString("g", culture);
+        var reasonKey = $"ChannelFailure_Reason_{email.ErrorCode}";
+        var reason = texts[reasonKey] is { ResourceNotFound: false } known ? known.Value : texts["ChannelFailure_Reason_Unknown"].Value;
+        string intro = texts["ChannelFailure_Intro", since, shop];
+
+        var body = $"<p style=\"margin:0 0 16px;font-size:14px;color:#3B4033\">{E(intro)}</p>"
+                   + $"<p style=\"margin:0;font-size:12px;color:#5C6250\">{E(texts["ChannelFailure_Reason"])}</p>"
+                   + $"<p style=\"margin:2px 0 0;font-size:14px;color:#B03A22\">{E(reason)}</p>";
+        var text = $"{intro}\n\n{texts["ChannelFailure_Reason"]}: {reason}";
+        return Frame(company, texts["ChannelFailure_Subject", company, shop], texts["ChannelFailure_Heading"], body, text,
+            texts["ChannelFailure_Open"], "/channels", texts["ChannelFailure_Footer"]);
+    }
+
     private EmailMessage LowStock(string company, IReadOnlyList<LowStockEmailItem> items, CultureInfo culture)
     {
-        var link = $"{options.Value.AppUrl?.TrimEnd('/')}/items?status=low";
-        var subject = texts["LowStock_Subject", company, items.Count.ToString("N0", culture)];
-
         var html = new StringBuilder();
-        html.Append("<!doctype html><html><body style=\"margin:0;padding:24px;background:#F5F5EF;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#1B1E16\">");
-        html.Append("<div style=\"max-width:600px;margin:0 auto;background:#FFFFFF;border:1px solid #D9DCCE;border-radius:6px;padding:24px\">");
-        html.Append($"<p style=\"margin:0 0 4px;font-size:12px;color:#5C6250\">{E(company)}</p>");
-        html.Append($"<h1 style=\"margin:0 0 8px;font-size:20px;font-weight:600\">{E(texts["LowStock_Heading"])}</h1>");
         html.Append($"<p style=\"margin:0 0 16px;font-size:14px;color:#3B4033\">{E(texts["LowStock_Intro"])}</p>");
         html.Append("<table style=\"width:100%;border-collapse:collapse;font-size:14px\"><tr>");
         html.Append($"<th style=\"text-align:left;padding:8px 0;border-bottom:1px solid #D9DCCE;font-size:12px;color:#5C6250\">{E(texts["LowStock_Item"])}</th>");
@@ -59,7 +75,7 @@ public class AlertEmails(
         html.Append($"<th style=\"text-align:right;padding:8px 0;border-bottom:1px solid #D9DCCE;font-size:12px;color:#5C6250\">{E(texts["LowStock_Min"])}</th></tr>");
 
         var text = new StringBuilder();
-        text.AppendLine(company).AppendLine(texts["LowStock_Heading"]).AppendLine().AppendLine(texts["LowStock_Intro"]).AppendLine();
+        text.AppendLine(texts["LowStock_Intro"]).AppendLine();
 
         foreach (var item in items)
         {
@@ -72,7 +88,9 @@ public class AlertEmails(
             var badge = item.IsNew
                 ? $" <span style=\"font-size:11px;padding:1px 6px;border-radius:8px;background:#E1E7CF;color:#55621E\">{E(texts["LowStock_New"])}</span>"
                 : "";
-            var status = outOfStock ? $"<div style=\"font-size:12px;color:{color};font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif\">{E(texts["LowStock_OutOfStock"])}</div>" : "";
+            var status = outOfStock
+                ? $"<div style=\"font-size:12px;color:{color};font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif\">{E(texts["LowStock_OutOfStock"])}</div>"
+                : "";
 
             html.Append("<tr>");
             html.Append($"<td style=\"padding:10px 0;border-bottom:1px solid #E7E9DF\"><div style=\"font-weight:500\">{E(item.Name)}{badge}</div>");
@@ -86,12 +104,28 @@ public class AlertEmails(
         }
 
         html.Append("</table>");
-        html.Append($"<p style=\"margin:20px 0 0\"><a href=\"{E(link)}\" style=\"display:inline-block;background:#B4C17E;color:#11130E;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:4px\">{E(texts["LowStock_Open"])}</a></p>");
-        html.Append($"<p style=\"margin:20px 0 0;font-size:12px;color:#5C6250\">{E(texts["LowStock_Footer"])}</p>");
-        html.Append("</div></body></html>");
+        return Frame(company, texts["LowStock_Subject", company, items.Count.ToString("N0", culture)], texts["LowStock_Heading"],
+            html.ToString(), text.ToString().TrimEnd(), texts["LowStock_Open"], "/items?status=low", texts["LowStock_Footer"]);
+    }
 
-        text.AppendLine().AppendLine($"{texts["LowStock_Open"]}: {link}").AppendLine().AppendLine(texts["LowStock_Footer"]);
-        return new EmailMessage("", "", subject, html.ToString(), text.ToString());
+    /// <summary>
+    /// The frame every alert shares: company, heading, the body, a button into the app and a note on why
+    /// the email came. Colors are written out: emails know no CSS variables (light theme of DESIGN.md).
+    /// </summary>
+    private EmailMessage Frame(string company, string subject, string heading, string bodyHtml, string bodyText,
+        string button, string path, string footer)
+    {
+        var link = $"{options.Value.AppUrl?.TrimEnd('/')}{path}";
+        var html = "<!doctype html><html><body style=\"margin:0;padding:24px;background:#F5F5EF;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#1B1E16\">"
+                   + "<div style=\"max-width:600px;margin:0 auto;background:#FFFFFF;border:1px solid #D9DCCE;border-radius:6px;padding:24px\">"
+                   + $"<p style=\"margin:0 0 4px;font-size:12px;color:#5C6250\">{E(company)}</p>"
+                   + $"<h1 style=\"margin:0 0 8px;font-size:20px;font-weight:600\">{E(heading)}</h1>"
+                   + bodyHtml
+                   + $"<p style=\"margin:20px 0 0\"><a href=\"{E(link)}\" style=\"display:inline-block;background:#B4C17E;color:#11130E;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:4px\">{E(button)}</a></p>"
+                   + $"<p style=\"margin:20px 0 0;font-size:12px;color:#5C6250\">{E(footer)}</p>"
+                   + "</div></body></html>";
+        var text = $"{company}\n{heading}\n\n{bodyText}\n\n{button}: {link}\n\n{footer}\n";
+        return new EmailMessage("", "", subject, html, text);
     }
 
     /// <summary>Runs <paramref name="write"/> with the texts and number formats of <paramref name="language"/>.</summary>

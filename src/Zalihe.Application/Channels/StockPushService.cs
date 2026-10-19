@@ -84,8 +84,9 @@ public class StockPushService(
             }
             catch (SalesChannelException e)
             {
-                channel.RecordFailure(e.Code, timeProvider.GetUtcNow());
+                var nowFailing = channel.RecordFailure(e.Code, timeProvider.GetUtcNow());
                 await db.SaveChangesAsync(ct);
+                if (nowFailing) jobs.EmailChannelFailure(channel.TenantId, channel.Id);
                 throw;
             }
 

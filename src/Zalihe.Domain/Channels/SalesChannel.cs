@@ -49,6 +49,12 @@ public class SalesChannel : ITenantOwned
     /// <summary>When the shop started failing, counting from the first of the failed contacts in a row; null when the last contact worked.</summary>
     public DateTimeOffset? FailingSince { get; private set; }
 
+    /// <summary>
+    /// When the owner was emailed that the shop stopped working; null when not (yet) for the current
+    /// failure. One email per failure: it is cleared once the shop works again.
+    /// </summary>
+    public DateTimeOffset? ErrorEmailedAt { get; private set; }
+
     /// <summary>When the last order sync started; the next one asks the shop for orders changed since then.</summary>
     public DateTimeOffset? LastSyncedAt { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
@@ -90,6 +96,7 @@ public class SalesChannel : ITenantOwned
         Status = SalesChannelStatus.Connected;
         LastErrorCode = null;
         FailingSince = null;
+        ErrorEmailedAt = null;
     }
 
     /// <param name="startedAt">When the sync started, so orders changed while it ran are read again next time.</param>
@@ -110,16 +117,22 @@ public class SalesChannel : ITenantOwned
     /// A background contact (sync, stock push) failed. The channel shows an error once the shop has
     /// been failing for <see cref="ErrorAfter"/>; any contact that works brings it back (<see cref="MarkConnected"/>).
     /// </summary>
-    public void RecordFailure(string errorCode, DateTimeOffset at)
+    /// <returns>True when this failure is the one that put the channel into error: time to tell the owner.</returns>
+    public bool RecordFailure(string errorCode, DateTimeOffset at)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(errorCode);
         LastErrorCode = errorCode;
         FailingSince ??= at;
-        if (at - FailingSince >= ErrorAfter)
-        {
-            Status = SalesChannelStatus.Error;
-        }
+        if (Status == SalesChannelStatus.Error || at - FailingSince < ErrorAfter) return false;
+
+        Status = SalesChannelStatus.Error;
+        return true;
     }
+
+    /// <summary>The shop isn't working and the owner hasn't been emailed about it yet.</summary>
+    public bool NeedsErrorEmail => Status == SalesChannelStatus.Error && ErrorEmailedAt is null;
+
+    public void MarkErrorEmailed(DateTimeOffset at) => ErrorEmailedAt = at;
 
     /// <summary>
     /// "zrno.rs/" → "https://zrno.rs". Only https is accepted, except plain http for the local

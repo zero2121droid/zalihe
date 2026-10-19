@@ -19,6 +19,7 @@ public class OrderSyncService(
     ICredentialProtector protector,
     ISalesChannelFactory channels,
     OrderService orders,
+    IBackgroundJobs jobs,
     TimeProvider timeProvider)
 {
     /// <summary>
@@ -50,8 +51,9 @@ public class OrderSyncService(
         }
         catch (SalesChannelException e)
         {
-            channel.RecordFailure(e.Code, timeProvider.GetUtcNow());
+            var nowFailing = channel.RecordFailure(e.Code, timeProvider.GetUtcNow());
             await db.SaveChangesAsync(ct);
+            if (nowFailing) jobs.EmailChannelFailure(channel.TenantId, channel.Id);
             throw;
         }
 

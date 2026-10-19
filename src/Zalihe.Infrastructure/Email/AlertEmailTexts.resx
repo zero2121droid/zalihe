@@ -21,4 +21,15 @@
   <data name="Unit_Ml" xml:space="preserve"><value>ml</value></data>
   <data name="Unit_M" xml:space="preserve"><value>m</value></data>
   <data name="Unit_Pak" xml:space="preserve"><value>pak</value></data>
+  <data name="ChannelFailure_Subject" xml:space="preserve"><value>{0} · Prodavnica ne radi: {1}</value></data>
+  <data name="ChannelFailure_Heading" xml:space="preserve"><value>Prodavnica ne radi</value></data>
+  <data name="ChannelFailure_Intro" xml:space="preserve"><value>Od {0} Zalihe ne mogu da se povežu sa prodavnicom {1}. Dok veza ne proradi, stanje iz Zaliha se ne šalje u prodavnicu, a porudžbine koje nisu odmah stigle obradiće se tek kad veza proradi.</value></data>
+  <data name="ChannelFailure_Reason" xml:space="preserve"><value>Razlog</value></data>
+  <data name="ChannelFailure_Reason_channel.unreachable" xml:space="preserve"><value>Prodavnica nije dostupna. Proveri da li sajt radi.</value></data>
+  <data name="ChannelFailure_Reason_channel.unauthorized" xml:space="preserve"><value>Prodavnica je odbila ključeve. Proveri da li su opozvani ili im je promenjena dozvola „Čitanje/Pisanje”, pa ih zameni u Zalihama.</value></data>
+  <data name="ChannelFailure_Reason_channel.not_woocommerce" xml:space="preserve"><value>Na adresi prodavnice više nije pronađen WooCommerce. Proveri da li je dodatak uključen.</value></data>
+  <data name="ChannelFailure_Reason_channel.unexpected_response" xml:space="preserve"><value>Prodavnica je odgovorila neočekivano. Najčešće sigurnosni dodatak (npr. Wordfence) ili keš blokira REST API.</value></data>
+  <data name="ChannelFailure_Reason_Unknown" xml:space="preserve"><value>Prodavnica nije odgovorila kako treba.</value></data>
+  <data name="ChannelFailure_Open" xml:space="preserve"><value>Otvori kanale prodaje</value></data>
+  <data name="ChannelFailure_Footer" xml:space="preserve"><value>Kad veza proradi, Zalihe same nastavljaju. Ovaj email stiže jednom po prekidu.</value></data>
 </root>

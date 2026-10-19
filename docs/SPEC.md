@@ -36,7 +36,7 @@ Kad stanje padne na minimalnu zalihu ili ispod: oznaka u aplikaciji i email (naj
 Trenutno stanje (pretraga, filter po kategoriji, "ispod minimuma"), vrednost zaliha po nabavnoj ceni, najprodavaniji artikli u poslednjih 30 dana, artikli bez prometa 60+ dana, istorija kretanja po artiklu.
 
 ### 2.7 Firme i korisnici
-Registracija firme, vlasnik plus pozivanje dodatnih korisnika. Bez uloga i prava pristupa u v1.
+Registracija firme, vlasnik plus pozivanje dodatnih korisnika. Bez uloga i prava pristupa u v1: svaki pozvani korisnik vidi sve, i nabavne cene. Uloge su obavezne pre nego što firma pozove zaposlene (11.2).
 
 ### 2.8 Van obima v1 (ne implementirati)
 Fiskalizacija i ESIR, SEF i e-fakture, porudžbenice dobavljačima, više magacina, lotovi i serijski brojevi, rokovi trajanja, mobilna aplikacija, skeniranje barkoda, Shopify i drugi kanali, knjigovodstvo, uloge i prava, AI predviđanje, naplata pretplate (prvi korisnici besplatno ili ručna faktura).
@@ -168,12 +168,27 @@ Promene stanja (npr. porudžbina iz WooCommerce-a) se odmah prikazuju na otvoren
 - Posle ponovnog povezivanja frontend osvežava sve aktivne upite, pa propuštene poruke nisu problem
 - U v1 se isti efekat postiže periodičnim osvežavanjem preko TanStack Query-ja
 
-### 11.2 Mobilna aplikacija (React Native, Expo)
+### 11.2 Uloge korisnika — obavezno pre pozivanja zaposlenih
+Nabavna cena otkriva zaradu na svakom proizvodu, pa je ne sme videti svako ko radi u magacinu.
+
+| Uloga | Šta sme |
+|---|---|
+| Admin | sve: podešavanja firme, korisnici i njihove uloge, povezivanje prodavnice |
+| Menadžer | podešavanja (npr. minimalne zalihe, upozorenja), artikli, kretanja, uvoz, izveštaji, nabavne cene; ne upravlja korisnicima ni ulogama |
+| Zaposleni | artikli, stanje, kretanja (prijem, prodaja, povrat, popis), porudžbine; prodajna cena i vrednost po prodajnoj ceni, bez nabavne cene |
+
+- Vlasnik koji registruje firmu je admin. Firma uvek ima bar jednog admina.
+- Zaposleni ne vidi nabavnu cenu ni ništa iz čega se ona izračunava: vrednost zaliha po nabavnoj ceni (stanje × nabavna cena otkriva cenu), ukupnu vrednost na Početnoj i u izveštajima, vrednost po kategoriji ni vezanu robu u izveštaju „Roba koja stoji”, izmene nabavne cene u istoriji artikla, nabavnu cenu u formi artikla, CSV uvozu i uvozu iz prodavnice.
+- Pravo važi u API-ju, ne samo u prikazu: za zaposlenog API vraća ova polja kao `null` (u OpenAPI-ju opisana kao takva), odbija njihov unos i ne dozvoljava filtriranje ni sortiranje po njima. Sakrivanje samo u React-u nije zaštita, jer je API isti za mobilnu aplikaciju.
+- Uloga je na korisniku u firmi (claim u cookie-ju i u bearer tokenu), a provera je jedno mesto u Application sloju (npr. `ICurrentUser.CanSeePurchasePrices`), ne `if` u svakom kontroleru.
+- Integracioni testovi za svaku ulogu: zaposleni ne dobija nabavnu cenu ni vrednost ni iz jednog endpointa.
+
+### 11.3 Mobilna aplikacija (React Native, Expo)
 Namena: rad u magacinu, odnosno prijem robe, popis i skeniranje barkoda kamerom telefona.
 - Koristi isti API i isti generisani TypeScript klijent kao web
 - Autentifikacija preko bearer tokena (ASP.NET Core Identity API endpointi, access + refresh token), paralelno sa cookie-jem za web
 - Tokeni se čuvaju u sigurnom skladištu uređaja (`expo-secure-store`), nikad u `AsyncStorage`-u
 - Pretpostavke u v1 koje ovo omogućavaju: pravila u odeljku "API spreman za mobilnu aplikaciju" u `CLAUDE.md`
 
-### 11.3 Ostalo
+### 11.4 Ostalo
 Shopify, porudžbenice dobavljačima, više magacina, naplata pretplate, SEF/e-fakture za B2B distributere.

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Zalihe.Infrastructure.Channels.WooCommerce;
+using Zalihe.Infrastructure.Email;
 using Zalihe.Infrastructure.Persistence;
 
 namespace Zalihe.IntegrationTests.Infrastructure;
@@ -20,6 +21,9 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     /// <summary>The fake WooCommerce shop every channel talks to in tests.</summary>
     public FakeShopHandler Shop { get; } = new();
 
+    /// <summary>Keeps every email the app sends instead of sending it.</summary>
+    public FakeEmailSender Emails { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
@@ -27,10 +31,15 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // Scheduled jobs would sync every test's shop at random moments; tests run them directly.
         builder.UseSetting("Jobs:OrderSyncCron", "");
         builder.UseSetting("Jobs:WebhookCleanupCron", "");
+        builder.UseSetting("Jobs:LowStockAlertCron", "");
+        builder.UseSetting("Email:AppUrl", "https://app.zalihe.test");
         // Likewise stock pushes, which every stock change in every test would schedule.
         builder.UseSetting("Jobs:StockPushDelaySeconds", "");
         builder.ConfigureTestServices(services =>
-            services.AddHttpClient(SalesChannelFactory.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Shop));
+        {
+            services.AddHttpClient(SalesChannelFactory.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Shop);
+            services.AddSingleton<IEmailSender>(Emails);
+        });
     }
 
     public async Task InitializeAsync()

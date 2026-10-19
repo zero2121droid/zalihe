@@ -50,6 +50,13 @@ services:
     volumes:
       - wordpress-data:/var/www/html
 
+  # Catches every email the app sends locally; nothing leaves the computer. Inbox: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   # WP-CLI for setting up the test shop; not started by "up":
   #   docker compose run --rm wpcli bash /scripts/setup.sh
   wpcli:

@@ -97,7 +97,7 @@ Posle v1 planirana je React Native (Expo) aplikacija koja koristi isti API. Zato
 ## Komande
 
 ```bash
-docker compose up -d --wait                                # Postgres (localhost:5433), WordPress (localhost:8080)
+docker compose up -d --wait                                # Postgres (localhost:5433), WordPress (localhost:8080), Mailpit (emailovi: localhost:8025)
 dotnet run --project src/Zalihe.Web --launch-profile http  # API na http://localhost:5131
 cd src/web && npm run dev                                  # React na http://localhost:5173, /api ide na backend
 cd src/web && npm run dev:slow                             # isto, ali svaki API zahtev kasni 1,5 s (da se vide loaderi i animacije)

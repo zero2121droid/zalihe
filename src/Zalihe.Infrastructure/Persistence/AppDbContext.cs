@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ItemChannelMapping> ItemChannelMappings => Set<ItemChannelMapping>();
     public DbSet<ExternalOrder> ExternalOrders => Set<ExternalOrder>();
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
+    public DbSet<LowStockAlert> LowStockAlerts => Set<LowStockAlert>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -40,6 +41,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         builder.Entity<Tenant>(tenant =>
         {
             tenant.Property(t => t.Name).HasMaxLength(Tenant.NameMaxLength);
+        });
+
+        builder.Entity<LowStockAlert>(alert =>
+        {
+            // One per company, so the company is the key.
+            alert.HasKey(a => a.TenantId);
+            alert.HasOne<Tenant>().WithOne().HasForeignKey<LowStockAlert>(a => a.TenantId).OnDelete(DeleteBehavior.Restrict);
         });
 
         // Users are not company data in the filter sense: sign-in looks them up by email
@@ -252,6 +260,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             .OrderBy(c => c.Id)
             .Select(c => new ChannelOwner(c.TenantId, c.Id))
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Guid>> ListAllTenantIdsAsync(CancellationToken ct) =>
+        await Tenants.OrderBy(t => t.Id).Select(t => t.Id).ToListAsync(ct);
 
     public Task<int> DeleteWebhookEventsReceivedBeforeAsync(DateTimeOffset before, CancellationToken ct) =>
         WebhookEvents

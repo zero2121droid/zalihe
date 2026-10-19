@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Zalihe.Application.Alerts;
 using Zalihe.Application.Common;
 using Zalihe.Application.Orders;
 using Zalihe.Application.Webhooks;
@@ -17,6 +18,7 @@ public static class RecurringJobs
 {
     public const string OrderSyncId = "order-sync";
     public const string WebhookCleanupId = "webhook-event-cleanup";
+    public const string LowStockAlertId = "low-stock-alerts";
 
     /// <summary>Registers (or updates) the jobs in Hangfire's storage; called once at startup.</summary>
     public static void ScheduleRecurringJobs(this IServiceProvider services)
@@ -28,6 +30,8 @@ public static class RecurringJobs
             job => job.ScheduleAllAsync(CancellationToken.None));
         Schedule<WebhookCleanupJob>(manager, WebhookCleanupId, configuration["Jobs:WebhookCleanupCron"],
             job => job.RunAsync(CancellationToken.None));
+        Schedule<LowStockAlertJob>(manager, LowStockAlertId, configuration["Jobs:LowStockAlertCron"],
+            job => job.ScheduleAllAsync(CancellationToken.None));
     }
 
     private static void Schedule<TJob>(IRecurringJobManager manager, string id, string? cron,
@@ -78,4 +82,28 @@ public class OrderSyncJob(IAppDbContext db, IBackgroundJobClient jobs, TenantCon
 public class WebhookCleanupJob(WebhookService webhooks)
 {
     public Task RunAsync(CancellationToken ct) => webhooks.DeleteExpiredAsync(ct);
+}
+
+/// <summary>
+/// The email about items to reorder (SPEC 2.5): every hour, one job per company, each with its company
+/// set. The service decides whether an email is due; most runs send nothing. A failed send is retried
+/// by the next run, so the job itself isn't retried.
+/// </summary>
+public class LowStockAlertJob(IAppDbContext db, IBackgroundJobClient jobs, TenantContext tenant, LowStockAlertService alerts)
+{
+    [AutomaticRetry(Attempts = 0)]
+    public async Task ScheduleAllAsync(CancellationToken ct)
+    {
+        foreach (var tenantId in await db.ListAllTenantIdsAsync(ct))
+        {
+            jobs.Enqueue<LowStockAlertJob>(job => job.RunAsync(tenantId, CancellationToken.None));
+        }
+    }
+
+    [AutomaticRetry(Attempts = 0)]
+    public async Task RunAsync(Guid tenantId, CancellationToken ct)
+    {
+        tenant.Set(tenantId);
+        await alerts.RunAsync(ct);
+    }
 }

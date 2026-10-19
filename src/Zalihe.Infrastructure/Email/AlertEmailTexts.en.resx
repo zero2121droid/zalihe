@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="LowStock_Subject" xml:space="preserve"><value>{0} · To reorder: {1}</value></data>
+  <data name="LowStock_Heading" xml:space="preserve"><value>Items to reorder</value></data>
+  <data name="LowStock_Intro" xml:space="preserve"><value>These items are at or below their minimum stock. The ones that fell since the last email are marked as new.</value></data>
+  <data name="LowStock_New" xml:space="preserve"><value>new</value></data>
+  <data name="LowStock_OutOfStock" xml:space="preserve"><value>out of stock</value></data>
+  <data name="LowStock_Item" xml:space="preserve"><value>Item</value></data>
+  <data name="LowStock_Stock" xml:space="preserve"><value>Stock</value></data>
+  <data name="LowStock_Min" xml:space="preserve"><value>Min.</value></data>
+  <data name="LowStock_Open" xml:space="preserve"><value>Open in Zalihe</value></data>
+  <data name="LowStock_Footer" xml:space="preserve"><value>Zalihe sends this email at most once a day, when an item falls to its minimum stock or runs out.</value></data>
+  <data name="Unit_Kom" xml:space="preserve"><value>pcs</value></data>
+  <data name="Unit_Kg" xml:space="preserve"><value>kg</value></data>
+  <data name="Unit_G" xml:space="preserve"><value>g</value></data>
+  <data name="Unit_L" xml:space="preserve"><value>l</value></data>
+  <data name="Unit_Ml" xml:space="preserve"><value>ml</value></data>
+  <data name="Unit_M" xml:space="preserve"><value>m</value></data>
+  <data name="Unit_Pak" xml:space="preserve"><value>pack</value></data>
+</root>

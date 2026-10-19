@@ -4,6 +4,7 @@ using Zalihe.Domain.Channels;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Orders;
 using Zalihe.Domain.Stock;
+using Zalihe.Domain.Tenants;
 
 namespace Zalihe.Application.Common;
 
@@ -22,6 +23,7 @@ public interface IAppDbContext
     DbSet<ItemChannelMapping> ItemChannelMappings { get; }
     DbSet<ExternalOrder> ExternalOrders { get; }
     DbSet<WebhookEvent> WebhookEvents { get; }
+    DbSet<LowStockAlert> LowStockAlerts { get; }
 
     /// <summary>For explicit transactions, e.g. around locking stock.</summary>
     DatabaseFacade Database { get; }
@@ -42,13 +44,16 @@ public interface IAppDbContext
 
     /// <summary>
     /// The company a shop belongs to, read without a current company: a webhook arrives knowing only
-    /// its shop, and the company is set from this. Crosses companies, like the two methods below;
+    /// its shop, and the company is set from this. Crosses companies, like the three methods below;
     /// nothing else may.
     /// </summary>
     Task<Guid?> FindChannelTenantAsync(Guid channelId, CancellationToken ct);
 
     /// <summary>Every company's shops, for background jobs that then work on each shop with its company set.</summary>
     Task<IReadOnlyList<ChannelOwner>> ListAllChannelsAsync(CancellationToken ct);
+
+    /// <summary>Every company, for background jobs that then work on each one with its company set.</summary>
+    Task<IReadOnlyList<Guid>> ListAllTenantIdsAsync(CancellationToken ct);
 
     /// <summary>Deletes every company's webhook events received before <paramref name="before"/>; returns how many.</summary>
     Task<int> DeleteWebhookEventsReceivedBeforeAsync(DateTimeOffset before, CancellationToken ct);

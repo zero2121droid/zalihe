@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Zalihe.Application.Alerts;
 using Zalihe.Application.Channels;
 using Zalihe.Application.Common;
 using Zalihe.Application.Dashboard;
@@ -18,6 +19,7 @@ using Zalihe.Application.Webhooks;
 using Zalihe.Infrastructure.Jobs;
 using Zalihe.Application.Stock;
 using Zalihe.Infrastructure.Channels.WooCommerce;
+using Zalihe.Infrastructure.Email;
 using Zalihe.Infrastructure.Identity;
 using Zalihe.Infrastructure.Persistence;
 using Zalihe.Infrastructure.Security;
@@ -53,6 +55,13 @@ public static class DependencyInjection
         services.AddScoped<OrderSyncService>();
         services.AddScoped<OrderListService>();
         services.AddScoped<StockPushService>();
+        services.AddScoped<LowStockAlertService>();
+
+        // Emails: SMTP settings from "Email" (Mailpit locally), texts from resx in the user's language.
+        services.AddOptions<EmailOptions>().BindConfiguration(EmailOptions.Section);
+        services.AddLocalization();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<IAlertEmails, AlertEmails>();
         services.AddSingleton<IShopOrderReader, WooCommerceOrderReader>();
         services.AddSingleton(sp =>
         {

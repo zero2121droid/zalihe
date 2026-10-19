@@ -11,13 +11,20 @@ public class Tenant
 
     public Tenant(string name, DateTimeOffset createdAt)
     {
+        Id = Guid.CreateVersion7();
+        Name = ValidName(name);
+        CreatedAt = createdAt;
+    }
+
+    /// <summary>Changes the company's name; the same rules apply as at registration.</summary>
+    public void Rename(string name) => Name = ValidName(name);
+
+    private static string ValidName(string name)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         name = name.Trim();
         ArgumentOutOfRangeException.ThrowIfGreaterThan(name.Length, NameMaxLength, nameof(name));
-
-        Id = Guid.CreateVersion7();
-        Name = name;
-        CreatedAt = createdAt;
+        return name;
     }
 
     // For EF Core.

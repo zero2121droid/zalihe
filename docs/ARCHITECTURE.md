@@ -332,6 +332,8 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
   5. ako to ne uspe, vraća greške, a `await using` zatvara transakciju bez commita, pa se firma **poništava**;
   6. ako uspe, radi `CommitAsync`.
 
+**Podešavanja u `AccountService.cs`**: `RenameCompanyAsync` (`Tenant.Rename`, ista pravila kao pri registraciji), `UpdateProfileAsync` (ime i jezik) i `ChangePasswordAsync`. Pogrešna trenutna lozinka je `auth.wrong_password` na polju `currentPassword`, a pravila za novu (npr. dužina) idu na `newPassword`.
+
   Bez transakcije bi posle neuspele registracije ostajale firme bez korisnika. Ovo radi zato što `UserManager` koristi isti `DbContext` (isti scope), pa je u istoj transakciji.
 - `GetTenantAsync()`: učitava firmu, koristi je `me` endpoint.
 - `MapIdentityError()`: prevodi Identity kodove (`DuplicateEmail`, `PasswordTooShort`) u kodove aplikacije (`auth.email_taken`, `auth.password_too_short` sa `min`). `switch` izraz sa šablonima: poznati slučajevi eksplicitno, sve ostale greške lozinke kao `auth.password_*`, sve ostalo kao `auth.*`.
@@ -393,6 +395,8 @@ Slike: proizvod šalje `images` (uzima se prva), a varijacija `image`; varijacij
 - `Me`: vraća ko je prijavljen i izdaje antiforgery token.
 - `[ProducesResponseType]` atributi opisuju svaki mogući odgovor u OpenAPI-ju, pa Orval generiše tačne tipove, uključujući greške.
 - `Name = "Login"` u `[HttpPost("login", Name = "Login")]` postaje `operationId` u OpenAPI-ju, a od njega Orval pravi ime hooka (`useLogin`). Svaki novi endpoint treba da ima ime.
+
+**`Auth/AccountController.cs`**: podešavanja (`/api/account`): `PUT company`, `PUT profile` i `POST password`. Prva dva vraćaju `CurrentUserResponse`, isti oblik kao `me`, pa frontend samo zameni podatke i meni, ime i jezik se odmah promene. Posle promene lozinke Identity menja „security stamp”, pa `RefreshSignInAsync` ovom uređaju izda nov cookie; ostali uređaji se odjave kad se njihov cookie sledeći put proveri. U v1 svaki korisnik firme sme da promeni naziv; sa ulogama (SPEC 11.2) to postaje pravo admina.
 
 **`Auth/CookieAntiforgeryFilter.cs`**: zaštita od **CSRF** napada. Problem: ako je korisnik prijavljen, a zlonamerni sajt pošalje formu na API, browser sam doda cookie. Rešenje:
 - `IssueToken()`: `me` postavlja cookie `XSRF-TOKEN` koji JavaScript **može da pročita** (`HttpOnly = false`). Tuđi sajt ne može da pročita cookie-je druge adrese.
@@ -568,6 +572,8 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 
 **`pages/reports/ReportsPage.tsx`**: „Izveštaji” (`/reports`): traka sa četiri brojke, pilule za izveštaj (`?r=slowMovers`, `?r=stockValue`; najprodavaniji su podrazumevani), pretraga i kategorija (`?cat=`), pa tabela sa paginacijom. Učitava se samo izabrani izveštaj. Vrednost po kategoriji nema pretragu ni filter, a udeo računa od ukupne vrednosti (`formatPercent()`).
 
+**`pages/settings/SettingsPage.tsx`**: „Podešavanja” (`/settings`, obična širina): tri male forme koje se čuvaju posebno (Firma, Moj nalog, Lozinka), sa `SaveButton` i `useShake`. Email nije polje, jer ne može da se menja. Jezik se primeni kroz `me` (`useCurrentUser`), čim se sačuva.
+
 **`pages/channels/ProductImportPage.tsx`**: „Uvoz proizvoda iz prodavnice” (`/channels/{id}/import`, dugme „Uvezi proizvode” na kartici kanala). Traka sa četiri brojke (novi, postoje u Zalihama, već povezano, preskočeno), tabela novih proizvoda sa izborom (svi su izabrani, korisnik isključuje ono što ne želi; zaglavlje ima „izaberi sve”), tabela povezivanja (link na postojeći artikal) i preskočeni sa prevedenim razlogom. Pregled se ne učitava ponovo pri povratku na prozor (`staleTime: Infinity`, `refetchOnWindowFocus: false`), jer je čitanje prodavnice sporo i opterećuje je. Posle uvoza se osvežavaju artikli, brojke i Početna, a pregled se briše iz keša.
 
 Kad je sve već povezano, umesto teksta „sve je povezano” stoji i dugme „Osveži slike iz prodavnice”: isti uvoz bez novih artikala (`createExternalIds: []`), bez animacije, sa brojem proizvoda koji imaju sliku (`ImageCount`).
@@ -606,6 +612,8 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 - `ReadProblemAsync()`: proveri da je odgovor `problem+json` i pročita ga.
 
 **`Auth/AuthTests.cs`**: 11 testova koji pokrivaju registraciju (uspeh, podrazumevani jezik, zauzet email, kratka lozinka, prazna polja, nepodržan jezik), prijavu (uspeh, pogrešna lozinka), 401 umesto preusmeravanja i odjavu sa tokenom i bez njega. Svaki test prati **Arrange / Act / Assert** i naziv `Metoda_Situacija_OcekivaniRezultat`, pa se iz samog naziva vidi šta se pokvarilo kad test padne.
+
+**`Auth/AccountTests.cs`**: preimenovanje (i da ne dira drugu firmu), prazan i predugačak naziv, ime i jezik, nepodržan jezik, promena lozinke (ostaje prijavljen, radi samo nova), pogrešna trenutna i prekratka nova lozinka, 401 i antiforgery.
 
 ---
 

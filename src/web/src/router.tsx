@@ -13,6 +13,7 @@ import { LoginPage } from './pages/LoginPage'
 import { OrdersPage } from './pages/orders/OrdersPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ReportsPage } from './pages/reports/ReportsPage'
+import { SettingsPage } from './pages/settings/SettingsPage'
 
 export const routes: RouteObject[] = [
   {
@@ -42,6 +43,7 @@ export const routes: RouteObject[] = [
           { path: '/reports', element: <ReportsPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/channels', element: <ChannelsPage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/channels/:id/import', element: <ProductImportPage />, handle: { width: 'wide' } satisfies RouteHandle },
+          { path: '/settings', element: <SettingsPage /> },
         ],
       },
     ],

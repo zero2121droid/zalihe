@@ -60,6 +60,50 @@ public partial class AccountService(
     public Task<Tenant> GetTenantAsync(Guid tenantId, CancellationToken ct) =>
         db.Tenants.SingleAsync(t => t.Id == tenantId, ct);
 
+    /// <summary>Renames the user's company. Request validation already checked the name.</summary>
+    public async Task RenameCompanyAsync(User user, string name, CancellationToken ct)
+    {
+        var tenant = await GetTenantAsync(user.TenantId, ct);
+        tenant.Rename(name);
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Changes the user's own name and UI language.</summary>
+    public async Task<IReadOnlyList<AppError>> UpdateProfileAsync(User user, string name, string language)
+    {
+        if (!Languages.IsSupported(language))
+        {
+            return [new AppError("validation.unsupported_language", "language")];
+        }
+
+        user.Name = name.Trim();
+        user.Language = language;
+        var result = await userManager.UpdateAsync(user);
+        return result.Succeeded ? [] : [.. result.Errors.Select(MapIdentityError).Distinct()];
+    }
+
+    /// <summary>
+    /// Changes the user's password after checking the current one. Identity then changes the user's
+    /// security stamp, which signs the user out on other devices once their cookie is checked again.
+    /// </summary>
+    public async Task<IReadOnlyList<AppError>> ChangePasswordAsync(User user, string currentPassword, string newPassword)
+    {
+        var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        return result.Succeeded ? [] : [.. result.Errors.Select(MapPasswordChangeError).Distinct()];
+    }
+
+    /// <summary>A wrong current password belongs to that field; the rules for a new one, to the new one.</summary>
+    private AppError MapPasswordChangeError(IdentityError error)
+    {
+        if (error.Code == nameof(IdentityErrorDescriber.PasswordMismatch))
+        {
+            return new AppError("auth.wrong_password", "currentPassword");
+        }
+
+        var mapped = MapIdentityError(error);
+        return mapped.Field == "password" ? mapped with { Field = "newPassword" } : mapped;
+    }
+
     private static RegistrationResult Failed(params AppError[] errors) => new(null, errors);
 
     private AppError MapIdentityError(IdentityError error) => error.Code switch

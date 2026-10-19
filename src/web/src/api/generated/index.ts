@@ -1,3 +1,4 @@
+export * from './account/account';
 export * from './auth/auth';
 export * from './channels/channels';
 export * from './dashboard/dashboard';

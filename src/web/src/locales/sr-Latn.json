@@ -14,7 +14,8 @@
       "items": "Artikli",
       "orders": "Porudžbine",
       "channels": "Kanali prodaje",
-      "reports": "Izveštaji"
+      "reports": "Izveštaji",
+      "settings": "Podešavanja"
     },
     "logout": "Odjavi se",
     "cancel": "Otkaži",
@@ -113,7 +114,8 @@
       "locked_out": "Nalog je privremeno zaključan zbog previše neuspešnih pokušaja. Pokušaj ponovo za nekoliko minuta.",
       "email_taken": "Nalog sa ovom email adresom već postoji.",
       "password_too_short": "Lozinka mora imati najmanje {{min}} znakova.",
-      "antiforgery_invalid": "Sesija je istekla. Osveži stranicu i pokušaj ponovo."
+      "antiforgery_invalid": "Sesija je istekla. Osveži stranicu i pokušaj ponovo.",
+      "wrong_password": "Trenutna lozinka nije tačna."
     },
     "item": {
       "sku_duplicate": "Artikal sa ovom šifrom već postoji.",
@@ -560,6 +562,29 @@
       "withoutPrice_one": "{{count}} artikal bez nabavne cene",
       "withoutPrice_few": "{{count}} artikla bez nabavne cene",
       "withoutPrice_other": "{{count}} artikala bez nabavne cene"
+    }
+  },
+  "settings": {
+    "title": "Podešavanja",
+    "save": "Sačuvaj",
+    "company": {
+      "title": "Firma",
+      "description": "Naziv firme koji vide svi korisnici, na primer u meniju.",
+      "name": "Naziv firme"
+    },
+    "profile": {
+      "title": "Moj nalog",
+      "description": "Tvoje ime i jezik aplikacije. Drugi korisnici firme vide tvoje ime u istoriji artikala.",
+      "name": "Ime",
+      "email": "Email",
+      "emailNote": "Email je i korisničko ime za prijavu i za sada ne može da se promeni."
+    },
+    "password": {
+      "title": "Lozinka",
+      "description": "Posle promene ostaješ prijavljen ovde, a na drugim uređajima ćeš morati ponovo da se prijaviš.",
+      "current": "Trenutna lozinka",
+      "new": "Nova lozinka",
+      "rule": "Najmanje 8 znakova."
     }
   }
 }

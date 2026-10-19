@@ -14,7 +14,8 @@
       "items": "Items",
       "orders": "Orders",
       "channels": "Sales channels",
-      "reports": "Reports"
+      "reports": "Reports",
+      "settings": "Settings"
     },
     "logout": "Sign out",
     "cancel": "Cancel",
@@ -113,7 +114,8 @@
       "locked_out": "The account is temporarily locked after too many failed attempts. Try again in a few minutes.",
       "email_taken": "An account with this email already exists.",
       "password_too_short": "The password must have at least {{min}} characters.",
-      "antiforgery_invalid": "Your session has expired. Refresh the page and try again."
+      "antiforgery_invalid": "Your session has expired. Refresh the page and try again.",
+      "wrong_password": "The current password is wrong."
     },
     "item": {
       "sku_duplicate": "An item with this SKU already exists.",
@@ -560,6 +562,29 @@
       "withoutPrice_one": "{{count}} item without a purchase price",
       "withoutPrice_few": "{{count}} items without a purchase price",
       "withoutPrice_other": "{{count}} items without a purchase price"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "save": "Save",
+    "company": {
+      "title": "Company",
+      "description": "The company name every user sees, for example in the menu.",
+      "name": "Company name"
+    },
+    "profile": {
+      "title": "My account",
+      "description": "Your name and the app's language. Other users of the company see your name in item history.",
+      "name": "Name",
+      "email": "Email",
+      "emailNote": "The email is also your sign-in name and can't be changed for now."
+    },
+    "password": {
+      "title": "Password",
+      "description": "You stay signed in here after the change; other devices will have to sign in again.",
+      "current": "Current password",
+      "new": "New password",
+      "rule": "At least 8 characters."
     }
   }
 }

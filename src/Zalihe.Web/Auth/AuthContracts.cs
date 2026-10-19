@@ -26,3 +26,21 @@ public record LoginRequest(
     bool RememberMe = false);
 
 public record CurrentUserResponse(Guid Id, string Name, string Email, string Language, Guid TenantId, string TenantName);
+
+public record UpdateCompanyRequest(
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(Tenant.NameMaxLength, ErrorMessage = "validation.max_length")]
+    string Name);
+
+public record UpdateProfileRequest(
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(User.NameMaxLength, ErrorMessage = "validation.max_length")]
+    string Name,
+    [Required(ErrorMessage = "validation.required")]
+    string Language);
+
+public record ChangePasswordRequest(
+    [Required(ErrorMessage = "validation.required")]
+    string CurrentPassword,
+    [Required(ErrorMessage = "validation.required")]
+    string NewPassword);

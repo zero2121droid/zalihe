@@ -38,6 +38,8 @@ Trenutno stanje (pretraga, filter po kategoriji, "ispod minimuma"), vrednost zal
 ### 2.7 Firme i korisnici
 Registracija firme, vlasnik plus pozivanje dodatnih korisnika. Bez uloga i prava pristupa u v1: svaki pozvani korisnik vidi sve, i nabavne cene. Uloge su obavezne pre nego što firma pozove zaposlene (11.2).
 
+Podešavanja: naziv firme, a za prijavljenog korisnika ime, jezik i promena lozinke. Email je i korisničko ime i u v1 se ne menja. Kad stignu uloge, naziv firme menja samo admin.
+
 ### 2.8 Van obima v1 (ne implementirati)
 Fiskalizacija i ESIR, SEF i e-fakture, porudžbenice dobavljačima, više magacina, lotovi i serijski brojevi, rokovi trajanja, mobilna aplikacija, skeniranje barkoda, Shopify i drugi kanali, knjigovodstvo, uloge i prava, AI predviđanje, naplata pretplate (prvi korisnici besplatno ili ručna faktura).
 

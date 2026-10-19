@@ -1,6 +1,6 @@
 import { ActionIcon, AppShell, Box, Burger, Group, NavLink, Stack, Text } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconBox, IconChartBar, IconHome, IconLink, IconLogout, IconReceipt } from '@tabler/icons-react'
+import { IconBox, IconChartBar, IconHome, IconLink, IconLogout, IconReceipt, IconSettings } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -26,6 +26,7 @@ const navItems: NavItem[] = [
   { to: '/orders', labelKey: 'common.nav.orders', icon: IconReceipt },
   { to: '/reports', labelKey: 'common.nav.reports', icon: IconChartBar },
   { to: '/channels', labelKey: 'common.nav.channels', icon: IconLink },
+  { to: '/settings', labelKey: 'common.nav.settings', icon: IconSettings },
 ]
 
 export function AppLayout() {

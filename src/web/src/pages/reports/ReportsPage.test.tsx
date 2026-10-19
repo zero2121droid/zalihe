@@ -81,4 +81,21 @@ describe('ReportsPage', () => {
     expect(screen.getByText('2 artikla bez nabavne cene')).toBeInTheDocument()
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
   })
+
+  it('Render_ApiWithoutReports_SaysWhatFailedInsteadOfBlankFigures', async () => {
+    // Arrange: an API started before reports existed answers 404 to all of them.
+    const missing = { status: 404, body: { status: 404, code: 'not_found' } }
+    mockApi({
+      'GET /api/reports/summary': missing,
+      'GET /api/items/categories': { status: 200, body: [] },
+      'GET /api/reports/top-sellers': missing,
+    })
+
+    // Act
+    await renderRoutes(routes, '/reports')
+
+    // Assert
+    expect(await screen.findAllByRole('alert')).toHaveLength(2)
+    expect(screen.queryByRole('region', { name: 'Pregled zaliha' })).not.toBeInTheDocument()
+  })
 })

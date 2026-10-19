@@ -99,29 +99,35 @@ export function ReportsPage() {
       </Stack>
 
       {/* One strip divided by lines, not separate cards (DESIGN.md): the 1 px gaps show the line color. */}
-      <SimpleGrid
-        component="section"
-        aria-label={t('reports.figures.label')}
-        cols={{ base: 2, md: 4 }}
-        spacing={1}
-        verticalSpacing={1}
-        bg="var(--z-line)"
-        bd="1px solid var(--z-line)"
-        style={{ ...sectionStyle, overflow: 'hidden' }}
-      >
-        <Figure label={t('reports.figures.stockValue')} hint={t('reports.figures.stockValueHint')}>
-          {summary.data && <Money value={summary.data.stockValue} />}
-        </Figure>
-        <Figure label={t('reports.figures.withoutPrice')} hint={t('reports.figures.withoutPriceHint')}>
-          {summary.data && formatNumber(summary.data.itemsWithoutPrice, i18n.language)}
-        </Figure>
-        <Figure label={t('reports.figures.slowMovers', { days: SLOW_MOVER_DAYS })} hint={t('reports.figures.slowMoversHint')}>
-          {summary.data && formatNumber(summary.data.slowMoverCount, i18n.language)}
-        </Figure>
-        <Figure label={t('reports.figures.slowMoverValue')} hint={t('reports.figures.slowMoverValueHint')}>
-          {summary.data && <Money value={summary.data.slowMoverValue} />}
-        </Figure>
-      </SimpleGrid>
+      {summary.isError ? (
+        <Text role="alert" p="lg" bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
+          {formErrorMessage(t, summary.error)}
+        </Text>
+      ) : (
+        <SimpleGrid
+          component="section"
+          aria-label={t('reports.figures.label')}
+          cols={{ base: 2, md: 4 }}
+          spacing={1}
+          verticalSpacing={1}
+          bg="var(--z-line)"
+          bd="1px solid var(--z-line)"
+          style={{ ...sectionStyle, overflow: 'hidden' }}
+        >
+          <Figure label={t('reports.figures.stockValue')} hint={t('reports.figures.stockValueHint')}>
+            {summary.data && <Money value={summary.data.stockValue} />}
+          </Figure>
+          <Figure label={t('reports.figures.withoutPrice')} hint={t('reports.figures.withoutPriceHint')}>
+            {summary.data && formatNumber(summary.data.itemsWithoutPrice, i18n.language)}
+          </Figure>
+          <Figure label={t('reports.figures.slowMovers', { days: SLOW_MOVER_DAYS })} hint={t('reports.figures.slowMoversHint')}>
+            {summary.data && formatNumber(summary.data.slowMoverCount, i18n.language)}
+          </Figure>
+          <Figure label={t('reports.figures.slowMoverValue')} hint={t('reports.figures.slowMoverValueHint')}>
+            {summary.data && <Money value={summary.data.slowMoverValue} />}
+          </Figure>
+        </SimpleGrid>
+      )}
 
       <Group gap="md" wrap="wrap">
         <Group gap={6} role="group" aria-label={t('reports.choose')}>

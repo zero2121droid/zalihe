@@ -175,13 +175,14 @@ Nabavna cena otkriva zaradu na svakom proizvodu, pa je ne sme videti svako ko ra
 |---|---|
 | Admin | sve: podešavanja firme, korisnici i njihove uloge, povezivanje prodavnice |
 | Menadžer | podešavanja (npr. minimalne zalihe, upozorenja), artikli, kretanja, uvoz, izveštaji, nabavne cene; ne upravlja korisnicima ni ulogama |
-| Zaposleni | artikli, stanje, kretanja (prijem, prodaja, povrat, popis), porudžbine; prodajna cena i vrednost po prodajnoj ceni, bez nabavne cene |
+| Zaposleni | artikli, stanje, kretanja (prijem, prodaja, povrat, popis), porudžbine; prodajna cena i vrednost po prodajnoj ceni; nabavna cena samo kad je admin dozvoli (vidi niže) |
 
 - Vlasnik koji registruje firmu je admin. Firma uvek ima bar jednog admina.
-- Zaposleni ne vidi nabavnu cenu ni ništa iz čega se ona izračunava: vrednost zaliha po nabavnoj ceni (stanje × nabavna cena otkriva cenu), ukupnu vrednost na Početnoj i u izveštajima, vrednost po kategoriji ni vezanu robu u izveštaju „Roba koja stoji”, izmene nabavne cene u istoriji artikla, nabavnu cenu u formi artikla, CSV uvozu i uvozu iz prodavnice.
-- Pravo važi u API-ju, ne samo u prikazu: za zaposlenog API vraća ova polja kao `null` (u OpenAPI-ju opisana kao takva), odbija njihov unos i ne dozvoljava filtriranje ni sortiranje po njima. Sakrivanje samo u React-u nije zaštita, jer je API isti za mobilnu aplikaciju.
-- Uloga je na korisniku u firmi (claim u cookie-ju i u bearer tokenu), a provera je jedno mesto u Application sloju (npr. `ICurrentUser.CanSeePurchasePrices`), ne `if` u svakom kontroleru.
-- Integracioni testovi za svaku ulogu: zaposleni ne dobija nabavnu cenu ni vrednost ni iz jednog endpointa.
+- Da li zaposleni vide nabavne cene bira admin u podešavanjima firme („Zaposleni vide nabavne cene”), za sve zaposlene u firmi odjednom. Podrazumevano je isključeno, pa je oprezan vlasnik zaštićen od početka, a vlasnik sa malim timom kome veruje ne mora svima da daje ulogu menadžera samo zbog cena. Admin i menadžer cene vide uvek. Promena važi od sledećeg zahteva, bez ponovne prijave.
+- Kad je isključeno, zaposleni ne vidi nabavnu cenu ni ništa iz čega se ona izračunava: vrednost zaliha po nabavnoj ceni (stanje × nabavna cena otkriva cenu), ukupnu vrednost na Početnoj i u izveštajima, vrednost po kategoriji ni vezanu robu u izveštaju „Roba koja stoji”, izmene nabavne cene u istoriji artikla, nabavnu cenu u formi artikla, CSV uvozu i uvozu iz prodavnice.
+- Pravo važi u API-ju, ne samo u prikazu: za zaposlenog bez tog prava API vraća ova polja kao `null` (u OpenAPI-ju opisana kao takva), odbija njihov unos i ne dozvoljava filtriranje ni sortiranje po njima. Sakrivanje samo u React-u nije zaštita, jer je API isti za mobilnu aplikaciju.
+- Uloga je na korisniku u firmi (claim u cookie-ju i u bearer tokenu), a podešavanje na firmi, pa se čita iz baze pri zahtevu, a ne iz cookie-ja, da isključivanje važi odmah. Provera je jedno mesto u Application sloju (npr. `ICurrentUser.CanSeePurchasePrices`: uloga + podešavanje firme), ne `if` u svakom kontroleru.
+- Integracioni testovi za svaku ulogu i oba položaja podešavanja: zaposleni bez prava ne dobija nabavnu cenu ni vrednost ni iz jednog endpointa, a posle uključivanja ih dobija bez ponovne prijave.
 
 ### 11.3 Mobilna aplikacija (React Native, Expo)
 Namena: rad u magacinu, odnosno prijem robe, popis i skeniranje barkoda kamerom telefona.

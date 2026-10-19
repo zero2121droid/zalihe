@@ -31,4 +31,5 @@ export interface ItemDto {
   sold30Days: number;
   /** @nullable */
   imageUrl: string | null;
+  hasOwnImage: boolean;
 }

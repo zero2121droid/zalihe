@@ -193,7 +193,9 @@ zalihe/
 
 **Slanje stanja na vezi** (`ItemChannelMapping`): `StockChangedAt` je oznaka „stanje artikla se promenilo, a prodavnica ga još nema” (null kad je prodavnica ažurna), a `PushedStock` poslednje stanje poslato prodavnici. `ShopStock()` zaokružuje naniže na ceo broj, jer WooCommerce stanje je ceo broj: 2,5 kg se prikazuje kao 2, nikad kao više nego što ima. Migracija `AddStockPush`.
 
-**Slika proizvoda na vezi** (`ItemChannelMapping.ImageUrl`): adresa glavne slike proizvoda u prodavnici. Čuva se na vezi, a ne na artiklu, jer pripada prodavnici: uvoz i dalje ne menja postojeće artikle, a svaki uvoz osvežava slike i već povezanih proizvoda. Slika se ne kopira, nego se prikazuje sa adrese prodavnice. `SetImageUrl()` ne veruje prodavnici: sve što nije apsolutna http(s) adresa razumne dužine znači „bez slike”, da pokvaren proizvod ne obori uvoz. Migracija `AddChannelProductImages`. `ItemDto.ImageUrl` je za sada ta slika.
+**Slika proizvoda na vezi** (`ItemChannelMapping.ImageUrl`): adresa glavne slike proizvoda u prodavnici. Čuva se na vezi, a ne na artiklu, jer pripada prodavnici: uvoz i dalje ne menja postojeće artikle, a svaki uvoz osvežava slike i već povezanih proizvoda. Slika se ne kopira, nego se prikazuje sa adrese prodavnice. `SetImageUrl()` ne veruje prodavnici: sve što nije apsolutna http(s) adresa razumne dužine znači „bez slike”, da pokvaren proizvod ne obori uvoz. Migracija `AddChannelProductImages`. `ItemDto.ImageUrl` je ta slika, osim kad artikal ima sliku koju je dodao korisnik (vidi `ItemImage`).
+
+**`Items/ItemImage.cs`**: slika koju je korisnik dodao artiklu; ima prednost nad slikom iz prodavnice. Jedna po artiklu (ključ je `ItemId`), najviše 2 MB. Čuva se u bazi (`bytea`), ne na disku: male su, jer ih browser smanji pre slanja, filter firme ih štiti kao sve ostale podatke, a backup baze ih pokriva. Vrsta se određuje po prvim bajtovima fajla (`DetectContentType`: JPEG, PNG, WebP), nikad po onome što kaže klijent; SVG se ne prima jer može da nosi skriptu. Migracija `AddItemImages`.
 
 **`Orders/ExternalOrder.cs`**: porudžbina iz prodavnice, samo broj, status, vreme kad je naručena (`PlacedAt`, po prodavnici), vreme poslednje izmene i stavke, **bez podataka kupca**. `Apply(status, modifiedAt, stavke)` je cela logika iz SPEC 6 (vidi „Porudžbine: primenjuje se samo razlika”): vraća spisak `OrderStockChange` (artikal i promena stanja, negativna za prodaju), a za događaj stariji od poslednjeg vraća prazan spisak i ništa ne menja. Ista šifra proizvoda u više redova se sabira. `OrderLineSnapshot` je stavka onako kako je prodavnica šalje sada, sa artiklom sa kojim je proizvod povezan.
 
@@ -225,6 +227,8 @@ zalihe/
 **`Items/ItemHistoryService.cs`**: istorija artikla: kretanja i izmene zajedno, najnovije prvo, sa filterom (`all`, `stock`, `changes`). Spajanje i paginacija rade se u bazi (`UNION ALL` samo nad ID-jevima i vremenom), a zatim se učitaju redovi te strane.
 
 **`Dashboard/DashboardService.cs`**: pregled za Početnu u nekoliko upita: vrednost zaliha (aktivni artikli, pozitivno stanje × nabavna cena), broj aktivnih artikala, ispod minimuma i bez zaliha, pet artikala koje najhitnije treba naručiti (prvo bez zaliha, pa oni sa najmanjim delom minimuma) i šest poslednjih kretanja u firmi.
+
+**`Items/ItemImageService.cs`**: `SetAsync` (prevelik fajl odbije pre čitanja, `item.image_too_large`; ono što nije slika `item.image_unsupported`, polje `file`), `RemoveAsync` i `GetAsync`. Adresa slike (`ItemService.OwnImageUrl`) sadrži vreme postavljanja (`?v=`), pa browser sme da je čuva zauvek, a nova slika se ipak odmah vidi.
 
 **`Reports/ReportService.cs`**: izveštaji (SPEC 2.6), samo za aktivne artikle. **Prodato** je prodaja umanjena za povraćaj, pa se otkazana porudžbina (`Sale` pa `Return`) ne računa kao prodata; isto važi za „prodato 30 dana” u `ItemService`. `GetSummaryAsync`: vrednost zaliha, broj artikala na stanju bez nabavne cene (nisu u vrednosti), broj i vrednost robe koja stoji. `ListTopSellersAsync`: najviše prodato u poslednjih 30 dana (grupisanje kretanja po artiklu u SQL-u). `ListSlowMoversAsync`: na stanju, bez nijedne prodaje 60 dana; artikli dodati u tom periodu se preskaču jer nisu ni imali priliku da se prodaju. Prvo najviše uloženog novca, artikli bez cene na kraju, uz datum poslednje prodaje. `ListCategoryValuesAsync`: vrednost po kategoriji, artikli bez kategorije su jedna grupa. Liste imaju pretragu (naziv, šifra), filter po kategoriji i paginaciju.
 
@@ -428,6 +432,8 @@ Primer odgovora sa greškom:
 
 **`Dashboard/DashboardController.cs`**: `GET /api/dashboard`.
 
+**Slike u `Items/ItemsController.cs`**: `PUT /api/items/{id}/image` (`multipart/form-data`, polje `file`; granica zahteva je 4 MB, da servis za sve do toga vrati svoj kod), `GET` (sa `Cache-Control: private, immutable`, `X-Content-Type-Options: nosniff` i CSP `sandbox`, da se fajl nikad ne izvrši kao nešto drugo) i `DELETE`. Antiforgery važi kao za svaki drugi zahtev koji menja podatke.
+
 **`Reports/ReportsController.cs`**: `GET /api/reports/summary`, `top-sellers`, `slow-movers` i `stock-value`.
 
 **`Imports/ImportsController.cs`**: `POST /api/imports/items/analyze`, `/preview` i `/api/imports/items`, sve kao `multipart/form-data` (fajl + broj kolone za svako polje, `ItemImportForm`). Fajl se šalje u svakom koraku, pa server ne čuva stanje između koraka. Najveći fajl je 5 MB.
@@ -549,6 +555,8 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 **`components/stock.tsx`**: `StockStatusLabel` (tačka + tekst, nikad samo boja), `StockQuantity` (broj sa jedinicom, obojen za niske zalihe) i `MovementQuantity` (`+24` / `−2`).
 
 **`components/ItemImage.tsx`**: slika artikla u kvadratu (36 px u listi, 72 px na artiklu), `loading="lazy"`, prazan `alt` jer je naziv uvek pored. Bez slike, ili kad se slika ne učita (obrisana u prodavnici), ostaje prazan okvir sa tihom ikonom.
+
+**`pages/items/ItemImageEditor.tsx`** i **`lib/shrinkImage.ts`**: na stranici artikla slika (88 px) sa „Dodaj sliku” ili „Promeni sliku” i, za sliku koju je dodao korisnik, „Ukloni sliku”. Pre slanja `shrinkImage()` sliku smanji na najviše 800 px (`fitWithin`), na beloj pozadini, kao WebP (ili JPEG u browseru koji ne ume WebP), i uspravi fotografiju sa telefona. Zato API-ju ne treba biblioteka za obradu slika. Slika koju browser ne može da otvori (npr. HEIC u Chrome-u) dobija poruku bez slanja.
 
 **`pages/items/ItemModal.tsx`**: jedna forma za dodavanje i izmenu. Bez `item` pravi novi artikal, a sa `item` popuni polja (decimale u formatu jezika, npr. `12,5`, preko `formatDecimalInput()`), šalje `PUT` i nudi „Deaktiviraj” ili „Aktiviraj”. Roditelj joj daje `key` po artiklu, pa forma pri svakom otvaranju kreće od podataka tog artikla. Jedinice mere dolaze iz generisane konstante `Unit`, dakle iz istog izvora kao na backendu. Kategorija nudi predloge iz `GET /api/items/categories`. Posle uspešnog čuvanja invalidiraju se lista i kategorije, pa se novi artikal odmah vidi.
 

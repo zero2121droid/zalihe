@@ -9,7 +9,6 @@ import { ApiError, formErrorMessage } from '../../api/errors'
 import { useGetItem, useGetItemHistory } from '../../api/generated/items/items'
 import type { ItemDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
 import { FilterPill } from '../../components/FilterPill'
-import { ItemImage } from '../../components/ItemImage'
 import { BoxLoader, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
@@ -18,6 +17,7 @@ import { formatDateTime, formatMoney, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE } from '../../lib/pageSize'
 import { useArrivals } from '../../lib/useArrivals'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
+import { ItemImageEditor } from './ItemImageEditor'
 import { ItemModal } from './ItemModal'
 import { MovementModal } from './MovementModal'
 
@@ -70,8 +70,8 @@ function ItemDetail({ item }: { item: ItemDto }) {
       <Stack gap="xs">
         <BackLink />
         <Group justify="space-between" align="flex-end" gap="md">
-          <Group gap="md" wrap="nowrap" miw={0}>
-            <ItemImage url={item.imageUrl} size={72} />
+          <Group gap="lg" wrap="nowrap" miw={0} align="flex-start">
+            <ItemImageEditor item={item} />
             <Stack gap={4} miw={0}>
               <Group gap="sm">
                 <Title order={1} lts="-0.01em">

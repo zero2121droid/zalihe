@@ -15,6 +15,7 @@ public interface IAppDbContext
 {
     DbSet<Item> Items { get; }
     DbSet<ItemChange> ItemChanges { get; }
+    DbSet<ItemImage> ItemImages { get; }
     DbSet<StockMovement> StockMovements { get; }
     DbSet<StockLevel> StockLevels { get; }
     DbSet<SalesChannel> SalesChannels { get; }

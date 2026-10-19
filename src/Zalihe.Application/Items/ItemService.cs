@@ -21,7 +21,8 @@ public record ItemDto(
     StockStatus Status,
     decimal? StockValue, // stock (when positive) times purchase price; null without a purchase price
     decimal Sold30Days, // quantity sold in the last 30 days, less returns
-    string? ImageUrl); // the item's image: the product's image in the linked shop; null without one
+    string? ImageUrl, // the item's picture: the one the user added, else the linked shop's product image; null without one
+    bool HasOwnImage); // whether ImageUrl is a picture the user added (it can be removed)
 
 public record ItemListQuery(
     string? Search,
@@ -241,10 +242,11 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
         public decimal Stock { get; init; }
         public decimal Sold30Days { get; init; }
         public string? ShopImageUrl { get; init; }
+        public DateTimeOffset? OwnImageAt { get; init; }
     }
 
     /// <summary>
-    /// Joins each item with its stock, its sales of the last 30 days and its shop image, in one query. Sales less
+    /// Joins each item with its stock, its sales of the last 30 days and its pictures, in one query. Sales less
     /// returns, as in ReportService, so a cancelled order doesn't count as sold.
     /// </summary>
     private IQueryable<ItemWithStock> WithStock(IQueryable<Item> items)
@@ -267,6 +269,7 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
                     .OrderBy(m => m.CreatedAt)
                     .Select(m => m.ImageUrl)
                     .FirstOrDefault(),
+                OwnImageAt = db.ItemImages.Where(i => i.ItemId == item.Id).Select(i => (DateTimeOffset?)i.UpdatedAt).FirstOrDefault(),
             };
     }
 
@@ -278,6 +281,14 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
             i.Id, i.Name, i.Sku, i.Barcode, i.Unit, i.Category, i.GroupName, i.PurchasePrice, i.SalePrice,
             i.MinStock, i.IsActive, row.Stock, StockStatusRules.For(row.Stock, i.MinStock), value,
             Math.Max(row.Sold30Days, 0), // a return of an older sale can outweigh the recent ones
-            row.ShopImageUrl);
+            row.OwnImageAt is { } at ? OwnImageUrl(i.Id, at) : row.ShopImageUrl,
+            row.OwnImageAt is not null);
     }
+
+    /// <summary>
+    /// Where the API serves a picture the user added. The time it was set is part of the address,
+    /// so browsers can keep it for good and a new picture still shows at once.
+    /// </summary>
+    public static string OwnImageUrl(Guid itemId, DateTimeOffset updatedAt) =>
+        $"/api/items/{itemId}/image?v={updatedAt.ToUnixTimeMilliseconds()}";
 }

@@ -397,6 +397,33 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.ToTable("ItemChanges");
                 });
 
+            modelBuilder.Entity("Zalihe.Domain.Items.ItemImage", b =>
+                {
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ItemId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ItemImages");
+                });
+
             modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -812,6 +839,21 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Changes");
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Items.ItemImage", b =>
+                {
+                    b.HasOne("Zalihe.Domain.Items.Item", null)
+                        .WithOne()
+                        .HasForeignKey("Zalihe.Domain.Items.ItemImage", "ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrder", b =>

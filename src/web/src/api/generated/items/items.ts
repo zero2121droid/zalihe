@@ -31,7 +31,8 @@ import type {
   ListItemsParams,
   PagedResultOfItemDto,
   PagedResultOfItemHistoryEntryDto,
-  ProblemDetails
+  ProblemDetails,
+  SetItemImageBody
 } from '../model';
 
 import { customFetch } from '../../http';
@@ -751,4 +752,235 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getActivateItemMutationOptions(options), queryClient);
+    }
+    export const getSetItemImageUrl = (id: string,) => {
+
+
+
+
+  return `/api/items/${id}/image`
+}
+
+export const setItemImage = async (id: string,
+    setItemImageBody: SetItemImageBody, options?: Parameters<typeof customFetch>[1]): Promise<ItemDto> => {
+    const formData = new FormData();
+formData.append(`file`, setItemImageBody.file);
+
+  return customFetch<ItemDto>(getSetItemImageUrl(id),
+  {
+    ...options,
+    method: 'PUT'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getSetItemImageMutationKey = () => ['setItemImage'] as const;
+
+export const getSetItemImageMutationOptions = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setItemImage>>, TError,SetItemImageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setItemImage>>, TError,SetItemImageMutationVariables, TContext> => {
+
+const mutationKey = getSetItemImageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setItemImage>>, SetItemImageMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setItemImage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetItemImageMutationResult = NonNullable<Awaited<ReturnType<typeof setItemImage>>>
+    export type SetItemImageMutationBody = BodyType<SetItemImageBody>
+    export type SetItemImageMutationError = ErrorType<ApiProblemDetails | ProblemDetails>
+    export type SetItemImageMutationVariables = {id: string;data: BodyType<SetItemImageBody>}
+
+    export const useSetItemImage = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setItemImage>>, TError,SetItemImageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setItemImage>>,
+        TError,
+        SetItemImageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetItemImageMutationOptions(options), queryClient);
+    }
+    export const getGetItemImageUrl = (id: string,) => {
+
+
+
+
+  return `/api/items/${id}/image`
+}
+
+export const getItemImage = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetItemImageUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetItemImageQueryKey = (id: string,) => {
+    return [
+    `/api/items/${id}/image`
+    ] as const;
+    }
+
+
+export const getGetItemImageQueryOptions = <TData = Awaited<ReturnType<typeof getItemImage>>, TError = ErrorType<ProblemDetails>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemImage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetItemImageQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItemImage>>> = ({ signal }) => getItemImage(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItemImage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetItemImageQueryResult = NonNullable<Awaited<ReturnType<typeof getItemImage>>>
+export type GetItemImageQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetItemImage<TData = Awaited<ReturnType<typeof getItemImage>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemImage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemImage>>,
+          TError,
+          Awaited<ReturnType<typeof getItemImage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemImage<TData = Awaited<ReturnType<typeof getItemImage>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemImage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemImage>>,
+          TError,
+          Awaited<ReturnType<typeof getItemImage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemImage<TData = Awaited<ReturnType<typeof getItemImage>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemImage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetItemImage<TData = Awaited<ReturnType<typeof getItemImage>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemImage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetItemImageQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getRemoveItemImageUrl = (id: string,) => {
+
+
+
+
+  return `/api/items/${id}/image`
+}
+
+export const removeItemImage = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getRemoveItemImageUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveItemImageMutationKey = () => ['removeItemImage'] as const;
+
+export const getRemoveItemImageMutationOptions = <TError = ErrorType<ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeItemImage>>, TError,RemoveItemImageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeItemImage>>, TError,RemoveItemImageMutationVariables, TContext> => {
+
+const mutationKey = getRemoveItemImageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeItemImage>>, RemoveItemImageMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeItemImage(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveItemImageMutationResult = NonNullable<Awaited<ReturnType<typeof removeItemImage>>>
+
+    export type RemoveItemImageMutationError = ErrorType<ProblemDetails>
+    export type RemoveItemImageMutationVariables = {id: string}
+
+    export const useRemoveItemImage = <TError = ErrorType<ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeItemImage>>, TError,RemoveItemImageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof removeItemImage>>,
+        TError,
+        RemoveItemImageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRemoveItemImageMutationOptions(options), queryClient);
     }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zalihe.Application.Common;
 using Zalihe.Application.Items;
+using Zalihe.Domain.Items;
 using Zalihe.Domain.Stock;
 using Zalihe.Web.Errors;
 
@@ -12,7 +13,7 @@ namespace Zalihe.Web.Items;
 [Authorize]
 [Route("api/items")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
-public class ItemsController(ItemService itemService, ItemHistoryService historyService) : ControllerBase
+public class ItemsController(ItemService itemService, ItemHistoryService historyService, ItemImageService imageService) : ControllerBase
 {
     /// <summary>
     /// Items of the current company, paged, searchable by name, SKU or barcode.
@@ -100,6 +101,60 @@ public class ItemsController(ItemService itemService, ItemHistoryService history
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<IActionResult> Activate(Guid id, CancellationToken ct) =>
         await itemService.SetActiveAsync(id, isActive: true, ct) ? NoContent() : NotFound();
+
+    /// <summary>
+    /// Sets the item's picture (JPEG, PNG or WebP, at most 2 MB), replacing the previous one. It is shown
+    /// instead of the shop's product image. The web app shrinks pictures before sending them.
+    /// </summary>
+    [HttpPut("{id:guid}/image", Name = "SetItemImage")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(ImageRequestLimit)]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImageRequestLimit)]
+    [ProducesResponseType<ItemDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> SetImage(Guid id, [Required(ErrorMessage = "validation.required")] IFormFile file, CancellationToken ct)
+    {
+        await using var content = file.OpenReadStream();
+        var result = await imageService.SetAsync(id, content, file.Length, ct);
+        if (result.NotFound)
+        {
+            return NotFound();
+        }
+
+        return result.Succeeded ? Ok(result.Item) : ValidationFailed(result);
+    }
+
+    /// <summary>The picture the user added to the item. Its address changes with every new picture, so it is cached for good.</summary>
+    [HttpGet("{id:guid}/image", Name = "GetItemImage")]
+    [ProducesResponseType<Stream>(StatusCodes.Status200OK, "image/jpeg", "image/png", "image/webp")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> GetImage(Guid id, CancellationToken ct)
+    {
+        if (await imageService.GetAsync(id, ct) is not { } image)
+        {
+            return NotFound();
+        }
+
+        // Private: only the company's users may see it. Never sniffed or run as anything but a picture.
+        Response.Headers.CacheControl = "private, max-age=31536000, immutable";
+        Response.Headers.XContentTypeOptions = "nosniff";
+        Response.Headers.ContentSecurityPolicy = "default-src 'none'; sandbox";
+        return File(image.Data, image.ContentType, lastModified: image.UpdatedAt, entityTag: null);
+    }
+
+    /// <summary>Removes the picture the user added; the shop's product image shows again, if there is one.</summary>
+    [HttpDelete("{id:guid}/image", Name = "RemoveItemImage")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> RemoveImage(Guid id, CancellationToken ct) =>
+        await imageService.RemoveAsync(id, ct) ? NoContent() : NotFound();
+
+    /// <summary>
+    /// Room for a picture larger than allowed plus the form around it, so the service can answer with
+    /// its own error code; anything larger is cut off by the server.
+    /// </summary>
+    private const long ImageRequestLimit = ItemImage.MaxBytes * 2L;
 
     private static SaveItemCommand ToCommand(ItemRequest request) => new(
         request.Name, request.Sku, request.Barcode, request.Unit!.Value, request.Category,

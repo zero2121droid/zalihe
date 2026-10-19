@@ -22,6 +22,8 @@ const item = {
   status: 'low',
   stockValue: 3600,
   sold30Days: 38,
+  imageUrl: null,
+  hasOwnImage: false,
 }
 
 const movementEntry = (movement: object) => ({

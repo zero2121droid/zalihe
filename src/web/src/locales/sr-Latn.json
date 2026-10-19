@@ -116,7 +116,9 @@
       "antiforgery_invalid": "Sesija je istekla. Osveži stranicu i pokušaj ponovo."
     },
     "item": {
-      "sku_duplicate": "Artikal sa ovom šifrom već postoji."
+      "sku_duplicate": "Artikal sa ovom šifrom već postoji.",
+      "image_too_large": "Slika je veća od {{maxMb}} MB.",
+      "image_unsupported": "Slika mora biti JPEG, PNG ili WebP."
     },
     "stock": {
       "no_change": "Prebrojano stanje je isto kao trenutno, nema šta da se koriguje."
@@ -273,6 +275,13 @@
         "again": "Novi uvoz"
       },
       "back": "Nazad"
+    },
+    "image": {
+      "add": "Dodaj sliku",
+      "change": "Promeni sliku",
+      "remove": "Ukloni sliku",
+      "saving": "Čuvam sliku…",
+      "unreadable": "Ova slika ne može da se otvori. Izaberi JPEG, PNG ili WebP."
     }
   },
   "orders": {

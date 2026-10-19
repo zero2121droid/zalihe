@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Item> Items => Set<Item>();
     public DbSet<ItemChange> ItemChanges => Set<ItemChange>();
+    public DbSet<ItemImage> ItemImages => Set<ItemImage>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockLevel> StockLevels => Set<StockLevel>();
     public DbSet<SalesChannel> SalesChannels => Set<SalesChannel>();
@@ -82,6 +83,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             change.HasOne<Tenant>().WithMany().HasForeignKey(c => c.TenantId).OnDelete(DeleteBehavior.Restrict);
             change.HasOne<User>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);
             change.HasIndex(c => new { c.ItemId, c.OccurredAt });
+        });
+
+        builder.Entity<ItemImage>(image =>
+        {
+            // One picture per item, so the item is the key.
+            image.HasKey(i => i.ItemId);
+            image.Property(i => i.ContentType).HasMaxLength(16);
+            image.HasOne<Item>().WithOne().HasForeignKey<ItemImage>(i => i.ItemId).OnDelete(DeleteBehavior.Restrict);
+            image.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId).OnDelete(DeleteBehavior.Restrict);
+            image.HasIndex(i => i.TenantId);
         });
 
         builder.Entity<StockMovement>(movement =>

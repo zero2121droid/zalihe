@@ -84,6 +84,31 @@ describe('ChannelsPage', () => {
     )
   })
 
+  it('Check_WhileWaiting_ShowsCheckingThenConnected', async () => {
+    // Arrange: the shop answers only when the test lets it.
+    let answer!: () => void
+    const fetchMock = mockApi({
+      'GET /api/channels': { status: 200, body: [channel] },
+      'POST /api/channels/c1/check': { status: 200, body: channel },
+    })
+    const respond = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation(async (input, init) => {
+      if (init?.method === 'POST') await new Promise<void>((resolve) => (answer = resolve))
+      return respond(input, init)
+    })
+    await renderPage(<ChannelsPage />, '/channels')
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Proveri vezu' }))
+    const whileChecking = await screen.findByText('Proveravam vezu…')
+    answer()
+
+    // Assert
+    expect(whileChecking).toBeInTheDocument()
+    expect(await screen.findByText('Povezano')).toBeInTheDocument()
+    expect(screen.queryByText('Proveravam vezu…')).not.toBeInTheDocument()
+  })
+
   it('Check_KeysRevoked_ShowsErrorStatusAndReason', async () => {
     // Arrange
     mockApi({

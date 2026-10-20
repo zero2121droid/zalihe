@@ -1,12 +1,19 @@
 import { Anchor, Badge, Box, Button, Group, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core'
 import { IconArrowLeft } from '@tabler/icons-react'
-import { keepPreviousData } from '@tanstack/react-query'
+import { keepPreviousData, useQueryClient } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { ApiError, formErrorMessage } from '../../api/errors'
-import { useGetItem, useGetItemHistory } from '../../api/generated/items/items'
+import {
+  getGetItemHistoryQueryKey,
+  getGetItemQueryKey,
+  getListItemsQueryKey,
+  useActivateItem,
+  useGetItem,
+  useGetItemHistory,
+} from '../../api/generated/items/items'
 import type { ItemDto, ItemHistoryEntryDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
 import { CopySku } from '../../components/CopySku'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
@@ -14,6 +21,7 @@ import { BoxLoader, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
 import stockClasses from '../../components/stock.module.css'
+import { UndoToast } from '../../components/UndoToast'
 import { formatDateTime, formatMoney, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE } from '../../lib/pageSize'
 import { useArrivals } from '../../lib/useArrivals'
@@ -66,6 +74,18 @@ function ItemDetail({ item }: { item: ItemDto }) {
   const { t, i18n } = useTranslation()
   const [movementKind, setMovementKind] = useState<ManualMovementKind | null>(null)
   const [editing, setEditing] = useState(false)
+  const [undoing, setUndoing] = useState(false)
+  const queryClient = useQueryClient()
+  const activate = useActivateItem({
+    mutation: {
+      onSuccess: () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(item.id) }),
+          queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }),
+          queryClient.invalidateQueries({ queryKey: getGetItemHistoryQueryKey(item.id) }),
+        ]),
+    },
+  })
 
   return (
     <Stack gap="lg">
@@ -142,7 +162,20 @@ function ItemDetail({ item }: { item: ItemDto }) {
       <History item={item} />
 
       <MovementModal key={movementKind ?? 'closed'} item={item} kind={movementKind} onClose={() => setMovementKind(null)} />
-      {editing && <ItemModal opened item={item} onClose={() => setEditing(false)} />}
+      {editing && (
+        <ItemModal opened item={item} onClose={() => setEditing(false)} onDeactivated={() => setUndoing(true)} />
+      )}
+      {undoing && (
+        <UndoToast
+          message={t('items.deactivatedToast', { name: item.name })}
+          undoLabel={t('common.undo')}
+          onUndo={() => {
+            setUndoing(false)
+            activate.mutate({ id: item.id })
+          }}
+          onDone={() => setUndoing(false)}
+        />
+      )}
     </Stack>
   )
 }

@@ -1,0 +1,74 @@
+/* Line icon at stroke 1.8 in the status color (DESIGN.md "Ikone", "Pokret"). */
+.icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.spin {
+  transform-origin: 8px 8px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Right after a successful check the check draws itself; otherwise it is simply there. */
+.check {
+  stroke-width: 2.2;
+}
+
+.icon[data-fresh] .check {
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  animation: draw 0.35s ease-out forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.nudge {
+  transform-origin: 8px 13px;
+  animation: nudge 2.6s ease-in-out infinite;
+}
+
+@keyframes nudge {
+  0%,
+  80%,
+  100% {
+    transform: rotate(0);
+  }
+  85% {
+    transform: rotate(-10deg);
+  }
+  90% {
+    transform: rotate(8deg);
+  }
+  95% {
+    transform: rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .nudge {
+    animation: none;
+  }
+
+  .icon[data-fresh] .check {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

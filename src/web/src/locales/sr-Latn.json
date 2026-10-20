@@ -31,7 +31,8 @@
     },
     "back": "Nazad",
     "close": "Zatvori",
-    "saved": "Sačuvano"
+    "saved": "Sačuvano",
+    "undo": "Poništi"
   },
   "auth": {
     "login": {
@@ -302,7 +303,8 @@
       "unreadable": "Ova slika ne može da se otvori. Izaberi JPEG, PNG ili WebP."
     },
     "copySku": "Kopiraj šifru {{sku}}",
-    "copied": "Šifra je kopirana"
+    "copied": "Šifra je kopirana",
+    "deactivatedToast": "„{{name}}” je deaktiviran."
   },
   "orders": {
     "title": "Porudžbine",
@@ -442,7 +444,8 @@
     },
     "status": {
       "connected": "Povezano",
-      "error": "Veza ne radi"
+      "error": "Veza ne radi",
+      "checking": "Proveravam vezu…"
     },
     "form": {
       "baseUrl": "Adresa prodavnice",

@@ -11,21 +11,17 @@ import {
   useConnectWooCommerce,
   useListChannels,
 } from '../../api/generated/channels/channels'
-import type { SalesChannelDto, SalesChannelStatus } from '../../api/generated/model'
+import type { SalesChannelDto } from '../../api/generated/model'
 import { Eyebrow } from '../../components/Eyebrow'
 import { PageLoader } from '../../components/loaders'
 import { formatDateTime } from '../../lib/format'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
+import { ChannelStatus } from './ChannelStatus'
 import { KeyFields } from './KeyFields'
 import { emptyKeys, type Keys } from './keys'
 import { ReplaceKeysModal } from './ReplaceKeysModal'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
-
-const statusColor: Record<SalesChannelStatus, string> = {
-  connected: 'var(--z-status-ok)',
-  error: 'var(--z-status-out)',
-}
 
 export function ChannelsPage() {
   const { t } = useTranslation()
@@ -178,12 +174,7 @@ function ChannelCard({ channel }: { channel: SalesChannelDto }) {
         </Stack>
 
         <Stack gap={6}>
-          <Group gap={8} wrap="nowrap">
-            <Box w={8} h={8} bg={statusColor[channel.status]} style={{ borderRadius: '50%', flexShrink: 0 }} aria-hidden />
-            <Text component="span" fw={500} c={statusColor[channel.status]}>
-              {t(`channels.status.${channel.status}`)}
-            </Text>
-          </Group>
+          <ChannelStatus status={channel.status} checking={check.isPending} fresh={check.isSuccess && channel.status === 'connected'} />
           {channel.status === 'error' && channel.lastErrorCode && (
             <Text fz="sm" c="var(--z-text-2)">
               {t(`errors.${channel.lastErrorCode}`, { defaultValue: t('errors.common.unexpected') })}

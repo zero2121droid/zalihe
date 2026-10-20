@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { onPhone } from '../../test/phone'
@@ -117,6 +117,50 @@ describe('ItemDetailPage', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/items/item-1/history?filter=changes&page=1&pageSize=20', expect.anything()),
     )
     expect(screen.getByRole('button', { name: 'Izmene artikla' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('Deactivate_FromEditForm_OffersUndoThatActivatesAgain', async () => {
+    // Arrange
+    const fetchMock = mockApi({
+      'GET /api/items/categories': { status: 200, body: [] },
+      'GET /api/items/item-1/history': historyPage([]),
+      'GET /api/items/item-1': { status: 200, body: item },
+      'POST /api/items/item-1/deactivate': { status: 204 },
+      'POST /api/items/item-1/activate': { status: 204 },
+    })
+    await renderRoutes(routes, '/items/item-1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Izmeni' }))
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Deaktiviraj' }))
+    await screen.findByText('„Kafa Etiopija 250 g” je deaktiviran.')
+    await userEvent.click(screen.getByRole('button', { name: 'Poništi' }))
+
+    // Assert
+    expect(fetchMock).toHaveBeenCalledWith('/api/items/item-1/activate', expect.objectContaining({ method: 'POST' }))
+    expect(screen.queryByText('„Kafa Etiopija 250 g” je deaktiviran.')).not.toBeInTheDocument()
+  })
+
+  it('UndoToast_TimeRunsOut_GoesAwayWithoutActivating', async () => {
+    // Arrange
+    const fetchMock = mockApi({
+      'GET /api/items/categories': { status: 200, body: [] },
+      'GET /api/items/item-1/history': historyPage([]),
+      'GET /api/items/item-1': { status: 200, body: item },
+      'POST /api/items/item-1/deactivate': { status: 204 },
+    })
+    await renderRoutes(routes, '/items/item-1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Izmeni' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Deaktiviraj' }))
+    const timer = (await screen.findByText(/je deaktiviran/)).closest('[role="status"]')!.lastElementChild!
+
+    // Act: the five-second line finishes. jsdom has no AnimationEvent, so React listens for the
+    // prefixed name there.
+    fireEvent(timer, new Event('webkitAnimationEnd', { bubbles: true }))
+
+    // Assert
+    expect(screen.queryByText(/je deaktiviran/)).not.toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/items/item-1/activate', expect.anything())
   })
 
   it('Render_UnknownItem_ShowsNotFound', async () => {

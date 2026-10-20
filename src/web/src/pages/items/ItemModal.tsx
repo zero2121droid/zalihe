@@ -66,13 +66,15 @@ interface ItemModalProps {
   onClose: () => void
   /** The item to edit; without it the modal creates a new item. */
   item?: ItemDto | null
+  /** Called after the item was deactivated and the modal closed, so the page can offer an undo. */
+  onDeactivated?: () => void
 }
 
 /**
  * Create and edit form in one. The parent gives it a `key` per item, so the fields start
  * from that item's data each time it opens.
  */
-export function ItemModal({ opened, onClose, item }: ItemModalProps) {
+export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalProps) {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [fields, setFields] = useState<Fields>(() => (item ? fieldsFrom(item, i18n.language) : emptyFields))
@@ -105,7 +107,14 @@ export function ItemModal({ opened, onClose, item }: ItemModalProps) {
 
   const createItem = useCreateItem({ mutation: { onSuccess: confirmAndClose, onError: shake.shake } })
   const updateItem = useUpdateItem({ mutation: { onSuccess: confirmAndClose, onError: shake.shake } })
-  const deactivateItem = useDeactivateItem({ mutation: { onSuccess: refreshAndClose } })
+  const deactivateItem = useDeactivateItem({
+    mutation: {
+      onSuccess: async () => {
+        await refreshAndClose()
+        onDeactivated?.()
+      },
+    },
+  })
   const activateItem = useActivateItem({ mutation: { onSuccess: refreshAndClose } })
   const save = item ? updateItem : createItem
   const toggleActive = item?.isActive ? deactivateItem : activateItem

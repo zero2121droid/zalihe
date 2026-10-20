@@ -99,6 +99,8 @@ Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CS
 - Filter pilule (Artikli, Porudžbine, Izveštaji, istorija artikla): izbor (pozadina `selected`, okvir `accent`) otklizi i promeni širinu do izabrane pilule (0,35 s), umesto da skoči (`FilterPills`). Izabrani izveštaj se pri promeni blago podigne na mesto (0,3 s).
 - Šifra na detalju artikla se kopira klikom: ikona kopiranja se uz malu oprugu zameni kvačicom, a pozadina postane `selected` (1,6 s); šifra ostaje, pa se ništa pored nje ne pomera (`CopySku`).
 - Prekidač: palac pri prebacivanju malo pređe cilj i vrati se, kao opruga (0,3 s).
+- Veza sa prodavnicom (Kanali prodaje) je uvek ikona i tekst: dok traje provera, strelice se vrte; kad provera uspe, kvačica se iscrta; dok veza ne radi, uzvičnik se povremeno malo pomeri (`ChannelStatus`).
+- Kad nešto nestane sa ekrana, a može da se vrati (deaktiviran artikal), dole u sredini se pojavi poruka sa „Poništi” (pozadina `text`, tekst `bg`). Linija `accent` ispod nje se skraćuje 5 s, koliko traje mogućnost poništavanja, i staje dok je pokazivač ili fokus na poruci (`UndoToast`).
 - Uvoz iz prodavnice: lista ostaje na mestu, ali izbledi (30%) i zaključa se, a animacija uvoza stoji u sredini ekrana na sekciji (`surface`, okvir od 1 px). Bez zamagljivanja (vidi „Zabranjeno“: glassmorphism). Kad stigne rezultat, broj uvezenih proizvoda odbroji jedan po jedan do poslednjeg (oko 30 ms po broju, 0,6-3 s), paketi stanu, a animacija ostaje dok je korisnik ne zatvori na X (ili Escape). Uvoz je jedan zahtev, pa se broji tek kad je poznat stvaran broj, nikad izmišljen napredak.
 - Uvoz ima i tanku traku napretka (4 px, `accent`) koja se puni uz brojač, a kad se završi, skladište na animaciji dobije `accent-text` boju.
 - Čuvanje forme: dugme prvo pokaže stubiće, a kad uspe, iscrta se kvačica i piše „Sačuvano“ (pozadina `selected`, tekst `accent-text`), oko 0,6 s, pa se forma zatvori (`SaveButton`, `useSaved`).
@@ -106,7 +108,7 @@ Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CS
 - Početna: brojevi u pregledu odbroje od 0 do svoje vrednosti (oko 0,5 s), a artikli ispod minimuma se pojave jedan za drugim.
 - Pulsira samo ono što traži pažnju (status ispod minimuma ili bez zaliha), i to samo na detalju artikla, ne u listama.
 - Uz `prefers-reduced-motion` sve animacije staju, a brojevi se menjaju odmah. Mirno stanje mora biti čitljivo bez animacije.
-- Komponente: `src/web/src/components/loaders.tsx`, `stock.tsx`, `feedback.tsx`, `Odometer.tsx`, `StepButton.tsx`, `FilterPill.tsx` i `CopySku.tsx`. Sve se mogu videti na `/dev/animacije` (samo u razvoju).
+- Komponente: `src/web/src/components/loaders.tsx`, `stock.tsx`, `feedback.tsx`, `Odometer.tsx`, `StepButton.tsx`, `FilterPill.tsx`, `CopySku.tsx` i `UndoToast.tsx`. Sve se mogu videti na `/dev/animacije` (samo u razvoju).
 
 ## Zabranjeno
 

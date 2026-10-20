@@ -1,0 +1,105 @@
+/* Bottom middle of the content area: right of the navigation, like the large loaders. */
+.place {
+  position: fixed;
+  z-index: 300;
+  left: var(--app-shell-navbar-offset, 0px);
+  right: 0;
+  bottom: 20px;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+/* Inverted (text color as background) so it stands apart from the page without a shadow. */
+.toast {
+  width: min(420px, 100%);
+  border-radius: var(--mantine-radius-md);
+  overflow: hidden;
+  background: var(--z-text);
+  color: var(--z-bg);
+  pointer-events: auto;
+  animation: slideIn 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.undo {
+  flex: none;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--z-bg);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.undo:focus-visible {
+  outline: 2px solid var(--z-bg);
+  outline-offset: 2px;
+}
+
+.timer {
+  height: 3px;
+  background: var(--z-accent);
+  transform-origin: 0 50%;
+  animation: shrink 5s linear forwards;
+}
+
+.toast:hover .timer,
+.toast:focus-within .timer {
+  animation-play-state: paused;
+}
+
+@keyframes shrink {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Without motion the line stands still, but the five seconds still run (same length, no movement). */
+@keyframes wait {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .timer {
+    animation-name: wait;
+  }
+}

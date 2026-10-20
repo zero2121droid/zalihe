@@ -31,7 +31,8 @@
     },
     "back": "Back",
     "close": "Close",
-    "saved": "Saved"
+    "saved": "Saved",
+    "undo": "Undo"
   },
   "auth": {
     "login": {
@@ -302,7 +303,8 @@
       "unreadable": "This picture can't be opened. Choose a JPEG, PNG or WebP."
     },
     "copySku": "Copy SKU {{sku}}",
-    "copied": "SKU copied"
+    "copied": "SKU copied",
+    "deactivatedToast": "“{{name}}” was deactivated."
   },
   "orders": {
     "title": "Orders",
@@ -442,7 +444,8 @@
     },
     "status": {
       "connected": "Connected",
-      "error": "Connection not working"
+      "error": "Connection not working",
+      "checking": "Checking the connection…"
     },
     "form": {
       "baseUrl": "Shop address",

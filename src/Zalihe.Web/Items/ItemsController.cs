@@ -30,8 +30,10 @@ public class ItemsController(ItemService itemService, ItemHistoryService history
         [FromQuery] StockStatus? status = null,
         [FromQuery, Range(1, int.MaxValue, ErrorMessage = "validation.out_of_range")] int page = 1,
         [FromQuery, Range(1, Paging.MaxPageSize, ErrorMessage = "validation.out_of_range")] int pageSize = Paging.DefaultPageSize,
+        [FromQuery] ItemSort sort = ItemSort.Name,
+        [FromQuery] SortDirection direction = SortDirection.Asc,
         CancellationToken ct = default) =>
-        itemService.ListAsync(new ItemListQuery(search, category, includeInactive, status, page, pageSize), ct);
+        itemService.ListAsync(new ItemListQuery(search, category, includeInactive, status, page, pageSize, sort, direction), ct);
 
     [HttpGet("{id:guid}", Name = "GetItem")]
     [ProducesResponseType<ItemDto>(StatusCodes.Status200OK)]

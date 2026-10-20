@@ -634,6 +634,22 @@
               "format": "int32",
               "default": 20
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "default": "name",
+              "$ref": "#/components/schemas/ItemSort"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "default": "asc",
+              "$ref": "#/components/schemas/SortDirection"
+            }
           }
         ],
         "responses": {
@@ -3660,6 +3676,14 @@
           }
         }
       },
+      "ItemSort": {
+        "enum": [
+          "name",
+          "stock",
+          "sold30Days",
+          "value"
+        ]
+      },
       "LoginRequest": {
         "required": [
           "email",
@@ -4561,6 +4585,12 @@
             "format": "date-time"
           }
         }
+      },
+      "SortDirection": {
+        "enum": [
+          "asc",
+          "desc"
+        ]
       },
       "StockMovementDto": {
         "required": [

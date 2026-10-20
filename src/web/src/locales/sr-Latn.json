@@ -304,7 +304,8 @@
     },
     "copySku": "Kopiraj šifru {{sku}}",
     "copied": "Šifra je kopirana",
-    "deactivatedToast": "„{{name}}” je deaktiviran."
+    "deactivatedToast": "„{{name}}” je deaktiviran.",
+    "sortBy": "Sortiraj po koloni „{{column}}”"
   },
   "orders": {
     "title": "Porudžbine",

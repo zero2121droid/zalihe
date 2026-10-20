@@ -4,6 +4,8 @@
  * Zalihe.Web | v1
  * OpenAPI spec version: 1.0.0
  */
+import type { ItemSort } from './itemSort';
+import type { SortDirection } from './sortDirection';
 import type { StockStatus } from './stockStatus';
 
 export type ListItemsParams = {
@@ -21,4 +23,6 @@ page?: number;
  * @maximum 100
  */
 pageSize?: number;
+sort?: ItemSort;
+direction?: SortDirection;
 };

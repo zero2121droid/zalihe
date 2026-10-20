@@ -304,7 +304,8 @@
     },
     "copySku": "Copy SKU {{sku}}",
     "copied": "SKU copied",
-    "deactivatedToast": "“{{name}}” was deactivated."
+    "deactivatedToast": "“{{name}}” was deactivated.",
+    "sortBy": "Sort by “{{column}}”"
   },
   "orders": {
     "title": "Orders",

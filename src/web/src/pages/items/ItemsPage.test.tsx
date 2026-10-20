@@ -69,6 +69,39 @@ describe('ItemsPage', () => {
     expect(within(row).getAllByRole('cell')).toHaveLength(2)
   })
 
+  it('ColumnHeading_Clicked_SortsByItFromTheLargestThenTurnsTheOrderAround', async () => {
+    // Arrange
+    const fetchMock = mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item()]) })
+    const { router } = await renderRoutes(routes, '/items')
+    await screen.findByText('Kafa Etiopija 250 g')
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Stanje' }))
+    await waitFor(() => expect(router.state.location.search).toBe('?sort=stock&dir=desc'))
+    await userEvent.click(screen.getByRole('button', { name: 'Stanje' }))
+
+    // Assert
+    await waitFor(() => expect(router.state.location.search).toBe('?sort=stock'))
+    expect(fetchMock).toHaveBeenCalledWith('/api/items?page=1&pageSize=20&sort=stock&direction=desc', expect.anything())
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/items?page=1&pageSize=20&sort=stock', expect.anything()),
+    )
+    expect(screen.getByRole('columnheader', { name: 'Stanje' })).toHaveAttribute('aria-sort', 'ascending')
+  })
+
+  it('Render_SortInAddress_MarksThatColumnAndAsksTheServer', async () => {
+    // Arrange
+    const fetchMock = mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item()]) })
+
+    // Act
+    await renderRoutes(routes, '/items?sort=value&dir=desc')
+
+    // Assert
+    expect(await screen.findByRole('columnheader', { name: 'Vrednost' })).toHaveAttribute('aria-sort', 'descending')
+    expect(screen.getByRole('columnheader', { name: 'Artikal' })).not.toHaveAttribute('aria-sort')
+    expect(fetchMock).toHaveBeenCalledWith('/api/items?page=1&pageSize=20&sort=value&direction=desc', expect.anything())
+  })
+
   it('Render_Summary_ShowsCountsOnFilterPills', async () => {
     // Arrange
     mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item()]) })

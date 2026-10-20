@@ -1,13 +1,13 @@
-import { Anchor, Badge, Box, Button, Group, Loader, Stack, Switch, Table, Text, TextInput, Title } from '@mantine/core'
+import { Anchor, Badge, Box, Button, Group, Loader, Stack, Switch, Table, Text, TextInput, Title, UnstyledButton } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconSearch } from '@tabler/icons-react'
+import { IconArrowDown, IconArrowUp, IconSearch } from '@tabler/icons-react'
 import { keepPreviousData } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { formErrorMessage } from '../../api/errors'
 import { useListItems } from '../../api/generated/items/items'
-import type { ItemDto } from '../../api/generated/model'
+import { type ItemDto, ItemSort, SortDirection } from '../../api/generated/model'
 import { useGetStockSummary } from '../../api/generated/stock/stock'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { ItemImage } from '../../components/ItemImage'
@@ -18,6 +18,7 @@ import { StockQuantity, StockStatusLabel } from '../../components/stock'
 import { formatMoney, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { matchesSearch } from '../../lib/search'
+import { useFlipRows } from '../../lib/useFlipRows'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { usePhone } from '../../lib/usePhone'
 import { ItemModal } from './ItemModal'
@@ -32,18 +33,33 @@ interface ListState {
   pageSize: number
   showInactive: boolean
   status: StatusFilter
+  sort: ItemSort
+  direction: SortDirection
 }
 
-// Search, page and filters live in the URL, so back/forward and refresh keep them.
-function toParams({ search, page, pageSize, showInactive, status }: ListState) {
+interface Sorting {
+  sort: ItemSort
+  direction: SortDirection
+  onSort: (column: ItemSort) => void
+}
+
+// Search, page, filters and sorting live in the URL, so back/forward and refresh keep them.
+function toParams({ search, page, pageSize, showInactive, status, sort, direction }: ListState) {
   return {
     ...(search && { q: search }),
     ...(page > 1 && { page: String(page) }),
     ...(pageSize !== DEFAULT_PAGE_SIZE && { size: String(pageSize) }),
     ...(showInactive && { inactive: '1' }),
     ...(status && { status }),
+    ...(sort !== ItemSort.name && { sort }),
+    ...(direction !== SortDirection.asc && { dir: direction }),
   }
 }
+
+const sortValues = Object.values(ItemSort) as string[]
+
+/** A new column starts where it says the most: names A to Z, numbers from the largest. */
+const firstDirection = (column: ItemSort) => (column === ItemSort.name ? SortDirection.asc : SortDirection.desc)
 
 export function ItemsPage() {
   const { t, i18n } = useTranslation()
@@ -57,6 +73,8 @@ export function ItemsPage() {
     pageSize: parsePageSize(params.get('size')),
     showInactive: params.get('inactive') === '1',
     status: statusParam === 'low' || statusParam === 'outOfStock' ? statusParam : null,
+    sort: sortValues.includes(params.get('sort') ?? '') ? (params.get('sort') as ItemSort) : ItemSort.name,
+    direction: params.get('dir') === SortDirection.desc ? SortDirection.desc : SortDirection.asc,
   }
   const update = (changes: Partial<ListState>, replace = false) =>
     setParams(toParams({ ...state, page: 1, ...changes }), { replace })
@@ -75,9 +93,25 @@ export function ItemsPage() {
       status: state.status ?? undefined,
       page: state.page,
       pageSize: state.pageSize,
+      sort: state.sort === ItemSort.name ? undefined : state.sort,
+      direction: state.direction === SortDirection.asc ? undefined : state.direction,
     },
     { query: { placeholderData: keepPreviousData } },
   )
+  const sorting: Sorting = {
+    sort: state.sort,
+    direction: state.direction,
+    onSort: (column) =>
+      update({
+        sort: column,
+        direction:
+          column === state.sort
+            ? state.direction === SortDirection.asc
+              ? SortDirection.desc
+              : SortDirection.asc
+            : firstDirection(column),
+      }),
+  }
   const summary = useGetStockSummary()
   const display = useLoadingDisplay(items.isPending)
 
@@ -150,10 +184,10 @@ export function ItemsPage() {
         ) : (
           <>
             {phone ? (
-              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone />
+              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone sorting={sorting} />
             ) : (
               <Table.ScrollContainer minWidth={900}>
-                <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone={false} />
+                <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone={false} sorting={sorting} />
               </Table.ScrollContainer>
             )}
             <Pager
@@ -193,32 +227,46 @@ function ItemsTable({
   search,
   narrowing,
   phone,
+  sorting,
 }: {
   items: ItemDto[]
   search: string
   narrowing: boolean
   phone: boolean
+  sorting: Sorting
 }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const number = { ff: 'monospace', fz: 'sm', style: { fontVariantNumeric: 'tabular-nums' } } as const
+  const table = useRef<HTMLTableElement>(null)
+  useFlipRows(
+    table,
+    items.map((item) => item.id),
+    `${sorting.sort}:${sorting.direction}`,
+  )
 
   return (
     // On a phone the stock column keeps its width and a long name wraps instead.
-    <Table layout={phone ? 'fixed' : undefined}>
+    <Table ref={table} layout={phone ? 'fixed' : undefined}>
       <Table.Thead>
         <Table.Tr>
-          <Table.Th>{t('items.columns.item')}</Table.Th>
+          <SortableTh column={ItemSort.name} sorting={sorting}>
+            {t('items.columns.item')}
+          </SortableTh>
           {!phone && <Table.Th>{t('items.columns.sku')}</Table.Th>}
-          <Table.Th ta="right" w={phone ? 136 : undefined}>
+          <SortableTh column={ItemSort.stock} sorting={sorting} right w={phone ? 136 : undefined}>
             {t('items.columns.stock')}
-          </Table.Th>
+          </SortableTh>
           {!phone && (
             <>
               <Table.Th ta="right">{t('items.columns.minStock')}</Table.Th>
               <Table.Th>{t('items.columns.status')}</Table.Th>
-              <Table.Th ta="right">{t('items.columns.sold30Days')}</Table.Th>
-              <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
+              <SortableTh column={ItemSort.sold30Days} sorting={sorting} right>
+                {t('items.columns.sold30Days')}
+              </SortableTh>
+              <SortableTh column={ItemSort.value} sorting={sorting} right>
+                {t('items.columns.value')}
+              </SortableTh>
             </>
           )}
         </Table.Tr>
@@ -230,6 +278,7 @@ function ItemsTable({
             // The whole row opens the item for mouse users; the name is the real link for keyboards.
             <SearchRow
               key={item.id}
+              data-flip={item.id}
               hidden={hidden}
               onClick={() => void navigate(`/items/${item.id}`)}
               style={{ cursor: 'pointer' }}
@@ -325,6 +374,55 @@ function ItemsTable({
         })}
       </SearchBody>
     </Table>
+  )
+}
+
+/**
+ * A column heading that sorts the list: a click sorts by it, another click turns the order around.
+ * The arrow shows the current direction; screen readers get it from aria-sort.
+ */
+function SortableTh({
+  column,
+  sorting,
+  right,
+  w,
+  children,
+}: {
+  column: ItemSort
+  sorting: Sorting
+  right?: boolean
+  w?: number
+  children: string
+}) {
+  const { t } = useTranslation()
+  const active = sorting.sort === column
+  const Arrow = sorting.direction === SortDirection.asc ? IconArrowUp : IconArrowDown
+  return (
+    <Table.Th
+      ta={right ? 'right' : undefined}
+      w={w}
+      aria-sort={active ? (sorting.direction === SortDirection.asc ? 'ascending' : 'descending') : undefined}
+    >
+      <UnstyledButton
+        onClick={() => sorting.onSort(column)}
+        className="z-focus"
+        title={t('items.sortBy', { column: children })}
+        style={{
+          font: 'inherit',
+          letterSpacing: 'inherit',
+          textTransform: 'inherit',
+          color: active ? 'var(--z-text)' : 'inherit',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          flexDirection: right ? 'row-reverse' : 'row',
+        }}
+      >
+        {children}
+        {/* Always takes its place, so the heading doesn't shift when it becomes the sorted one. */}
+        <Arrow size={12} stroke={1.8} aria-hidden style={{ visibility: active ? 'visible' : 'hidden' }} />
+      </UnstyledButton>
+    </Table.Th>
   )
 }
 

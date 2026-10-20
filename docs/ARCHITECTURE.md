@@ -228,7 +228,8 @@ Radi kao korisnik `app`, ne root. Folder `/data/keys` (ključevi za šifrovanje)
 **`Common/PagedResult.cs`**: jedna strana liste: `Items`, `TotalCount`, `Page`, `PageSize`. Svaka lista u API-ju se pagira na serveru (najviše 100 po strani).
 
 **`Items/ItemService.cs`**: slučajevi korišćenja za artikle:
-- `ListAsync()`: pretraga po nazivu, šifri ili barkodu (bez obzira na velika i mala slova), filter po kategoriji, sortiranje po nazivu, paginacija. Nijedan upit ne pominje `TenantId`, to radi filter.
+- `ListAsync()`: pretraga po nazivu, šifri ili barkodu (bez obzira na velika i mala slova), filter po kategoriji, paginacija. Nijedan upit ne pominje `TenantId`, to radi filter.
+- Sortiranje (`ItemSort`: naziv, stanje, prodaja za 30 dana, vrednost; `SortDirection`) radi u SQL-u, pa važi za celu listu, a ne samo za trenutnu stranu. Na kraju uvek dolaze naziv, šifra i ID, da strane budu iste svaki put i da se artikal sa istom vrednošću ne ponovi ni ne preskoči. Po vrednosti, artikli bez nabavne cene su na kraju u oba smera. Kad stignu uloge (SPEC 11.2), zaposlenom koji ne vidi nabavne cene sortiranje po vrednosti neće biti dozvoljeno, jer bi i sam redosled otkrio cene.
 - `GetAsync()`: jedan artikal ili `null` (artikal druge firme za ovaj servis „ne postoji”).
 - `GetCategoriesAsync()`: kategorije koje firma već koristi, za predloge u formi.
 - `CreateAsync()` i `UpdateAsync()`: isti `SaveItemCommand` i ista provera (`ValidateAsync`): decimale (`validation.too_many_decimals` sa `{max}`) i jedinstvenost šifre (`item.sku_duplicate`; pri izmeni se sam artikal ne računa). Neaktivni artikli i dalje „zauzimaju” svoju šifru.

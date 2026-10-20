@@ -24,13 +24,31 @@ public record ItemDto(
     string? ImageUrl, // the item's picture: the one the user added, else the linked shop's product image; null without one
     bool HasOwnImage); // whether ImageUrl is a picture the user added (it can be removed)
 
+/// <summary>What the item list is sorted by. Equal values are ordered by name, then SKU.</summary>
+public enum ItemSort
+{
+    Name,
+    Stock,
+    Sold30Days,
+    /// <summary>Stock value at purchase price; items without a purchase price come last either way.</summary>
+    Value,
+}
+
+public enum SortDirection
+{
+    Asc,
+    Desc,
+}
+
 public record ItemListQuery(
     string? Search,
     string? Category,
     bool IncludeInactive = false,
     StockStatus? Status = null,
     int Page = 1,
-    int PageSize = Paging.DefaultPageSize);
+    int PageSize = Paging.DefaultPageSize,
+    ItemSort Sort = ItemSort.Name,
+    SortDirection Direction = SortDirection.Asc);
 
 /// <summary>Item data for both creating and updating an item.</summary>
 public record SaveItemCommand(
@@ -93,9 +111,7 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
         };
 
         var totalCount = await rows.CountAsync(ct);
-        var page = await rows
-            .OrderBy(r => r.Item.Name)
-            .ThenBy(r => r.Item.Sku)
+        var page = await Sorted(rows, query.Sort, query.Direction)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync(ct);
@@ -271,6 +287,27 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
                     .FirstOrDefault(),
                 OwnImageAt = db.ItemImages.Where(i => i.ItemId == item.Id).Select(i => (DateTimeOffset?)i.UpdatedAt).FirstOrDefault(),
             };
+    }
+
+    /// <summary>
+    /// The list in the chosen order, ending in name, SKU and ID, so every page is the same each time
+    /// it's asked for. When roles come (SPEC 11.2), sorting by value is not allowed for an employee who
+    /// can't see purchase prices: the order alone would give the prices away.
+    /// </summary>
+    private static IOrderedQueryable<ItemWithStock> Sorted(IQueryable<ItemWithStock> rows, ItemSort sort, SortDirection direction)
+    {
+        var desc = direction == SortDirection.Desc;
+        IOrderedQueryable<ItemWithStock> sorted = sort switch
+        {
+            ItemSort.Stock => desc ? rows.OrderByDescending(r => r.Stock) : rows.OrderBy(r => r.Stock),
+            ItemSort.Sold30Days => desc ? rows.OrderByDescending(r => r.Sold30Days) : rows.OrderBy(r => r.Sold30Days),
+            // Same value as ToDto: stock, when positive, times the purchase price.
+            ItemSort.Value => desc
+                ? rows.OrderBy(r => r.Item.PurchasePrice == null).ThenByDescending(r => (r.Stock > 0 ? r.Stock : 0) * r.Item.PurchasePrice)
+                : rows.OrderBy(r => r.Item.PurchasePrice == null).ThenBy(r => (r.Stock > 0 ? r.Stock : 0) * r.Item.PurchasePrice),
+            _ => desc ? rows.OrderByDescending(r => r.Item.Name) : rows.OrderBy(r => r.Item.Name),
+        };
+        return sorted.ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Sku).ThenBy(r => r.Item.Id);
     }
 
     private static ItemDto ToDto(ItemWithStock row)

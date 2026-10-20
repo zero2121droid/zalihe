@@ -33,7 +33,7 @@ Uvoz artikala sa početnim stanjem. Korisnik mapira kolone, vidi pregled pre uvo
 Kad stanje padne na minimalnu zalihu ili ispod: oznaka u aplikaciji i email (najviše jedan email dnevno po firmi, sa spiskom).
 
 ### 2.6 Pregled i izveštaji
-Trenutno stanje (pretraga, filter po kategoriji, "ispod minimuma"), vrednost zaliha po nabavnoj ceni, najprodavaniji artikli u poslednjih 30 dana, artikli bez prometa 60+ dana, istorija kretanja po artiklu.
+Trenutno stanje (pretraga, filter po kategoriji, "ispod minimuma", sortiranje po nazivu, stanju, prodaji za 30 dana i vrednosti), vrednost zaliha po nabavnoj ceni, najprodavaniji artikli u poslednjih 30 dana, artikli bez prometa 60+ dana, istorija kretanja po artiklu.
 
 ### 2.7 Firme i korisnici
 Registracija firme, vlasnik plus pozivanje dodatnih korisnika. Bez uloga i prava pristupa u v1: svaki pozvani korisnik vidi sve, i nabavne cene. Uloge su obavezne pre nego što firma pozove zaposlene (11.2).

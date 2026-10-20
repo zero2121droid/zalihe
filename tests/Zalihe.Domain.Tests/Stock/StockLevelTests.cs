@@ -85,4 +85,37 @@ public class StockLevelTests
     {
         StockStatusRules.For(quantity, minStock).ShouldBe(expected);
     }
+
+    [Fact]
+    public void Reconcile_CacheDiffersFromMovements_SetsTheSumAndReturnsTheDifference()
+    {
+        // Arrange
+        var item = new Item(Guid.NewGuid(), "Kafa", "KF-1", Unit.Kom, 0, Now);
+        var level = new StockLevel(item, Now);
+        level.Apply(StockMovement.Receipt(item, 10, Now, StockMovementSource.Manual, null));
+
+        // Act
+        var fixedBy = level.Reconcile(12.5m, Now.AddDays(1));
+
+        // Assert
+        fixedBy.ShouldBe(2.5m);
+        level.Quantity.ShouldBe(12.5m);
+        level.UpdatedAt.ShouldBe(Now.AddDays(1));
+    }
+
+    [Fact]
+    public void Reconcile_CacheIsRight_ChangesNothing()
+    {
+        // Arrange
+        var item = new Item(Guid.NewGuid(), "Kafa", "KF-1", Unit.Kom, 0, Now);
+        var level = new StockLevel(item, Now);
+        level.Apply(StockMovement.Receipt(item, 10, Now, StockMovementSource.Manual, null));
+
+        // Act
+        var fixedBy = level.Reconcile(10, Now.AddDays(1));
+
+        // Assert
+        fixedBy.ShouldBe(0);
+        level.UpdatedAt.ShouldBe(Now);
+    }
 }

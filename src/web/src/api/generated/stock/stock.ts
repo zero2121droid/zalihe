@@ -28,6 +28,7 @@ import type {
   ProblemDetails,
   RecordMovementRequest,
   RecordMovementResponse,
+  StockRecalculationDto,
   StockSummaryDto
 } from '../model';
 
@@ -230,3 +231,70 @@ export function useGetStockSummary<TData = Awaited<ReturnType<typeof getStockSum
 
 
 
+export const getRecalculateStockUrl = () => {
+
+
+
+
+  return `/api/stock/recalculate`
+}
+
+export const recalculateStock = async ( options?: Parameters<typeof customFetch>[1]): Promise<StockRecalculationDto> => {
+
+  return customFetch<StockRecalculationDto>(getRecalculateStockUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRecalculateStockMutationKey = () => ['recalculateStock'] as const;
+
+export const getRecalculateStockMutationOptions = <TError = ErrorType<ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recalculateStock>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recalculateStock>>, TError,void, TContext> => {
+
+const mutationKey = getRecalculateStockMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recalculateStock>>, void> = () => {
+
+
+          return  recalculateStock(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecalculateStockMutationResult = NonNullable<Awaited<ReturnType<typeof recalculateStock>>>
+
+    export type RecalculateStockMutationError = ErrorType<ProblemDetails>
+
+
+    export const useRecalculateStock = <TError = ErrorType<ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recalculateStock>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof recalculateStock>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRecalculateStockMutationOptions(options), queryClient);
+    }

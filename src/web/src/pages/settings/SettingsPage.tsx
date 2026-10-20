@@ -11,6 +11,7 @@ import { SaveButton } from '../../components/feedback'
 import { languages } from '../../i18n'
 import { useSaved } from '../../lib/useSaved'
 import { useShake } from '../../lib/useShake'
+import { StockCheckSection } from './StockCheckSection'
 import { UsersSection } from './UsersSection'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
@@ -31,6 +32,7 @@ export function SettingsPage() {
           <UsersSection user={user} />
           <ProfileForm user={user} />
           <PasswordForm />
+          <StockCheckSection />
         </>
       )}
     </Stack>

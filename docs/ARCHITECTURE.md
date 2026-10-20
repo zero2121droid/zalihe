@@ -87,6 +87,7 @@ COMMIT
 - **Istovremeni unosi:** red sa stanjem se zaključava (`LockStockLevelAsync`, `SELECT … FOR UPDATE`), pa se kretanja za isti artikal izvršavaju jedno za drugim. `RowVersion` (Postgres `xmin`) je dodatna zaštita. Test `Record_TenConcurrentReceipts_NoneIsLost` to proverava.
 - **Stanje sme u minus**, jer porudžbine sa sajta stižu bez obzira na stanje. Forma za ručnu prodaju samo upozori.
 - **Status** (`StockStatusRules`): ≤ 0 je „Nema na stanju”, ≤ minimuma je „Ispod minimuma”, ostalo „Na stanju”. Isti uslovi se koriste kao SQL filter u listi.
+- **Ponovni obračun** (`StockRecalculationService`, `POST /api/stock/recalculate`, „Provera stanja” u Podešavanjima): prvo nađe artikle čije se stanje ne slaže sa zbirom kretanja, pa svaki zaključa kao pri novom kretanju (redom po ID-ju), ponovo sabere i ispravi (`StockLevel.Reconcile`). Kretanja se ne menjaju i ne dodaju. Ispravljeno stanje ide u prodavnicu, a svaka ispravka se loguje kao upozorenje, jer znači grešku u kodu.
 
 ### Porudžbine: primenjuje se samo razlika
 

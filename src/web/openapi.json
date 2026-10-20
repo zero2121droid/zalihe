@@ -141,6 +141,46 @@
         }
       }
     },
+    "/api/stock/recalculate": {
+      "post": {
+        "tags": [
+          "Stock"
+        ],
+        "operationId": "RecalculateStock",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockRecalculationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockRecalculationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockRecalculationDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/reports/summary": {
       "get": {
         "tags": [
@@ -2984,6 +3024,40 @@
           }
         }
       },
+      "CorrectedStockDto": {
+        "required": [
+          "itemId",
+          "name",
+          "sku",
+          "unit",
+          "before",
+          "after"
+        ],
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          },
+          "before": {
+            "type": "number",
+            "format": "double"
+          },
+          "after": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "CurrentUserResponse": {
         "required": [
           "id",
@@ -4553,6 +4627,25 @@
           "adjustment",
           "return"
         ]
+      },
+      "StockRecalculationDto": {
+        "required": [
+          "checkedCount",
+          "corrected"
+        ],
+        "type": "object",
+        "properties": {
+          "checkedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "corrected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorrectedStockDto"
+            }
+          }
+        }
       },
       "StockStatus": {
         "enum": [

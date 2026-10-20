@@ -13,7 +13,7 @@ namespace Zalihe.Web.Stock;
 [ApiController]
 [Authorize]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
-public class StockController(StockService stockService) : ControllerBase
+public class StockController(StockService stockService, StockRecalculationService recalculation) : ControllerBase
 {
     /// <summary>Records a receipt, sale, return or a correction to a counted quantity.</summary>
     [HttpPost("api/items/{itemId:guid}/movements", Name = "RecordStockMovement")]
@@ -42,4 +42,12 @@ public class StockController(StockService stockService) : ControllerBase
     [HttpGet("api/stock/summary", Name = "GetStockSummary")]
     [ProducesResponseType<StockSummaryDto>(StatusCodes.Status200OK)]
     public Task<StockSummaryDto> Summary(CancellationToken ct) => stockService.GetSummaryAsync(ct);
+
+    /// <summary>
+    /// Recalculates every item's stock from its movements and fixes the ones that differ (SPEC 4); returns
+    /// what was fixed. Movements are never changed. Normally nothing differs.
+    /// </summary>
+    [HttpPost("api/stock/recalculate", Name = "RecalculateStock")]
+    [ProducesResponseType<StockRecalculationDto>(StatusCodes.Status200OK)]
+    public Task<StockRecalculationDto> Recalculate(CancellationToken ct) => recalculation.RecalculateAsync(ct);
 }

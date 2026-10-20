@@ -615,6 +615,17 @@
       "inviteNote": "Everyone in the company sees everything, purchase prices too. Roles and permissions come later.",
       "invite": "Send invitation",
       "sent": "The invitation was sent to {{email}}."
+    },
+    "stockCheck": {
+      "title": "Stock check",
+      "description": "Every item's stock must equal the sum of its movements. The check recalculates the stock and fixes items that don't match; movements are never changed. Normally everything matches.",
+      "run": "Check stock",
+      "allGood_one": "Everything matches: {{formatted}} item checked.",
+      "allGood_few": "Everything matches: {{formatted}} items checked.",
+      "allGood_other": "Everything matches: {{formatted}} items checked.",
+      "corrected_one": "{{count}} item was corrected. Please tell us, it means there is a bug somewhere:",
+      "corrected_few": "{{count}} items were corrected. Please tell us, it means there is a bug somewhere:",
+      "corrected_other": "{{count}} items were corrected. Please tell us, it means there is a bug somewhere:"
     }
   }
 }

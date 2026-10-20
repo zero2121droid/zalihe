@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<ItemImageService>();
         services.AddScoped<ItemHistoryService>();
         services.AddScoped<StockService>();
+        services.AddScoped<StockRecalculationService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<ReportService>();
         services.AddScoped<ItemImportService>();

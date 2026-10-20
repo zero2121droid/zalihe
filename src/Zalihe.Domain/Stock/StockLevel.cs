@@ -31,6 +31,21 @@ public class StockLevel : ITenantOwned
     {
     }
 
+    /// <summary>
+    /// The administrative recalculation (SPEC 4): sets the cache back to the sum of the item's movements,
+    /// should it ever differ. Movements are never touched. Returns the difference that was fixed (0 when
+    /// the stock was right).
+    /// </summary>
+    public decimal Reconcile(decimal sumOfMovements, DateTimeOffset at)
+    {
+        var difference = sumOfMovements - Quantity;
+        if (difference == 0) return 0;
+
+        Quantity = sumOfMovements;
+        UpdatedAt = at;
+        return difference;
+    }
+
     public void Apply(StockMovement movement)
     {
         if (movement.ItemId != ItemId) throw new InvalidOperationException("The movement belongs to another item.");

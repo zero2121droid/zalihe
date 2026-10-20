@@ -615,6 +615,17 @@
       "inviteNote": "Svako u firmi vidi sve, i nabavne cene. Uloge i prava pristupa stižu kasnije.",
       "invite": "Pošalji poziv",
       "sent": "Poziv je poslat na {{email}}."
+    },
+    "stockCheck": {
+      "title": "Provera stanja",
+      "description": "Stanje svakog artikla mora biti jednako zbiru njegovih kretanja. Provera ponovo izračuna stanje i ispravi artikle koji se ne slažu; kretanja se ne menjaju. Normalno se sve slaže.",
+      "run": "Proveri stanje",
+      "allGood_one": "Sve se slaže: proveren {{formatted}} artikal.",
+      "allGood_few": "Sve se slaže: proverena {{formatted}} artikla.",
+      "allGood_other": "Sve se slaže: provereno {{formatted}} artikala.",
+      "corrected_one": "Ispravljen je {{count}} artikal. Javi nam, jer to znači da negde postoji greška:",
+      "corrected_few": "Ispravljena su {{count}} artikla. Javi nam, jer to znači da negde postoji greška:",
+      "corrected_other": "Ispravljeno je {{count}} artikala. Javi nam, jer to znači da negde postoji greška:"
     }
   }
 }

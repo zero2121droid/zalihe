@@ -55,6 +55,14 @@
       "submit": "Register company",
       "haveAccount": "Already have an account?",
       "toLogin": "Sign in"
+    },
+    "invitation": {
+      "title": "Invitation to {{company}}",
+      "subtitle": "{{name}} invites you to {{company}}. Enter your name and a password to join.",
+      "submit": "Accept the invitation",
+      "invalidTitle": "The invitation isn't valid",
+      "invalidText": "The link was already used, revoked or has expired. Ask for a new invitation.",
+      "toLogin": "To sign in"
     }
   },
   "home": {
@@ -149,6 +157,13 @@
       "product_sku_duplicate": "Several products in the shop have this SKU. The SKU must be unique.",
       "product_item_linked": "The item with this SKU is already linked to another product from the shop.",
       "too_many_products": "The shop has more than {{max}} products, which the import doesn't support yet."
+    },
+    "invitation": {
+      "invalid": "The invitation isn't valid: the link was already used, revoked or has expired.",
+      "email_taken": "This address already has a Zalihe account."
+    },
+    "email": {
+      "unavailable": "The email can't be sent right now. Try again in a few minutes."
     }
   },
   "items": {
@@ -585,6 +600,21 @@
       "current": "Current password",
       "new": "New password",
       "rule": "At least 8 characters."
+    },
+    "users": {
+      "title": "Users",
+      "description": "Who works in the company. The invited person gets an email with a link that works for 7 days and only once.",
+      "you": "(you)",
+      "pending": "Invited {{date}}",
+      "expired": "The invitation expired",
+      "resend": "Send again",
+      "resent": "Sent",
+      "revoke": "Revoke",
+      "revokeLabel": "Revoke the invitation for {{email}}",
+      "inviteEmail": "Invite a new user",
+      "inviteNote": "Everyone in the company sees everything, purchase prices too. Roles and permissions come later.",
+      "invite": "Send invitation",
+      "sent": "The invitation was sent to {{email}}."
     }
   }
 }

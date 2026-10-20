@@ -57,6 +57,51 @@ public partial class AccountService(
         return new RegistrationResult(user, []);
     }
 
+    public const string InvitationInvalid = "invitation.invalid";
+
+    /// <summary>
+    /// Creates the invited person's account in the inviting company, with the invitation's email, and
+    /// uses up the invitation. Found by token across companies, like <see cref="InvitationService.GetByTokenAsync"/>.
+    /// </summary>
+    public async Task<RegistrationResult> AcceptInvitationAsync(string token, string name, string password, string? language,
+        CancellationToken ct)
+    {
+        language ??= Languages.Default;
+        if (!Languages.IsSupported(language))
+        {
+            return Failed(new AppError("validation.unsupported_language", "language"));
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var hash = Invitation.HashToken(token);
+        var invitation = await db.Invitations.IgnoreQueryFilters().SingleOrDefaultAsync(i => i.TokenHash == hash, ct);
+        var now = timeProvider.GetUtcNow();
+        if (invitation is null || invitation.StateAt(now) != InvitationState.Pending)
+        {
+            return Failed(new AppError(InvitationInvalid));
+        }
+
+        var user = new User
+        {
+            UserName = invitation.Email,
+            Email = invitation.Email,
+            Name = name.Trim(),
+            TenantId = invitation.TenantId,
+            Language = language,
+        };
+        var result = await userManager.CreateAsync(user, password);
+        if (!result.Succeeded)
+        {
+            return Failed([.. result.Errors.Select(MapIdentityError).Distinct()]);
+        }
+
+        invitation.Accept(now);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return new RegistrationResult(user, []);
+    }
+
     public Task<Tenant> GetTenantAsync(Guid tenantId, CancellationToken ct) =>
         db.Tenants.SingleAsync(t => t.Id == tenantId, ct);
 

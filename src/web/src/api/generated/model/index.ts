@@ -5,12 +5,14 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './acceptInvitationRequest';
 export * from './analyzeItemImportBody';
 export * from './apiProblemDetails';
 export * from './appError';
 export * from './appErrorParams';
 export * from './categoryValueDto';
 export * from './changePasswordRequest';
+export * from './companyUserDto';
 export * from './connectWooCommerceRequest';
 export * from './currentUserResponse';
 export * from './dashboardDto';
@@ -26,6 +28,10 @@ export * from './importPreviewDto';
 export * from './importPreviewItemDto';
 export * from './importProductsRequest';
 export * from './importResultDto';
+export * from './invitationDto';
+export * from './invitationInfoDto';
+export * from './invitationState';
+export * from './inviteRequest';
 export * from './itemChangeDto';
 export * from './itemChangeKind';
 export * from './itemDto';
@@ -34,6 +40,8 @@ export * from './itemHistoryEntryDto';
 export * from './itemHistoryFilter';
 export * from './itemRequest';
 export * from './listCategoryValuesParams';
+export * from './listCompanyUsersParams';
+export * from './listInvitationsParams';
 export * from './listItemsParams';
 export * from './listOrdersParams';
 export * from './listSlowMoversParams';
@@ -45,6 +53,8 @@ export * from './orderLineDto';
 export * from './orderLineItemDto';
 export * from './orderLineState';
 export * from './pagedResultOfCategoryValueDto';
+export * from './pagedResultOfCompanyUserDto';
+export * from './pagedResultOfInvitationDto';
 export * from './pagedResultOfItemDto';
 export * from './pagedResultOfItemHistoryEntryDto';
 export * from './pagedResultOfOrderDto';

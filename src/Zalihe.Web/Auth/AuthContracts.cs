@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Zalihe.Domain.Tenants;
+using Zalihe.Domain.Users;
 using Zalihe.Infrastructure.Identity;
 
 namespace Zalihe.Web.Auth;
@@ -44,3 +45,17 @@ public record ChangePasswordRequest(
     string CurrentPassword,
     [Required(ErrorMessage = "validation.required")]
     string NewPassword);
+
+public record InviteRequest(
+    [Required(ErrorMessage = "validation.required")]
+    [EmailAddress(ErrorMessage = "validation.email")]
+    [MaxLength(Invitation.EmailMaxLength, ErrorMessage = "validation.max_length")]
+    string Email);
+
+public record AcceptInvitationRequest(
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(User.NameMaxLength, ErrorMessage = "validation.max_length")]
+    string Name,
+    [Required(ErrorMessage = "validation.required")]
+    string Password,
+    string? Language);

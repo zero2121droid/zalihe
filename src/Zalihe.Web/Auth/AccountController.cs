@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,12 @@ namespace Zalihe.Web.Auth;
 [Authorize]
 [Route("api/account")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
-public class AccountController(AccountService accountService, UserManager<User> userManager, SignInManager<User> signInManager)
+public class AccountController(
+    AccountService accountService,
+    InvitationService invitations,
+    UserManager<User> userManager,
+    SignInManager<User> signInManager,
+    ILogger<AccountController> logger)
     : ControllerBase
 {
     /// <summary>Renames the company; returns the signed-in user with the new name.</summary>
@@ -62,6 +68,59 @@ public class AccountController(AccountService accountService, UserManager<User> 
         await signInManager.RefreshSignInAsync(user);
         return NoContent();
     }
+
+    /// <summary>The company's users.</summary>
+    [HttpGet("users", Name = "ListCompanyUsers")]
+    [ProducesResponseType<PagedResult<CompanyUserDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public Task<PagedResult<CompanyUserDto>> Users(
+        [FromQuery, Range(1, int.MaxValue, ErrorMessage = "validation.out_of_range")] int page = 1,
+        [FromQuery, Range(1, Paging.MaxPageSize, ErrorMessage = "validation.out_of_range")] int pageSize = Paging.DefaultPageSize,
+        CancellationToken ct = default) =>
+        invitations.ListUsersAsync(page, pageSize, ct);
+
+    /// <summary>Invitations sent and not yet accepted or revoked, newest first; expired ones can be sent again.</summary>
+    [HttpGet("invitations", Name = "ListInvitations")]
+    [ProducesResponseType<PagedResult<InvitationDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public Task<PagedResult<InvitationDto>> Invitations(
+        [FromQuery, Range(1, int.MaxValue, ErrorMessage = "validation.out_of_range")] int page = 1,
+        [FromQuery, Range(1, Paging.MaxPageSize, ErrorMessage = "validation.out_of_range")] int pageSize = Paging.DefaultPageSize,
+        CancellationToken ct = default) =>
+        invitations.ListInvitationsAsync(page, pageSize, ct);
+
+    /// <summary>
+    /// Invites someone to the company by email; inviting the same address again sends a new link (the old one
+    /// stops working). 503 with "email.unavailable" when the email can't be sent: nothing is saved then.
+    /// </summary>
+    [HttpPost("invitations", Name = "Invite")]
+    [ProducesResponseType<InvitationDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+    public async Task<IActionResult> Invite(InviteRequest request, CancellationToken ct)
+    {
+        if (await userManager.GetUserAsync(User) is not { } user) return Unauthorized();
+
+        InviteResult result;
+        try
+        {
+            result = await invitations.InviteAsync(user, request.Email, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogError(e, "Sending an invitation failed");
+            return ApiProblems.Result(HttpContext, StatusCodes.Status503ServiceUnavailable, "email.unavailable");
+        }
+
+        return result.Succeeded ? Ok(result.Invitation) : Failed([result.Error!]);
+    }
+
+    /// <summary>Withdraws an invitation; its link stops working.</summary>
+    [HttpDelete("invitations/{id:guid}", Name = "RevokeInvitation")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> RevokeInvitation(Guid id, CancellationToken ct) =>
+        await invitations.RevokeAsync(id, ct) ? NoContent() : NotFound();
 
     private async Task<CurrentUserResponse> CurrentAsync(User user, CancellationToken ct)
     {

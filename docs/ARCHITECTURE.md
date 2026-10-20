@@ -340,6 +340,8 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 
 **Podešavanja u `AccountService.cs`**: `RenameCompanyAsync` (`Tenant.Rename`, ista pravila kao pri registraciji), `UpdateProfileAsync` (ime i jezik) i `ChangePasswordAsync`. Pogrešna trenutna lozinka je `auth.wrong_password` na polju `currentPassword`, a pravila za novu (npr. dužina) idu na `newPassword`.
 
+**Pozivi** (`Users/Invitation.cs` u domenu, `Identity/InvitationService.cs`): link nosi slučajan token od 256 bita, a u bazi je samo njegov SHA-256, pa curenje baze ne daje linkove koji rade. Poziv važi 7 dana i koristi se jednom; ponovni poziv na istu adresu (jedan po adresi u firmi) daje nov token i novu nedelju (`Renew`). Email ide pre čuvanja, pa server za poštu koji ne radi (503, `email.unavailable`) ne ostavlja poziv koji niko nije dobio. Email je na jeziku onog ko poziva. `GetByTokenAsync` i `AccountService.AcceptInvitationAsync` traže poziv po tokenu kroz sve firme (pozvani još nema firmu), kao `FindChannelTenantAsync` za webhookove; ništa drugo ne sme. Prihvatanje u jednoj transakciji pravi korisnika u firmi poziva i iskoristi poziv. Migracija `AddInvitations`.
+
   Bez transakcije bi posle neuspele registracije ostajale firme bez korisnika. Ovo radi zato što `UserManager` koristi isti `DbContext` (isti scope), pa je u istoj transakciji.
 - `GetTenantAsync()`: učitava firmu, koristi je `me` endpoint.
 - `MapIdentityError()`: prevodi Identity kodove (`DuplicateEmail`, `PasswordTooShort`) u kodove aplikacije (`auth.email_taken`, `auth.password_too_short` sa `min`). `switch` izraz sa šablonima: poznati slučajevi eksplicitno, sve ostale greške lozinke kao `auth.password_*`, sve ostalo kao `auth.*`.
@@ -403,6 +405,8 @@ Slike: proizvod šalje `images` (uzima se prva), a varijacija `image`; varijacij
 - `Name = "Login"` u `[HttpPost("login", Name = "Login")]` postaje `operationId` u OpenAPI-ju, a od njega Orval pravi ime hooka (`useLogin`). Svaki novi endpoint treba da ima ime.
 
 **`Auth/AccountController.cs`**: podešavanja (`/api/account`): `PUT company`, `PUT profile` i `POST password`. Prva dva vraćaju `CurrentUserResponse`, isti oblik kao `me`, pa frontend samo zameni podatke i meni, ime i jezik se odmah promene. Posle promene lozinke Identity menja „security stamp”, pa `RefreshSignInAsync` ovom uređaju izda nov cookie; ostali uređaji se odjave kad se njihov cookie sledeći put proveri. U v1 svaki korisnik firme sme da promeni naziv; sa ulogama (SPEC 11.2) to postaje pravo admina.
+
+**`Auth/InvitationsController.cs`** (bez prijave): `GET /api/invitations/{token}` (firma, email i ko poziva; 404 `invitation.invalid` za nepostojeći, iskorišćen, opozvan ili istekao) i `POST .../accept` (pravi nalog i prijavljuje). U `AccountController` su `GET users`, `GET invitations`, `POST invitations` i `DELETE invitations/{id}`.
 
 **`Auth/CookieAntiforgeryFilter.cs`**: zaštita od **CSRF** napada. Problem: ako je korisnik prijavljen, a zlonamerni sajt pošalje formu na API, browser sam doda cookie. Rešenje:
 - `IssueToken()`: `me` postavlja cookie `XSRF-TOKEN` koji JavaScript **može da pročita** (`HttpOnly = false`). Tuđi sajt ne može da pročita cookie-je druge adrese.
@@ -579,6 +583,8 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 **`pages/reports/ReportsPage.tsx`**: „Izveštaji” (`/reports`): traka sa četiri brojke, pilule za izveštaj (`?r=slowMovers`, `?r=stockValue`; najprodavaniji su podrazumevani), pretraga i kategorija (`?cat=`), pa tabela sa paginacijom. Učitava se samo izabrani izveštaj. Vrednost po kategoriji nema pretragu ni filter, a udeo računa od ukupne vrednosti (`formatPercent()`).
 
 **`pages/settings/SettingsPage.tsx`**: „Podešavanja” (`/settings`, obična širina): tri male forme koje se čuvaju posebno (Firma, Moj nalog, Lozinka), sa `SaveButton` i `useShake`. Email nije polje, jer ne može da se menja. Jezik se primeni kroz `me` (`useCurrentUser`), čim se sačuva.
+
+**`pages/settings/UsersSection.tsx`** i **`pages/AcceptInvitationPage.tsx`**: odeljak „Korisnici” (korisnici, poslati i istekli pozivi sa „Pošalji ponovo” i „Opozovi”, forma za poziv uz napomenu da svi vide i nabavne cene) i stranica linka iz emaila (`/invite/:token`, u `AuthLayout`, radi i kad je neko prijavljen; posle prihvatanja se keš briše i ulazi se kao novi korisnik).
 
 **`pages/channels/ProductImportPage.tsx`**: „Uvoz proizvoda iz prodavnice” (`/channels/{id}/import`, dugme „Uvezi proizvode” na kartici kanala). Traka sa četiri brojke (novi, postoje u Zalihama, već povezano, preskočeno), tabela novih proizvoda sa izborom (svi su izabrani, korisnik isključuje ono što ne želi; zaglavlje ima „izaberi sve”), tabela povezivanja (link na postojeći artikal) i preskočeni sa prevedenim razlogom. Pregled se ne učitava ponovo pri povratku na prozor (`staleTime: Infinity`, `refetchOnWindowFocus: false`), jer je čitanje prodavnice sporo i opterećuje je. Posle uvoza se osvežavaju artikli, brojke i Početna, a pregled se briše iz keša.
 

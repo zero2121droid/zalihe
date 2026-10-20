@@ -55,6 +55,14 @@
       "submit": "Registruj firmu",
       "haveAccount": "Već imaš nalog?",
       "toLogin": "Prijavi se"
+    },
+    "invitation": {
+      "title": "Poziv u firmu {{company}}",
+      "subtitle": "{{name}} te poziva u {{company}}. Upiši ime i lozinku i ulaziš u firmu.",
+      "submit": "Prihvati poziv",
+      "invalidTitle": "Poziv ne važi",
+      "invalidText": "Link je već iskorišćen, opozvan ili je istekao. Zamoli da ti pošalju nov poziv.",
+      "toLogin": "Na prijavu"
     }
   },
   "home": {
@@ -149,6 +157,13 @@
       "product_sku_duplicate": "Više proizvoda u prodavnici ima ovu šifru. Šifra mora biti jedinstvena.",
       "product_item_linked": "Artikal sa ovom šifrom je već povezan sa drugim proizvodom iz prodavnice.",
       "too_many_products": "Prodavnica ima više od {{max}} proizvoda, što uvoz za sada ne podržava."
+    },
+    "invitation": {
+      "invalid": "Poziv ne važi: link je već iskorišćen, opozvan ili je istekao.",
+      "email_taken": "Ova adresa već ima nalog u Zalihama."
+    },
+    "email": {
+      "unavailable": "Email trenutno ne može da se pošalje. Pokušaj ponovo za nekoliko minuta."
     }
   },
   "items": {
@@ -585,6 +600,21 @@
       "current": "Trenutna lozinka",
       "new": "Nova lozinka",
       "rule": "Najmanje 8 znakova."
+    },
+    "users": {
+      "title": "Korisnici",
+      "description": "Ko radi u firmi. Pozvani dobija email sa linkom koji važi 7 dana i može da se iskoristi jednom.",
+      "you": "(ti)",
+      "pending": "Poziv poslat {{date}}",
+      "expired": "Poziv je istekao",
+      "resend": "Pošalji ponovo",
+      "resent": "Poslato",
+      "revoke": "Opozovi",
+      "revokeLabel": "Opozovi poziv za {{email}}",
+      "inviteEmail": "Pozovi novog korisnika",
+      "inviteNote": "Svako u firmi vidi sve, i nabavne cene. Uloge i prava pristupa stižu kasnije.",
+      "invite": "Pošalji poziv",
+      "sent": "Poziv je poslat na {{email}}."
     }
   }
 }

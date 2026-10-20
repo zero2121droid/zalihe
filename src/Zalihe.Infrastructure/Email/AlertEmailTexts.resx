@@ -32,4 +32,9 @@
   <data name="ChannelFailure_Reason_Unknown" xml:space="preserve"><value>Prodavnica nije odgovorila kako treba.</value></data>
   <data name="ChannelFailure_Open" xml:space="preserve"><value>Otvori kanale prodaje</value></data>
   <data name="ChannelFailure_Footer" xml:space="preserve"><value>Kad veza proradi, Zalihe same nastavljaju. Ovaj email stiže jednom po prekidu.</value></data>
+  <data name="Invitation_Subject" xml:space="preserve"><value>{0} te poziva u Zalihe</value></data>
+  <data name="Invitation_Heading" xml:space="preserve"><value>Poziv u firmu {0}</value></data>
+  <data name="Invitation_Intro" xml:space="preserve"><value>{0} te poziva da se pridružiš firmi {1} u Zalihama, aplikaciji za praćenje zaliha. Otvori link, upiši ime i lozinku i odmah vidiš artikle i stanje firme.</value></data>
+  <data name="Invitation_Open" xml:space="preserve"><value>Prihvati poziv</value></data>
+  <data name="Invitation_Footer" xml:space="preserve"><value>Link važi do {0} i može da se iskoristi jednom. Ako ne očekuješ ovaj poziv, samo zanemari email.</value></data>
 </root>

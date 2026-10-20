@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { PublicOnly, RequireAuth } from './auth/RouteGuards'
+import { AcceptInvitationPage } from './pages/AcceptInvitationPage'
 import { AppLayout } from './layout/AppLayout'
 import { AuthLayout } from './layout/AuthLayout'
 import type { RouteHandle } from './layout/pageWidth'
@@ -27,6 +28,11 @@ export const routes: RouteObject[] = [
         ],
       },
     ],
+  },
+  // The invitation link works signed in or not: accepting signs in as the new user.
+  {
+    element: <AuthLayout />,
+    children: [{ path: '/invite/:token', element: <AcceptInvitationPage /> }],
   },
   {
     element: <RequireAuth />,

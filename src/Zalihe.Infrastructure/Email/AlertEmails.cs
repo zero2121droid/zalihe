@@ -11,7 +11,7 @@ using Zalihe.Infrastructure.Persistence;
 
 namespace Zalihe.Infrastructure.Email;
 
-/// <summary>Marker for the email texts: AlertEmailTexts.resx (Serbian, the default) and AlertEmailTexts.en.resx.</summary>
+/// <summary>Marker for the email texts (alerts and invitations): AlertEmailTexts.resx (Serbian, the default) and AlertEmailTexts.en.resx.</summary>
 public class AlertEmailTexts;
 
 /// <summary>
@@ -30,6 +30,25 @@ public class AlertEmails(
 
     public Task SendChannelFailureAsync(ChannelFailureEmail email, CancellationToken ct) =>
         SendToCompanyAsync((company, culture) => ChannelFailure(company, email, culture), ct);
+
+    /// <summary>
+    /// The invitation to join the current company, in the inviter's language (the invited person has none
+    /// yet). <paramref name="link"/> is the app path with the token, e.g. "/invite/abc".
+    /// </summary>
+    public async Task SendInvitationAsync(string to, string inviterName, string inviterLanguage, string link,
+        DateTimeOffset expiresAt, CancellationToken ct)
+    {
+        var company = await db.Tenants.Where(t => t.Id == tenant.TenantId).Select(t => t.Name).SingleAsync(ct);
+        var message = InLanguage(inviterLanguage, culture =>
+        {
+            var until = TimeZoneInfo.ConvertTime(expiresAt, LowStockAlertService.Zone).ToString("g", culture);
+            string intro = texts["Invitation_Intro", inviterName, company];
+            return Frame(company, texts["Invitation_Subject", inviterName], texts["Invitation_Heading", company],
+                $"<p style=\"margin:0;font-size:14px;color:#3B4033\">{E(intro)}</p>", intro,
+                texts["Invitation_Open"], link, texts["Invitation_Footer", until]);
+        });
+        await sender.SendAsync(message with { To = to, ToName = "" }, ct);
+    }
 
     /// <summary>Writes the email for each user of the current company in the user's language and sends it.</summary>
     private async Task SendToCompanyAsync(Func<string, CultureInfo, EmailMessage> write, CancellationToken ct)

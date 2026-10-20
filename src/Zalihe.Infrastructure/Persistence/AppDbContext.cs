@@ -27,6 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ExternalOrder> ExternalOrders => Set<ExternalOrder>();
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
     public DbSet<LowStockAlert> LowStockAlerts => Set<LowStockAlert>();
+    public DbSet<Invitation> Invitations => Set<Invitation>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -48,6 +49,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             // One per company, so the company is the key.
             alert.HasKey(a => a.TenantId);
             alert.HasOne<Tenant>().WithOne().HasForeignKey<LowStockAlert>(a => a.TenantId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Invitation>(invitation =>
+        {
+            invitation.Property(i => i.Email).HasMaxLength(Invitation.EmailMaxLength);
+            invitation.Property(i => i.TokenHash).HasMaxLength(64);
+            invitation.HasIndex(i => i.TokenHash).IsUnique();
+            // One invitation per address in a company: inviting again renews it.
+            invitation.HasIndex(i => new { i.TenantId, i.Email }).IsUnique();
+            invitation.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId).OnDelete(DeleteBehavior.Restrict);
+            invitation.HasOne<User>().WithMany().HasForeignKey(i => i.InvitedByUserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         // Users are not company data in the filter sense: sign-in looks them up by email

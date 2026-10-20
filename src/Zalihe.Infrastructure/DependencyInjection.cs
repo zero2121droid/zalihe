@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
 
         services.AddScoped<AccountService>();
+        services.AddScoped<InvitationService>();
         services.AddScoped<ItemService>();
         services.AddScoped<ItemImageService>();
         services.AddScoped<ItemHistoryService>();
@@ -62,7 +63,8 @@ public static class DependencyInjection
         services.AddOptions<EmailOptions>().BindConfiguration(EmailOptions.Section);
         services.AddLocalization();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
-        services.AddScoped<IAlertEmails, AlertEmails>();
+        services.AddScoped<AlertEmails>();
+        services.AddScoped<IAlertEmails>(sp => sp.GetRequiredService<AlertEmails>());
         services.AddSingleton<IShopOrderReader, WooCommerceOrderReader>();
         services.AddSingleton(sp =>
         {

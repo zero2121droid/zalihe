@@ -218,7 +218,11 @@ function EmptyHome() {
           <Text c="dimmed">{t('home.empty.actions')}</Text>
         </Stack>
         <Group gap="sm">
-          <Button component={Link} to="/items">
+          {/* Most companies start from their WooCommerce shop, so that's the main way in. */}
+          <Button component={Link} to="/channels">
+            {t('home.empty.connectShop')}
+          </Button>
+          <Button component={Link} to="/items" variant="default">
             {t('items.new')}
           </Button>
           <Button component={Link} to="/items/import" variant="default">

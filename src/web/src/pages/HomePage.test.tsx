@@ -53,6 +53,7 @@ describe('HomePage', () => {
 
     // Assert
     expect(await screen.findByText('Još nema artikala')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Poveži prodavnicu' })).toHaveAttribute('href', '/channels')
     expect(screen.getByRole('link', { name: 'Uvezi CSV' })).toHaveAttribute('href', '/items/import')
   })
 })

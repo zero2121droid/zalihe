@@ -70,7 +70,8 @@
     "empty": {
       "title": "Još nema artikala",
       "description": "Kad dodaš artikle, ovde ćeš videti vrednost zaliha, šta treba naručiti i poslednja kretanja.",
-      "actions": "Dodaj artikle jedan po jedan ili ih uvezi iz CSV fajla."
+      "actions": "Poveži WooCommerce prodavnicu i uvezi proizvode iz nje, ili dodaj artikle jedan po jedan ili iz CSV fajla.",
+      "connectShop": "Poveži prodavnicu"
     },
     "figures": {
       "stockValue": "Vrednost zaliha",

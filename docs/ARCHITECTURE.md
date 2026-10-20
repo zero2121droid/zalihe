@@ -534,6 +534,13 @@ src/web/
 
 **`vite.config.ts`**: **proxy** `/api` → `http://localhost:5131` (promenljiva `API_URL` ga preusmerava, npr. `API_URL=http://localhost:5199 npm run dev`). U razvoju browser priča samo sa Vite-om (5173), a Vite prosleđuje API pozive backendu. Browser zato vidi jednu adresu, cookie radi bez CORS podešavanja, a produkcija izgleda isto (ASP.NET servira i React i API sa iste adrese). Tu je i podešavanje Vitest-a (jsdom, `src/test/setup.ts`).
 
+Build deli kod na tri dela (`codeSplitting.groups`):
+- `react`: React, React Router i TanStack Query
+- `mantine`: Mantine
+- kod aplikacije
+
+Biblioteke se menjaju mnogo ređe od aplikacije, pa ih browser čuva i posle deploya, a nova verzija preuzme samo kod aplikacije.
+
 **`api/http.ts`**: `customFetch()` je jedina funkcija kroz koju idu svi API pozivi (Orval je poziva iz generisanog koda):
 - šalje cookie (`credentials: 'same-origin'`);
 - za POST, PUT i DELETE čita cookie `XSRF-TOKEN` i šalje ga u headeru `X-XSRF-TOKEN` (antiforgery);
@@ -571,6 +578,10 @@ Komponente koriste `var(--z-...)` ili Mantine propove (`c="dimmed"`), nikad hex.
 - `PublicOnly`: prijavljenog korisnika sa `/login` i `/register` šalje u aplikaciju.
 
 **`router.tsx`**: rute su ugnežđene: guard → layout → stranica. Tako svaka nova stranica za prijavljene automatski dobija zaštitu i bočnu navigaciju, samo se doda u listu. Ruta može da nosi i širinu sadržaja: `handle: { width: 'wide' }` za ekrane sa tabelama i pregledima, sada sve stranice aplikacije (do 1920 px), a bez toga važi `normal` (do 1180 px), predviđeno za stranice sa tekstom i formama.
+
+Početna, prijava i registracija su u glavnom paketu. Sve ostale stranice se učitavaju tek kad se prvi put otvore (`lazy: async () => ({ Component: (await import(...)).X })`). Pri prelasku na takvu stranicu ruter drži trenutnu stranu na ekranu dok se fajl ne preuzme, pa ništa ne bljesne. Za adresu otvorenu direktno, dok se njen fajl preuzima, prikazuje se `HydrateFallback` (`layout/StartingUp.tsx`), koji ne prikazuje ništa. Nova stranica se dodaje isto tako, kao `lazy`.
+
+**`lib/usePhone.ts`**: `true` ispod `sm` prekida, tamo gde se navigacija skuplja u meni. Tabele sa mnogo kolona tada daju mesto užem rasporedu: artikli i istorija artikla imaju dve kolone (šta je to, i broj), a porudžbine jednu ćeliju po porudžbini. Najvažniji broj je tako uvek na ekranu, bez pomeranja u stranu. Širina se čita već pri prvom prikazu, pa se široka tabela ne pojavi ni na trenutak. U testovima `onPhone()` (`test/phone.ts`) prikazuje stranu kao na telefonu.
 
 **`layout/pageWidth.ts`**: `usePageWidth()` čita širinu iz najdublje rute, a `AppLayout` je primeni kao `data-width` na glavni sadržaj. Raspored je fluidan do te granice, a veličina teksta se ne menja sa širinom ekrana (DESIGN.md).
 

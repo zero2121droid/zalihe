@@ -70,7 +70,8 @@
     "empty": {
       "title": "No items yet",
       "description": "Once you add items, you'll see stock value, what to reorder and the latest movements here.",
-      "actions": "Add items one by one or import them from a CSV file."
+      "actions": "Connect your WooCommerce shop and import its products, or add items one by one or from a CSV file.",
+      "connectShop": "Connect a shop"
     },
     "figures": {
       "stockValue": "Stock value",

@@ -24,6 +24,11 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     /// <summary>Keeps every email the app sends instead of sending it.</summary>
     public FakeEmailSender Emails { get; } = new();
 
+    /// <summary>A stand-in for the React build, served like the real one in the container.</summary>
+    public const string IndexHtml = "<!doctype html><title>Zalihe</title><div id=\"root\"></div>";
+    public const string AssetPath = "/assets/index-C0ffee42.js";
+    private readonly DirectoryInfo _webRoot = Directory.CreateTempSubdirectory("zalihe-wwwroot-");
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
@@ -33,6 +38,12 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Jobs:WebhookCleanupCron", "");
         builder.UseSetting("Jobs:LowStockAlertCron", "");
         builder.UseSetting("Email:AppUrl", "https://app.zalihe.test");
+        // As in production, behind Caddy.
+        builder.UseSetting("ForwardedHeaders:Enabled", "true");
+        File.WriteAllText(Path.Combine(_webRoot.FullName, "index.html"), IndexHtml);
+        Directory.CreateDirectory(Path.Combine(_webRoot.FullName, "assets"));
+        File.WriteAllText(_webRoot.FullName + AssetPath, "console.log('zalihe')");
+        builder.UseWebRoot(_webRoot.FullName);
         // Likewise stock pushes, which every stock change in every test would schedule.
         builder.UseSetting("Jobs:StockPushDelaySeconds", "");
         builder.ConfigureTestServices(services =>
@@ -54,6 +65,7 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
+        _webRoot.Delete(recursive: true);
     }
 }
 

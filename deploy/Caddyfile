@@ -1,0 +1,17 @@
+# HTTPS for the app. With a real domain Caddy gets a Let's Encrypt certificate by itself as soon as
+# DNS points at the server; with DOMAIN=localhost it uses its own local certificate (browsers warn).
+# Plain HTTP is redirected to HTTPS, and X-Forwarded-Proto/For are sent to the app.
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+
+	reverse_proxy app:8080
+}

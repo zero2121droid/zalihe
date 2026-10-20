@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/node_modules/
+src/web/dist/
+.git/
+.claude/
+deploy/.env
+docs/
+tests/

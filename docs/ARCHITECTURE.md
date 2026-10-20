@@ -122,7 +122,10 @@ zalihe/
 ├── CLAUDE.md                  pravila projekta
 ├── docs/
 │   ├── SPEC.md                specifikacija v1
-│   └── ARCHITECTURE.md        ovaj dokument
+│   ├── ARCHITECTURE.md        ovaj dokument
+│   └── DEPLOY.md              server, domen, email, backup i postavljanje
+├── Dockerfile                 produkcijski image (React build + API)
+├── deploy/                    produkcija: compose sa Caddyjem, skripte za deploy i backup
 ├── Zalihe.slnx                solution: spisak svih .NET projekata
 ├── dotnet-tools.json          lokalni .NET alati (dotnet-ef)
 ├── docker-compose.yml         Postgres, WordPress, MariaDB za razvoj
@@ -156,6 +159,18 @@ zalihe/
 - `mariadb` i `wordpress`: WordPress traži MySQL/MariaDB, i tu se instalira WooCommerce za testiranje integracije. `depends_on: condition: service_healthy` znači da WordPress ne kreće dok baza nije spremna.
 - `wpcli`: WP-CLI za podešavanje test prodavnice; ne pokreće se sa `up` (profil `tools`), nego `docker compose run --rm wpcli bash /scripts/setup.sh`.
 - `volumes`: imenovani volumeni čuvaju podatke kad se kontejneri ugase. `docker compose down` ih ne briše, `docker compose down -v` ih briše.
+
+**`Dockerfile`** i **`.dockerignore`**: produkcijski image u tri koraka.
+1. `node` napravi React build.
+2. `dotnet sdk` objavi API. Projektni fajlovi se kopiraju pre koda, pa se paketi ponovo preuzimaju samo kad se promene.
+3. Mali `aspnet` image dobije oba: React ide u `wwwroot`.
+
+Radi kao korisnik `app`, ne root. Folder `/data/keys` (ključevi za šifrovanje) pravi se unapred sa tim vlasnikom, pa nov volumen nasledi vlasnika i aplikacija može u njega da piše.
+
+**`deploy/`**: produkcija, opisana u `docs/DEPLOY.md`.
+- `docker-compose.yml`: aplikacija, Postgres i Caddy. Aplikacija i baza nisu objavljene napolje, samo Caddy na 80 i 443. Sva podešavanja su promenljive okruženja iz `deploy/.env` (`Email__Host` je `Email:Host`).
+- `Caddyfile`: HTTPS sa automatskim sertifikatom i bezbednosna zaglavlja.
+- `deploy.sh`, `backup.sh` i `restore.sh`. Backup uvek čuva bazu i ključeve zajedno, jer jedno bez drugog ne vredi.
 
 **`docker/woocommerce/setup.sh`**: pravi lokalnu WooCommerce prodavnicu (SPEC 9): instalira WordPress i WooCommerce, podesi RSD i srpske separatore, doda test proizvode (šest prostih, među njima jedan bez zaliha i jedan koji ne postoji u aplikaciji, i majicu sa četiri varijacije veličina × boja) i pri svakom pokretanju napravi nov API ključ za Zalihe i ispiše ga. Može da se pokrene ponovo, jer proizvode ne duplira.
 
@@ -389,11 +404,19 @@ Slike: proizvod šalje `images` (uzima se prva), a varijacija `image`; varijacij
 1. **Registracija servisa** (`builder.Services...`): `TimeProvider` (sat koji se u testovima može zameniti), infrastruktura, Identity, `ProblemDetails` sa kodovima, kontroleri sa antiforgery filterom i formatom validacionih grešaka, OpenAPI.
 2. **Pipeline** (`app.Use...`): redosled middleware-a kroz koje prolazi svaki zahtev. **Redosled je bitan:** `UseExceptionHandler` je prvi da uhvati greške iz svega posle njega, `UseAuthentication` mora pre `UseAuthorization` (prvo „ko si”, pa „smeš li”), a `MapControllers` je na kraju.
 
+**Produkcija u `Program.cs`**: deo pipeline-a radi samo u produkciji.
+- **Forwarded headers** (`ForwardedHeaders:Enabled`, uključeno samo u produkcijskom compose-u). Caddy završava HTTPS i aplikaciji šalje običan HTTP sa zaglavljem `X-Forwarded-Proto: https`. `UseForwardedHeaders` je prvi u pipeline-u, pa `Request.IsHttps` posle njega kaže istinu i kolačići dobijaju `Secure`. Lista dozvoljenih proxyja je prazna, jer do porta aplikacije stiže samo Caddy. Lokalno je isključeno, jer bi tu bilo ko mogao da pošalje ta zaglavlja.
+- **`UseStaticFiles`** servira React build iz `wwwroot`. Fajlovi pod `/assets` imaju hash u imenu i keširaju se godinu dana, a `index.html` se ne kešira (`Hosting/SpaFiles.cs`), pa posle deploya browser odmah dobije novu verziju.
+- **`MapFallbackToFile("index.html")`**: svaka adresa bez ekstenzije (`/items/…`, `/invite/…`) dobija React stranu, a React Router odluči šta prikazuje. Pre toga `Map("/api/{**path}")` nepoznatu API adresu pretvara u 404 ProblemDetails, da klijent ne bi dobio HTML umesto JSON-a.
+- **`/health`** (`Hosting/DatabaseHealthCheck.cs`): odgovara `Healthy` dok je baza dostupna. Docker i uptime monitor ga koriste.
+- **`Database:MigrateOnStartup`**: u produkciji nova verzija sama primeni migracije pri pokretanju (EF Core za to vreme zaključa bazu). Lokalno to radi `dotnet ef`, a u testovima factory.
+- **HSTS** (`UseHsts`) van razvoja. Preusmerenje sa HTTP-a na HTTPS radi Caddy.
+
 **`Auth/IdentitySetup.cs`**: `AddAppIdentity()`:
 - `AddIdentityApiEndpoints<User>`: registruje Identity sa kombinovanom šemom `BearerAndApplicationScheme`. Zahtev može da se autentifikuje bearer tokenom (mobilna aplikacija kasnije) ili cookie-jem (web sada). Namerno se **ne** zove `MapIdentityApi()`, jer projekat ima sopstvene endpointe sa kodovima grešaka.
 - Pravila lozinke: najmanje 8 znakova, bez obavezne složenosti (preporuka NIST-a).
 - `ConfigureApplicationCookie`: ime cookie-ja, trajanje 14 dana i `SlidingExpiration` (produžava se dok je korisnik aktivan). `SameSite=Lax` znači da browser ne šalje cookie uz većinu zahteva sa drugih sajtova.
-- `AddAntiforgery`: header u kom frontend šalje token.
+- `AddAntiforgery`: header u kom frontend šalje token. Njegov kolačić, za razliku od kolačića za prijavu, podrazumevano nije `Secure`, pa je `SecurePolicy = SameAsRequest`: preko HTTPS-a jeste.
 
 **`Auth/AuthContracts.cs`**: oblici zahteva i odgovora (DTO). Oni su **odvojeni od entiteta**: klijent nikad ne dobija `User` direktno, jer bi tako procurio hash lozinke. Atributi `[Required(ErrorMessage = "validation.required")]` imaju **kod umesto poruke**, i taj trik omogućava da ugrađena validacija daje kodove aplikacije.
 
@@ -615,7 +638,7 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 
 **`Zalihe.IntegrationTests/Infrastructure/ZaliheApiFactory.cs`**: pokreće **ceo API u memoriji** (`WebApplicationFactory<Program>`), povezan sa **pravim Postgres-om u Dockeru** (Testcontainers).
 - `InitializeAsync()`: podigne kontejner i primeni migracije.
-- `ConfigureWebHost()`: podmetne connection string test baze i lažnu WooCommerce prodavnicu (`Shop`).
+- `ConfigureWebHost()`: podmetne connection string test baze i lažnu WooCommerce prodavnicu (`Shop`). Uključi i forwarded headers, kao u produkciji, i podmetne mali lažni React build (`index.html` i jedan fajl pod `/assets`). Na njima `Hosting/HostingTests.cs` proverava serviranje React-a, keširanje, 404 za API, `Secure` kolačiće iza proxyja i `/health`.
 - `DisposeAsync()`: ugasi i obriše kontejner.
 - `ApiCollection` (`ICollectionFixture`): **svi testovi dele jedan kontejner**, pa se ne podiže baza za svaki test. Svaki test koristi jedinstven email (`UniqueEmail()`), pa se međusobno ne ometaju.
 

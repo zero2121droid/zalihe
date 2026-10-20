@@ -116,6 +116,9 @@ docker compose run --rm wpcli bash /scripts/more-products.sh
 # početna strana, dostava, pouzeće i nabavne cene ("Cost of goods sold"). Test proizvodi ostaju, ali su sakriveni iz prodavnice.
 docker compose run --rm wpcli bash /scripts/demo.sh
 
+# cela produkcija lokalno (aplikacija, Postgres, Caddy na https://localhost:8443), pre servera; vidi docs/DEPLOY.md
+docker compose -f deploy/docker-compose.yml up -d --build --wait
+
 # migracije
 dotnet ef migrations add NazivPromene -p src/Zalihe.Infrastructure -s src/Zalihe.Web -o Persistence/Migrations
 dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web

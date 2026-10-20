@@ -30,7 +30,12 @@ public static class IdentitySetup
             options.SlidingExpiration = true;
         });
 
-        services.AddAntiforgery(options => options.HeaderName = CookieAntiforgeryFilter.HeaderName);
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = CookieAntiforgeryFilter.HeaderName;
+            // Unlike the sign-in cookie, the antiforgery cookie isn't Secure by default: Secure over HTTPS.
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        });
 
         return services;
     }

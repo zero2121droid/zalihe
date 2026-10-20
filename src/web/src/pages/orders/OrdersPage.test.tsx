@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { onPhone } from '../../test/phone'
 import { mockApi, renderRoutes } from '../../test/render'
 import { OrdersPage } from './OrdersPage'
 
@@ -36,6 +37,22 @@ const order = (overrides: object = {}) => ({
 const page = (items: object[], totalCount = items.length) => ({ status: 200, body: { items, totalCount, page: 1, pageSize: 20 } })
 
 describe('OrdersPage', () => {
+  it('Render_OnPhone_ShowsEachOrderInOneCellWithStatusAndProducts', async () => {
+    // Arrange
+    onPhone()
+    mockApi({ 'GET /api/orders?': page([order({ status: 'cancelled', takesStock: false })]) })
+
+    // Act
+    await renderRoutes(routes, '/orders')
+
+    // Assert
+    const row = (await screen.findByRole('button', { name: 'Otvori porudžbinu 1041' })).closest('tr')!
+    expect(within(row).getAllByRole('cell')).toHaveLength(1)
+    expect(within(row).getByText('Otkazana · Ne skida sa stanja')).toBeInTheDocument()
+    expect(within(row).getByText(/Kafa Etiopija/)).toHaveTextContent('Kafa Etiopija ×2')
+    expect(screen.queryByRole('columnheader')).not.toBeInTheDocument()
+  })
+
   it('Render_OrdersExist_ShowsNumberStatusAndProducts', async () => {
     // Arrange
     const tea = { externalProductId: '99', name: 'Čaj od nane', state: 'unlinked', item: null, orderedQuantity: 4, appliedQuantity: 0 }

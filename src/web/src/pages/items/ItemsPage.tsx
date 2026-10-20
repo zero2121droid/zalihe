@@ -19,6 +19,7 @@ import { formatMoney, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { matchesSearch } from '../../lib/search'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
+import { usePhone } from '../../lib/usePhone'
 import { ItemModal } from './ItemModal'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
@@ -47,6 +48,7 @@ function toParams({ search, page, pageSize, showInactive, status }: ListState) {
 export function ItemsPage() {
   const { t, i18n } = useTranslation()
   const [creating, setCreating] = useState(false)
+  const phone = usePhone()
   const [params, setParams] = useSearchParams()
   const statusParam = params.get('status')
   const state: ListState = {
@@ -147,9 +149,13 @@ export function ItemsPage() {
           <EmptyState search={state.search} filtered={state.status !== null} onAdd={() => setCreating(true)} />
         ) : (
           <>
-            <Table.ScrollContainer minWidth={900}>
-              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} />
-            </Table.ScrollContainer>
+            {phone ? (
+              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone />
+            ) : (
+              <Table.ScrollContainer minWidth={900}>
+                <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone={false} />
+              </Table.ScrollContainer>
+            )}
             <Pager
               page={state.page}
               pageSize={state.pageSize}
@@ -179,23 +185,42 @@ function PillCount({ color, value }: { color: string; value: number | undefined 
 /**
  * `search` is the text in the field right now: while the server looks for it (`narrowing`), rows
  * of this page that can't match fold away, and the typed text is marked in names and SKUs.
+ * On a phone only the item and its stock are columns: the SKU goes under the name and the status
+ * under the stock, so the number stays in view without scrolling sideways.
  */
-function ItemsTable({ items, search, narrowing }: { items: ItemDto[]; search: string; narrowing: boolean }) {
+function ItemsTable({
+  items,
+  search,
+  narrowing,
+  phone,
+}: {
+  items: ItemDto[]
+  search: string
+  narrowing: boolean
+  phone: boolean
+}) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const number = { ff: 'monospace', fz: 'sm', style: { fontVariantNumeric: 'tabular-nums' } } as const
 
   return (
-    <Table>
+    // On a phone the stock column keeps its width and a long name wraps instead.
+    <Table layout={phone ? 'fixed' : undefined}>
       <Table.Thead>
         <Table.Tr>
           <Table.Th>{t('items.columns.item')}</Table.Th>
-          <Table.Th>{t('items.columns.sku')}</Table.Th>
-          <Table.Th ta="right">{t('items.columns.stock')}</Table.Th>
-          <Table.Th ta="right">{t('items.columns.minStock')}</Table.Th>
-          <Table.Th>{t('items.columns.status')}</Table.Th>
-          <Table.Th ta="right">{t('items.columns.sold30Days')}</Table.Th>
-          <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
+          {!phone && <Table.Th>{t('items.columns.sku')}</Table.Th>}
+          <Table.Th ta="right" w={phone ? 136 : undefined}>
+            {t('items.columns.stock')}
+          </Table.Th>
+          {!phone && (
+            <>
+              <Table.Th ta="right">{t('items.columns.minStock')}</Table.Th>
+              <Table.Th>{t('items.columns.status')}</Table.Th>
+              <Table.Th ta="right">{t('items.columns.sold30Days')}</Table.Th>
+              <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
+            </>
+          )}
         </Table.Tr>
       </Table.Thead>
       <SearchBody narrowing={narrowing}>
@@ -223,8 +248,8 @@ function ItemsTable({ items, search, narrowing }: { items: ItemDto[]; search: st
                           aria-label={t('items.open', { name: item.name })}
                           fw={500}
                           c={item.isActive ? 'var(--z-text)' : 'dimmed'}
-                          truncate
-                          maw={420}
+                          truncate={!phone}
+                          maw={phone ? undefined : 420}
                         >
                           <SearchMatch text={item.name} term={search} />
                         </Anchor>
@@ -234,6 +259,11 @@ function ItemsTable({ items, search, narrowing }: { items: ItemDto[]; search: st
                           </Badge>
                         )}
                       </Group>
+                      {phone && (
+                        <Text ff="monospace" fz="xs" c="var(--z-text-2)" truncate>
+                          <SearchMatch text={item.sku} term={search} />
+                        </Text>
+                      )}
                       {item.category && (
                         <Text fz="xs" c="dimmed">
                           {item.category}
@@ -243,42 +273,53 @@ function ItemsTable({ items, search, narrowing }: { items: ItemDto[]; search: st
                   </Group>
                 </SearchCell>
               </Table.Td>
-              <Table.Td>
-                <SearchCell>
-                  <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                    <SearchMatch text={item.sku} term={search} />
-                  </Text>
-                </SearchCell>
-              </Table.Td>
+              {!phone && (
+                <Table.Td>
+                  <SearchCell>
+                    <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                      <SearchMatch text={item.sku} term={search} />
+                    </Text>
+                  </SearchCell>
+                </Table.Td>
+              )}
               <Table.Td ta="right">
                 <SearchCell>
                   <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} animate />
+                  {phone && (
+                    <Group justify="flex-end" mt={2} wrap="nowrap" style={{ whiteSpace: 'nowrap' }}>
+                      <StockStatusLabel status={item.status} />
+                    </Group>
+                  )}
                 </SearchCell>
               </Table.Td>
-              <Table.Td ta="right">
-                <SearchCell>
-                  <Text {...number} c="dimmed">
-                    {formatNumber(item.minStock, i18n.language)}
-                  </Text>
-                </SearchCell>
-              </Table.Td>
-              <Table.Td>
-                <SearchCell>
-                  <StockStatusLabel status={item.status} />
-                </SearchCell>
-              </Table.Td>
-              <Table.Td ta="right">
-                <SearchCell>
-                  <Text {...number}>{formatNumber(item.sold30Days, i18n.language)}</Text>
-                </SearchCell>
-              </Table.Td>
-              <Table.Td ta="right">
-                <SearchCell>
-                  <Text {...number} c="var(--z-text-2)">
-                    {item.stockValue === null ? '' : formatMoney(item.stockValue, i18n.language)}
-                  </Text>
-                </SearchCell>
-              </Table.Td>
+              {!phone && (
+                <>
+                  <Table.Td ta="right">
+                    <SearchCell>
+                      <Text {...number} c="dimmed">
+                        {formatNumber(item.minStock, i18n.language)}
+                      </Text>
+                    </SearchCell>
+                  </Table.Td>
+                  <Table.Td>
+                    <SearchCell>
+                      <StockStatusLabel status={item.status} />
+                    </SearchCell>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <SearchCell>
+                      <Text {...number}>{formatNumber(item.sold30Days, i18n.language)}</Text>
+                    </SearchCell>
+                  </Table.Td>
+                  <Table.Td ta="right">
+                    <SearchCell>
+                      <Text {...number} c="var(--z-text-2)">
+                        {item.stockValue === null ? '' : formatMoney(item.stockValue, i18n.language)}
+                      </Text>
+                    </SearchCell>
+                  </Table.Td>
+                </>
+              )}
             </SearchRow>
           )
         })}

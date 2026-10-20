@@ -14,6 +14,7 @@ import { Pager } from '../../components/Pager'
 import { formatDateTime, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
+import { usePhone } from '../../lib/usePhone'
 import { OrderModal } from './OrderModal'
 import { lineName, shopHost, statusLabel, WOO_STATUSES } from './orderText'
 
@@ -43,6 +44,7 @@ function toParams({ search, page, pageSize, status, unlinkedOnly }: ListState) {
 
 export function OrdersPage() {
   const { t, i18n } = useTranslation()
+  const phone = usePhone()
   const [params, setParams] = useSearchParams()
   const [openedId, setOpenedId] = useState<string | null>(null)
   const state: ListState = {
@@ -140,9 +142,13 @@ export function OrdersPage() {
           <EmptyState search={state.search} filtered={filtered} />
         ) : (
           <>
-            <Table.ScrollContainer minWidth={760}>
-              <OrdersTable orders={data!.items} onOpen={setOpenedId} />
-            </Table.ScrollContainer>
+            {phone ? (
+              <OrdersList orders={data!.items} onOpen={setOpenedId} />
+            ) : (
+              <Table.ScrollContainer minWidth={760}>
+                <OrdersTable orders={data!.items} onOpen={setOpenedId} />
+              </Table.ScrollContainer>
+            )}
             <Pager
               page={state.page}
               pageSize={state.pageSize}
@@ -178,20 +184,7 @@ function OrdersTable({ orders, onOpen }: { orders: OrderDto[]; onOpen: (id: stri
           // The whole row opens the order for mouse users; the number is the real button for keyboards.
           <Table.Tr key={order.id} onClick={() => onOpen(order.id)} style={{ cursor: 'pointer' }}>
             <Table.Td>
-              <Anchor
-                component="button"
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onOpen(order.id)
-                }}
-                aria-label={t('orders.open', { number: order.number })}
-                ff="monospace"
-                fw={500}
-                c="var(--z-text)"
-              >
-                {t('orders.number', { number: order.number })}
-              </Anchor>
+              <OrderNumber order={order} onOpen={onOpen} />
               {severalShops && (
                 <Text fz="xs" c="dimmed">
                   {shopHost(order.shopUrl)}
@@ -219,6 +212,63 @@ function OrdersTable({ orders, onOpen }: { orders: OrderDto[]; onOpen: (id: stri
   )
 }
 
+/**
+ * The orders on a phone: one cell per order, number and time on top, status under them and the
+ * products below, so nothing hides past the edge of the screen.
+ */
+function OrdersList({ orders, onOpen }: { orders: OrderDto[]; onOpen: (id: string) => void }) {
+  const { t, i18n } = useTranslation()
+  const severalShops = new Set(orders.map((o) => o.channelId)).size > 1
+
+  return (
+    <Table>
+      <Table.Tbody>
+        {orders.map((order) => (
+          <Table.Tr key={order.id} onClick={() => onOpen(order.id)} style={{ cursor: 'pointer' }}>
+            <Table.Td>
+              <Group justify="space-between" gap="sm" wrap="nowrap" align="baseline">
+                <OrderNumber order={order} onOpen={onOpen} />
+                <Text ff="monospace" fz="xs" c="var(--z-text-2)" style={{ whiteSpace: 'nowrap' }}>
+                  {formatDateTime(order.placedAt, i18n.language)}
+                </Text>
+              </Group>
+              <Text fz="xs" c="dimmed" mb={6}>
+                {[
+                  statusLabel(t, order.status),
+                  order.takesStock ? t('orders.takesStock') : t('orders.doesNotTakeStock'),
+                  ...(severalShops ? [shopHost(order.shopUrl)] : []),
+                ].join(' · ')}
+              </Text>
+              <ProductsSummary order={order} />
+            </Table.Td>
+          </Table.Tr>
+        ))}
+      </Table.Tbody>
+    </Table>
+  )
+}
+
+/** The whole row opens the order for mouse and touch users; the number is the real button for keyboards. */
+function OrderNumber({ order, onOpen }: { order: OrderDto; onOpen: (id: string) => void }) {
+  const { t } = useTranslation()
+  return (
+    <Anchor
+      component="button"
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onOpen(order.id)
+      }}
+      aria-label={t('orders.open', { number: order.number })}
+      ff="monospace"
+      fw={500}
+      c="var(--z-text)"
+    >
+      {t('orders.number', { number: order.number })}
+    </Anchor>
+  )
+}
+
 function ProductsSummary({ order }: { order: OrderDto }) {
   const { t, i18n } = useTranslation()
   const shown = order.lines.slice(0, PRODUCTS_IN_ROW)
@@ -227,7 +277,7 @@ function ProductsSummary({ order }: { order: OrderDto }) {
   return (
     <Stack gap={2}>
       {shown.map((line) => (
-        <Text key={line.externalProductId} fz="sm" truncate maw={480}>
+        <Text key={line.externalProductId} fz="sm" lineClamp={2} maw={480}>
           {lineName(t, line)}{' '}
           <Text component="span" ff="monospace" fz="sm" c="dimmed">
             ×{formatNumber(line.orderedQuantity, i18n.language)}

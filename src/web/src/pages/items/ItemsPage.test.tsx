@@ -1,6 +1,7 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { onPhone } from '../../test/phone'
 import { mockApi, renderRoutes } from '../../test/render'
 import { ItemsPage } from './ItemsPage'
 
@@ -50,6 +51,22 @@ describe('ItemsPage', () => {
     expect(screen.getByText('3.600')).toBeInTheDocument()
     expect(screen.getByText('38')).toBeInTheDocument()
     expect(screen.getByText('1–20 od 42')).toBeInTheDocument()
+  })
+
+  it('Render_OnPhone_ShowsOnlyItemAndStockColumnsWithSkuAndStatusInThem', async () => {
+    // Arrange
+    onPhone()
+    mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item()]) })
+
+    // Act
+    await renderRoutes(routes, '/items')
+
+    // Assert
+    const row = (await screen.findByText('Kafa Etiopija 250 g')).closest('tr')!
+    expect(screen.getAllByRole('columnheader').map((th) => th.textContent)).toEqual(['Artikal', 'Stanje'])
+    expect(within(row).getByText('KF-ETI-250')).toBeInTheDocument()
+    expect(within(row).getByText('Ispod minimuma')).toBeInTheDocument()
+    expect(within(row).getAllByRole('cell')).toHaveLength(2)
   })
 
   it('Render_Summary_ShowsCountsOnFilterPills', async () => {

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { ApiError, formErrorMessage } from '../../api/errors'
 import { useGetItem, useGetItemHistory } from '../../api/generated/items/items'
-import type { ItemDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
+import type { ItemDto, ItemHistoryEntryDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
 import { FilterPill } from '../../components/FilterPill'
 import { BoxLoader, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
@@ -17,6 +17,7 @@ import { formatDateTime, formatMoney, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE } from '../../lib/pageSize'
 import { useArrivals } from '../../lib/useArrivals'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
+import { usePhone } from '../../lib/usePhone'
 import { ItemImageEditor } from './ItemImageEditor'
 import { ItemModal } from './ItemModal'
 import { MovementModal } from './MovementModal'
@@ -162,6 +163,7 @@ const historyFilters: ItemHistoryFilter[] = ['all', 'stock', 'changes']
 
 function History({ item }: { item: ItemDto }) {
   const { t, i18n } = useTranslation()
+  const phone = usePhone()
   const [filter, setFilter] = useState<ItemHistoryFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE)
@@ -206,74 +208,78 @@ function History({ item }: { item: ItemDto }) {
         </Text>
       ) : (
         <>
-          <Table.ScrollContainer minWidth={720}>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>{t('stock.history.columns.when')}</Table.Th>
-                  <Table.Th>{t('stock.history.columns.type')}</Table.Th>
-                  <Table.Th>{t('stock.history.columns.details')}</Table.Th>
-                  <Table.Th ta="right">{t('stock.history.columns.quantity')}</Table.Th>
-                  <Table.Th>{t('stock.history.columns.user')}</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {data!.items.map((entry) => (
-                  <Table.Tr key={entry.id} className={arrivals.has(entry.id) ? stockClasses.freshRow : undefined}>
-                    <Table.Td>
-                      <Text ff="monospace" fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-                        {formatDateTime(entry.occurredAt, i18n.language)}
-                      </Text>
-                    </Table.Td>
-                    {entry.movement ? (
-                      <>
-                        <Table.Td>
-                          <Text fz="sm">{t(`stock.types.${entry.movement.type}`)}</Text>
-                          <Text fz="xs" c="dimmed">
-                            {t(`stock.sources.${entry.movement.source}`)}
-                            {entry.movement.externalRef && ` #${entry.movement.externalRef}`}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text fz="sm" c="var(--z-text-2)">
-                            {entry.movement.note}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td ta="right">
-                          <MovementQuantity quantity={entry.movement.quantity} />
-                        </Table.Td>
-                      </>
-                    ) : (
-                      <>
-                        <Table.Td>
-                          <Text fz="sm">{t(`items.changes.${entry.change!.kind}`)}</Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Stack gap={2}>
-                            {entry.change!.changes.map((field) => (
-                              <Text key={field.field} fz="sm" c="var(--z-text-2)">
-                                <Text component="span" fz="sm" c="dimmed">
-                                  {t(`items.form.${field.field}`)}:
-                                </Text>{' '}
-                                {formatChangeValue(field.field, field.oldValue, item, t, i18n.language)} →{' '}
-                                {formatChangeValue(field.field, field.newValue, item, t, i18n.language)}
-                              </Text>
-                            ))}
-                          </Stack>
-                        </Table.Td>
-                        <Table.Td />
-                      </>
-                    )}
-                    <Table.Td>
-                      <Text fz="sm" c="dimmed">
-                        {entry.userName}
-                      </Text>
-                    </Table.Td>
+          {phone ? (
+            <HistoryList entries={data!.items} item={item} fresh={arrivals} />
+          ) : (
+            <Table.ScrollContainer minWidth={720}>
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('stock.history.columns.when')}</Table.Th>
+                    <Table.Th>{t('stock.history.columns.type')}</Table.Th>
+                    <Table.Th>{t('stock.history.columns.details')}</Table.Th>
+                    <Table.Th ta="right">{t('stock.history.columns.quantity')}</Table.Th>
+                    <Table.Th>{t('stock.history.columns.user')}</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
+                </Table.Thead>
+                <Table.Tbody>
+                  {data!.items.map((entry) => (
+                    <Table.Tr key={entry.id} className={arrivals.has(entry.id) ? stockClasses.freshRow : undefined}>
+                      <Table.Td>
+                        <Text ff="monospace" fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                          {formatDateTime(entry.occurredAt, i18n.language)}
+                        </Text>
+                      </Table.Td>
+                      {entry.movement ? (
+                        <>
+                          <Table.Td>
+                            <Text fz="sm">{t(`stock.types.${entry.movement.type}`)}</Text>
+                            <Text fz="xs" c="dimmed">
+                              {t(`stock.sources.${entry.movement.source}`)}
+                              {entry.movement.externalRef && ` #${entry.movement.externalRef}`}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text fz="sm" c="var(--z-text-2)">
+                              {entry.movement.note}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td ta="right">
+                            <MovementQuantity quantity={entry.movement.quantity} />
+                          </Table.Td>
+                        </>
+                      ) : (
+                        <>
+                          <Table.Td>
+                            <Text fz="sm">{t(`items.changes.${entry.change!.kind}`)}</Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Stack gap={2}>
+                              {entry.change!.changes.map((field) => (
+                                <Text key={field.field} fz="sm" c="var(--z-text-2)">
+                                  <Text component="span" fz="sm" c="dimmed">
+                                    {t(`items.form.${field.field}`)}:
+                                  </Text>{' '}
+                                  {formatChangeValue(field.field, field.oldValue, item, t, i18n.language)} →{' '}
+                                  {formatChangeValue(field.field, field.newValue, item, t, i18n.language)}
+                                </Text>
+                              ))}
+                            </Stack>
+                          </Table.Td>
+                          <Table.Td />
+                        </>
+                      )}
+                      <Table.Td>
+                        <Text fz="sm" c="dimmed">
+                          {entry.userName}
+                        </Text>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Table.ScrollContainer>
+          )}
           <Pager
             page={page}
             pageSize={pageSize}
@@ -287,6 +293,63 @@ function History({ item }: { item: ItemDto }) {
         </>
       )}
     </Box>
+  )
+}
+
+/**
+ * The history on a phone: two columns, what happened (with when, how and who under it) and the
+ * quantity, so the number is in view without scrolling sideways.
+ */
+function HistoryList({
+  entries,
+  item,
+  fresh,
+}: {
+  entries: ItemHistoryEntryDto[]
+  item: ItemDto
+  fresh: ReadonlySet<string>
+}) {
+  const { t, i18n } = useTranslation()
+  return (
+    <Table>
+      <Table.Tbody>
+        {entries.map((entry) => {
+          const movement = entry.movement
+          const how = movement
+            ? [t(`stock.sources.${movement.source}`) + (movement.externalRef ? ` #${movement.externalRef}` : '')]
+            : []
+          return (
+            <Table.Tr key={entry.id} className={fresh.has(entry.id) ? stockClasses.freshRow : undefined}>
+              <Table.Td>
+                <Text fz="sm">
+                  {entry.movement ? t(`stock.types.${entry.movement.type}`) : t(`items.changes.${entry.change!.kind}`)}
+                </Text>
+                <Text fz="xs" c="dimmed">
+                  {[...how, formatDateTime(entry.occurredAt, i18n.language), entry.userName].join(' · ')}
+                </Text>
+                {entry.movement?.note && (
+                  <Text fz="sm" c="var(--z-text-2)" mt={2}>
+                    {entry.movement.note}
+                  </Text>
+                )}
+                {entry.change?.changes.map((field) => (
+                  <Text key={field.field} fz="sm" c="var(--z-text-2)" mt={2}>
+                    <Text component="span" fz="sm" c="dimmed">
+                      {t(`items.form.${field.field}`)}:
+                    </Text>{' '}
+                    {formatChangeValue(field.field, field.oldValue, item, t, i18n.language)} →{' '}
+                    {formatChangeValue(field.field, field.newValue, item, t, i18n.language)}
+                  </Text>
+                ))}
+              </Table.Td>
+              <Table.Td ta="right" style={{ verticalAlign: 'top' }}>
+                {entry.movement && <MovementQuantity quantity={entry.movement.quantity} />}
+              </Table.Td>
+            </Table.Tr>
+          )
+        })}
+      </Table.Tbody>
+    </Table>
   )
 }
 

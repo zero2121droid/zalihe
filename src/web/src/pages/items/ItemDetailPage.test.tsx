@@ -1,6 +1,7 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { onPhone } from '../../test/phone'
 import { mockApi, renderRoutes } from '../../test/render'
 import { ItemDetailPage } from './ItemDetailPage'
 
@@ -72,6 +73,31 @@ describe('ItemDetailPage', () => {
     expect(screen.getByText(/900 RSD → prazno/)).toBeInTheDocument()
     expect(screen.getByText(/kom → kg/)).toBeInTheDocument()
     expect(screen.getByText('Artikal napravljen')).toBeInTheDocument()
+  })
+
+  it('Render_HistoryOnPhone_ShowsWhatHappenedAndTheQuantityInTwoColumns', async () => {
+    // Arrange
+    onPhone()
+    mockApi({
+      'GET /api/items/item-1/history': historyPage([
+        movementEntry({ type: 'sale', quantity: -2, source: 'wooCommerce', externalRef: '1048', note: 'Popis' }),
+        changeEntry('updated', [{ field: 'minStock', oldValue: '10', newValue: '12.5' }]),
+      ]),
+      'GET /api/items/item-1': { status: 200, body: item },
+    })
+
+    // Act
+    await renderRoutes(routes, '/items/item-1')
+
+    // Assert
+    const sale = (await screen.findByText('−2')).closest('tr')!
+    expect(within(sale).getAllByRole('cell')).toHaveLength(2)
+    expect(within(sale).getByText('Prodaja')).toBeInTheDocument()
+    expect(within(sale).getByText(/^WooCommerce #1048 · .+ · Miljan$/)).toBeInTheDocument()
+    expect(within(sale).getByText('Popis')).toBeInTheDocument()
+    const change = screen.getByText('Artikal izmenjen').closest('tr')!
+    expect(within(change).getByText(/10 kom → 12,5 kom/)).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader')).not.toBeInTheDocument()
   })
 
   it('HistoryFilter_ChangesClicked_RequestsOnlyItemChanges', async () => {

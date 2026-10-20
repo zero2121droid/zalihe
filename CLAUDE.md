@@ -29,6 +29,7 @@ docs/
   SPEC.md
   DESIGN.md
   ARCHITECTURE.md
+  DEPLOY.md
   mockups/
 ```
 

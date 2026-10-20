@@ -1,0 +1,29 @@
+/* Pills sit above the sliding highlight of FilterPills. */
+.pill {
+  position: relative;
+  z-index: 1;
+}
+
+/* The selected pill's look, drawn once under the row and moved to the chosen pill. */
+.highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(var(--x), var(--y));
+  border: 1px solid var(--z-accent);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--z-selected);
+  pointer-events: none;
+}
+
+.highlight[data-placed] {
+  transition:
+    transform 0.35s cubic-bezier(0.3, 0.7, 0.3, 1),
+    width 0.35s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .highlight[data-placed] {
+    transition: none;
+  }
+}

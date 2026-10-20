@@ -77,9 +77,13 @@
   }
 }
 
-/* Page loader: three boxes stacking up. */
+/* Page loader: three boxes with lids stacking up (the box of the empty state, smaller). */
 .stack {
   color: var(--z-accent-text);
+}
+
+.stackBody {
+  fill: var(--z-surface);
 }
 
 .stackBox {

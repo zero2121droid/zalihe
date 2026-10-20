@@ -1,0 +1,10 @@
+/* W from the animation sheet: the thumb overshoots a little as it switches, like a spring. */
+.thumb {
+  transition: inset-inline-start 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumb {
+    transition: none;
+  }
+}

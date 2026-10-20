@@ -99,7 +99,7 @@ describe('MovementModal', () => {
     await userEvent.type(screen.getByLabelText(/^Prodata količina/), '6')
 
     // Assert
-    expect(screen.getByText('−2 kom')).toBeInTheDocument()
+    expect(screen.getByText('−2').closest('p')).toHaveTextContent(/ kom$/)
     expect(screen.getByText(/Stanje će otići u minus/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Zabeleži' })).toBeEnabled()
   })
@@ -114,7 +114,26 @@ describe('MovementModal', () => {
 
     // Assert
     expect(screen.getByText('Razlika')).toBeInTheDocument()
-    expect(screen.getByText('+3 kom')).toBeInTheDocument()
+    expect(screen.getByText('+3').closest('p')).toHaveTextContent(/ kom$/)
+  })
+
+  it('StepButtons_Pressed_ChangeQuantityByOneButNotBelowZero', async () => {
+    // Arrange
+    mockApi({})
+    await render('receipt')
+    const field = screen.getByLabelText(/^Primljena količina/)
+
+    // Act
+    await userEvent.click(screen.getByRole('button', { name: 'Povećaj za 1' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Povećaj za 1' }))
+    const afterTwoUp = (field as HTMLInputElement).value
+    await userEvent.clear(field)
+    await userEvent.type(field, '0,5')
+    await userEvent.click(screen.getByRole('button', { name: 'Smanji za 1' }))
+
+    // Assert
+    expect(afterTwoUp).toBe('2')
+    expect(field).toHaveValue('0')
   })
 
   it('Submit_CountWithoutReason_ShowsApiErrorUnderNote', async () => {

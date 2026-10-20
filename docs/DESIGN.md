@@ -92,9 +92,13 @@ Linijske ikone, debljina 1.8, 16 px u navigaciji i 18-20 px na telefonu. Bibliot
 Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CSS-a, bez biblioteke.
 
 - Linijske ikone debljine 1.8 u bojama tokena, nikad scene ni ilustracije.
-- Učitavanje: podrazumevani `Loader` su stubići na polici (isti se koristi i u dugmadima). Za celu stranicu služe kutije koje se slažu, za tabele redovi koji „dišu“ (samo providnost, bez preliva), a kad se otvara jedna stvar (artikal, spisak proizvoda iz prodavnice) kutija koja se otvara. Pretraga ne sklanja listu: stari rezultati ostaju, a u polju za pretragu se vrte mali stubići dok ne stignu novi. Loader se ne prikazuje ako odgovor stigne za manje od 200 ms, a kad se jednom pojavi, ostaje najmanje 500 ms, da ne bljesne (`useLoadingDisplay`).
+- Učitavanje: podrazumevani `Loader` su stubići na polici (isti se koristi i u dugmadima). Za celu stranicu služe kutije sa poklopcem koje se slažu (iste kao kutija praznog stanja), za tabele redovi koji „dišu“ (samo providnost, bez preliva), a kad se otvara jedna stvar (artikal, spisak proizvoda iz prodavnice) kutija koja se otvara. Pretraga ne sklanja listu: stari rezultati ostaju, a u polju za pretragu se vrte mali stubići dok ne stignu novi. Loader se ne prikazuje ako odgovor stigne za manje od 200 ms, a kad se jednom pojavi, ostaje najmanje 500 ms, da ne bljesne (`useLoadingDisplay`).
 - Pretraga u listi: dok se kuca, redovi trenutne strane koji ne sadrže ukucani tekst (naziv, šifra, barkod) se skupe (0,3 s), a ukucani deo naziva i šifre se istakne (pozadina `selected`, tekst `accent-text`). Kad stignu rezultati sa servera, oni zamene listu (`SearchMatch`, `SearchRow` u `search.tsx`).
 - Promena stanja: broj glatko pređe na novu vrednost (oko 0,5 s), a iznad njega kratko iskoči `+24` ili `−2`. Novo kretanje u istoriji se kratko istakne.
+- Unos količine (prijem, prodaja, povrat, korekcija): pored polja su dugmad − i + (`surface-2`, 40 px, na telefonu 44 px), jedan korak po pritisku, a dok se drži, menja se brže. „Stanje posle” se ne prepisuje odjednom: svaka cifra se zavrti do nove vrednosti kao brojčanik (0,6 s, `Odometer`); separatori i znak stoje.
+- Filter pilule (Artikli, Porudžbine, Izveštaji, istorija artikla): izbor (pozadina `selected`, okvir `accent`) otklizi i promeni širinu do izabrane pilule (0,35 s), umesto da skoči (`FilterPills`). Izabrani izveštaj se pri promeni blago podigne na mesto (0,3 s).
+- Šifra na detalju artikla se kopira klikom: ikona kopiranja se uz malu oprugu zameni kvačicom, a pozadina postane `selected` (1,6 s); šifra ostaje, pa se ništa pored nje ne pomera (`CopySku`).
+- Prekidač: palac pri prebacivanju malo pređe cilj i vrati se, kao opruga (0,3 s).
 - Uvoz iz prodavnice: lista ostaje na mestu, ali izbledi (30%) i zaključa se, a animacija uvoza stoji u sredini ekrana na sekciji (`surface`, okvir od 1 px). Bez zamagljivanja (vidi „Zabranjeno“: glassmorphism). Kad stigne rezultat, broj uvezenih proizvoda odbroji jedan po jedan do poslednjeg (oko 30 ms po broju, 0,6-3 s), paketi stanu, a animacija ostaje dok je korisnik ne zatvori na X (ili Escape). Uvoz je jedan zahtev, pa se broji tek kad je poznat stvaran broj, nikad izmišljen napredak.
 - Uvoz ima i tanku traku napretka (4 px, `accent`) koja se puni uz brojač, a kad se završi, skladište na animaciji dobije `accent-text` boju.
 - Čuvanje forme: dugme prvo pokaže stubiće, a kad uspe, iscrta se kvačica i piše „Sačuvano“ (pozadina `selected`, tekst `accent-text`), oko 0,6 s, pa se forma zatvori (`SaveButton`, `useSaved`).
@@ -102,7 +106,7 @@ Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CS
 - Početna: brojevi u pregledu odbroje od 0 do svoje vrednosti (oko 0,5 s), a artikli ispod minimuma se pojave jedan za drugim.
 - Pulsira samo ono što traži pažnju (status ispod minimuma ili bez zaliha), i to samo na detalju artikla, ne u listama.
 - Uz `prefers-reduced-motion` sve animacije staju, a brojevi se menjaju odmah. Mirno stanje mora biti čitljivo bez animacije.
-- Komponente: `src/web/src/components/loaders.tsx`, `stock.tsx` i `feedback.tsx`. Sve se mogu videti na `/dev/animacije` (samo u razvoju).
+- Komponente: `src/web/src/components/loaders.tsx`, `stock.tsx`, `feedback.tsx`, `Odometer.tsx`, `StepButton.tsx`, `FilterPill.tsx` i `CopySku.tsx`. Sve se mogu videti na `/dev/animacije` (samo u razvoju).
 
 ## Zabranjeno
 

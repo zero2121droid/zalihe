@@ -9,7 +9,7 @@ import { formErrorMessage } from '../../api/errors'
 import { useListItems } from '../../api/generated/items/items'
 import type { ItemDto } from '../../api/generated/model'
 import { useGetStockSummary } from '../../api/generated/stock/stock'
-import { FilterPill } from '../../components/FilterPill'
+import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { ItemImage } from '../../components/ItemImage'
 import { EmptyBox, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
@@ -118,7 +118,7 @@ export function ItemsPage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.currentTarget.value)}
         />
-        <Group gap={6} role="group" aria-label={t('items.filters.label')}>
+        <FilterPills label={t('items.filters.label')}>
           <FilterPill active={state.status === null} onClick={() => update({ status: null })}>
             {t('items.filters.all')}
           </FilterPill>
@@ -130,7 +130,7 @@ export function ItemsPage() {
             {t('items.filters.outOfStock')}{' '}
             <PillCount color="var(--z-status-out)" value={summary.data?.outOfStock} />
           </FilterPill>
-        </Group>
+        </FilterPills>
         <Switch
           label={t('items.showInactive')}
           checked={state.showInactive}

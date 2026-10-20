@@ -49,14 +49,24 @@ function CenteredLoader({ label, placement, children }: { label?: string; placem
   return placement === 'inline' ? <Center py="xl">{content}</Center> : <div className={classes.screen}>{content}</div>
 }
 
-/** Loading a whole page or section: boxes stacking up. */
+/** One of the stacking boxes: a body with a lid, like the box in BoxLoader and EmptyBox. */
+function StackBox({ x, y }: { x: number; y: number }) {
+  return (
+    <g className={classes.stackBox}>
+      <rect className={cx(classes.line, classes.stackBody)} x={x} y={y + 4} width="16" height="10" rx="1.5" />
+      <rect className={cx(classes.line, classes.stackBody)} x={x - 1.5} y={y} width="19" height="4" rx="1" />
+    </g>
+  )
+}
+
+/** Loading a whole page or section: boxes with lids stacking up. */
 export function PageLoader({ label, placement = 'screen' }: { label?: string; placement?: LoaderPlacement }) {
   return (
     <CenteredLoader label={label} placement={placement}>
       <svg className={cx(classes.stack, classes.large)} width={LOADER_SIZE} height={LOADER_SIZE} viewBox={CENTERED_VIEW_BOX} aria-hidden>
-        <rect className={cx(classes.line, classes.stackBox)} x="7" y="29" width="16" height="12" rx="2" />
-        <rect className={cx(classes.line, classes.stackBox)} x="25" y="29" width="16" height="12" rx="2" />
-        <rect className={cx(classes.line, classes.stackBox)} x="16" y="15" width="16" height="12" rx="2" />
+        <StackBox x={7} y={28} />
+        <StackBox x={25} y={28} />
+        <StackBox x={16} y={13} />
       </svg>
     </CenteredLoader>
   )

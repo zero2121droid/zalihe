@@ -8,7 +8,9 @@ import type { ItemDto, ManualMovementKind } from '../../api/generated/model'
 import { getGetStockSummaryQueryKey, useRecordStockMovement } from '../../api/generated/stock/stock'
 import { DecimalInput } from '../../components/DecimalInput'
 import { SaveButton } from '../../components/feedback'
-import { formatNumber, formatSignedQuantity, readDecimal } from '../../lib/format'
+import { Odometer } from '../../components/Odometer'
+import { StepButton } from '../../components/StepButton'
+import { formatDecimalInput, formatNumber, formatSignedQuantity, readDecimal } from '../../lib/format'
 import { useSaved } from '../../lib/useSaved'
 import { useShake } from '../../lib/useShake'
 
@@ -67,6 +69,16 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
     amount === null ? null : kind === 'sale' ? -amount : kind === 'count' ? amount - item.stock : amount
   const after = change === null ? null : item.stock + change
 
+  // − and + change the typed quantity by one (never below zero); an empty field counts as zero.
+  function stepBy(delta: number) {
+    setQuantity((current) => {
+      const typed = readDecimal(current)
+      const base = typeof typed === 'number' ? typed : 0
+      return formatDecimalInput(Math.max(0, base + delta), i18n.language)
+    })
+    setQuantityError(null)
+  }
+
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!kind) return
@@ -99,24 +111,31 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
             </Text>
           </Group>
 
-          <DecimalInput
-            label={kind ? t(`stock.form.quantity.${kind}`) : ''}
-            description={isCount ? t('stock.form.countHint') : undefined}
-            inputWrapperOrder={['label', 'input', 'description', 'error']}
-            withAsterisk
-            data-autofocus
-            rightSection={
-              <Text fz="xs" c="dimmed" pr="xs">
-                {unit}
-              </Text>
-            }
-            value={quantity}
-            onChange={(next) => {
-              setQuantity(next)
-              setQuantityError(null)
-            }}
-            error={quantityError ?? serverErrors.quantity}
-          />
+          <Group gap="xs" align="flex-start" wrap="nowrap">
+            <DecimalInput
+              flex={1}
+              label={kind ? t(`stock.form.quantity.${kind}`) : ''}
+              description={isCount ? t('stock.form.countHint') : undefined}
+              inputWrapperOrder={['label', 'input', 'description', 'error']}
+              withAsterisk
+              data-autofocus
+              rightSection={
+                <Text fz="xs" c="dimmed" pr="xs">
+                  {unit}
+                </Text>
+              }
+              value={quantity}
+              onChange={(next) => {
+                setQuantity(next)
+                setQuantityError(null)
+              }}
+              error={quantityError ?? serverErrors.quantity}
+            />
+            <Group gap="xs" wrap="nowrap" mt={kind ? 26 : 0}>
+              <StepButton label={t('stock.form.decrease')} sign="−" onStep={() => stepBy(-1)} />
+              <StepButton label={t('stock.form.increase')} sign="+" onStep={() => stepBy(1)} />
+            </Group>
+          </Group>
 
           {change !== null && after !== null && (
             <Stack gap={4}>
@@ -125,9 +144,8 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
                   {isCount ? t('stock.form.difference') : t('stock.form.after')}
                 </Text>
                 <Text ff="monospace" fz="sm" c={after < 0 ? 'var(--z-status-out)' : undefined}>
-                  {isCount
-                    ? `${formatSignedQuantity(change, i18n.language)} ${unit}`
-                    : `${formatNumber(after, i18n.language)} ${unit}`}
+                  <Odometer text={isCount ? formatSignedQuantity(change, i18n.language) : formatNumber(after, i18n.language)} />{' '}
+                  {unit}
                 </Text>
               </Group>
               {after < 0 && (

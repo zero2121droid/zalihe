@@ -8,7 +8,8 @@ import { Link, useParams } from 'react-router'
 import { ApiError, formErrorMessage } from '../../api/errors'
 import { useGetItem, useGetItemHistory } from '../../api/generated/items/items'
 import type { ItemDto, ItemHistoryEntryDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
-import { FilterPill } from '../../components/FilterPill'
+import { CopySku } from '../../components/CopySku'
+import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { BoxLoader, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
@@ -85,9 +86,7 @@ function ItemDetail({ item }: { item: ItemDto }) {
                 )}
               </Group>
               <Text fz="sm" c="dimmed">
-                <Text component="span" ff="monospace" fz="sm">
-                  {item.sku}
-                </Text>
+                <CopySku sku={item.sku} />
                 {item.category && ` · ${item.category}`}
               </Text>
             </Stack>
@@ -180,7 +179,7 @@ function History({ item }: { item: ItemDto }) {
     <Box component="section" bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
       <Group justify="space-between" px="lg" py="sm" gap="sm" style={{ borderBottom: '1px solid var(--z-line)' }}>
         <Title order={2}>{t('stock.history.title')}</Title>
-        <Group gap={6} role="group" aria-label={t('stock.history.filters.label')}>
+        <FilterPills label={t('stock.history.filters.label')}>
           {historyFilters.map((value) => (
             <FilterPill
               key={value}
@@ -193,7 +192,7 @@ function History({ item }: { item: ItemDto }) {
               {t(`stock.history.filters.${value}`)}
             </FilterPill>
           ))}
-        </Group>
+        </FilterPills>
       </Group>
 
       {history.isPending || display !== 'content' ? (

@@ -10,7 +10,8 @@ import { formErrorMessage } from '../../api/errors'
 import { useListItemCategories } from '../../api/generated/items/items'
 import type { CategoryValueDto, SlowMoverDto, TopSellerDto } from '../../api/generated/model'
 import { useGetReportSummary, useListCategoryValues, useListSlowMovers, useListTopSellers } from '../../api/generated/reports/reports'
-import { FilterPill } from '../../components/FilterPill'
+import feedbackClasses from '../../components/feedback.module.css'
+import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
 import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
@@ -130,13 +131,13 @@ export function ReportsPage() {
       )}
 
       <Group gap="md" wrap="wrap">
-        <Group gap={6} role="group" aria-label={t('reports.choose')}>
+        <FilterPills label={t('reports.choose')}>
           {REPORTS.map((report) => (
             <FilterPill key={report} active={state.report === report} onClick={() => changeReport(report)}>
               {t(`reports.${report}.tab`, { days: report === 'topSellers' ? TOP_SELLER_DAYS : SLOW_MOVER_DAYS })}
             </FilterPill>
           ))}
-        </Group>
+        </FilterPills>
         {filterable && (
           <>
             <TextInput
@@ -165,11 +166,14 @@ export function ReportsPage() {
         )}
       </Group>
 
-      {state.report === 'topSellers' && <TopSellers {...list} searchInput={searchInput} {...pager} />}
-      {state.report === 'slowMovers' && <SlowMovers {...list} searchInput={searchInput} {...pager} />}
-      {state.report === 'stockValue' && (
-        <StockValue page={state.page} pageSize={state.pageSize} total={summary.data?.stockValue} {...pager} />
-      )}
+      {/* A new key per report, so the chosen report rises into place. */}
+      <div key={state.report} className={feedbackClasses.rise}>
+        {state.report === 'topSellers' && <TopSellers {...list} searchInput={searchInput} {...pager} />}
+        {state.report === 'slowMovers' && <SlowMovers {...list} searchInput={searchInput} {...pager} />}
+        {state.report === 'stockValue' && (
+          <StockValue page={state.page} pageSize={state.pageSize} total={summary.data?.stockValue} {...pager} />
+        )}
+      </div>
     </Stack>
   )
 }

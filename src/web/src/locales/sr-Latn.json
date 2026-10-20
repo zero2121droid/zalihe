@@ -300,7 +300,9 @@
       "remove": "Ukloni sliku",
       "saving": "Čuvam sliku…",
       "unreadable": "Ova slika ne može da se otvori. Izaberi JPEG, PNG ili WebP."
-    }
+    },
+    "copySku": "Kopiraj šifru {{sku}}",
+    "copied": "Šifra je kopirana"
   },
   "orders": {
     "title": "Porudžbine",
@@ -409,7 +411,9 @@
       "negativeWarning": "Stanje će otići u minus. Dozvoljeno je, ali proveri da li je količina tačna.",
       "note": "Napomena",
       "noteRequired": "Razlog (popis, otpis, oštećenje…)",
-      "submit": "Zabeleži"
+      "submit": "Zabeleži",
+      "decrease": "Smanji za 1",
+      "increase": "Povećaj za 1"
     },
     "history": {
       "title": "Istorija",

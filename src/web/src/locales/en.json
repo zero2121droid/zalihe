@@ -300,7 +300,9 @@
       "remove": "Remove picture",
       "saving": "Saving picture…",
       "unreadable": "This picture can't be opened. Choose a JPEG, PNG or WebP."
-    }
+    },
+    "copySku": "Copy SKU {{sku}}",
+    "copied": "SKU copied"
   },
   "orders": {
     "title": "Orders",
@@ -409,7 +411,9 @@
       "negativeWarning": "Stock will go below zero. That's allowed, but check that the quantity is right.",
       "note": "Note",
       "noteRequired": "Reason (count, write-off, damage…)",
-      "submit": "Record"
+      "submit": "Record",
+      "decrease": "Decrease by 1",
+      "increase": "Increase by 1"
     },
     "history": {
       "title": "History",

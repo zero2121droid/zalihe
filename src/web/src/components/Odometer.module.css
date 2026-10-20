@@ -1,0 +1,47 @@
+/* Counter wheels (DESIGN.md "Pokret"): each digit is a column 0-9 that slides to its value. */
+
+.odometer {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The plain number, for screen readers and copying; the wheels are only drawn. */
+.text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wheels {
+  display: inline-flex;
+  white-space: pre;
+}
+
+.digit {
+  display: inline-block;
+  height: 1.25em;
+  line-height: 1.25em;
+  overflow: hidden;
+  /* A clipped box sits on the baseline with its bottom edge; this lowers it so the digit inside
+     lines up with the text next to it. */
+  vertical-align: -0.29em;
+}
+
+.reel {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.wheels > span:not(.digit) {
+  line-height: 1.25em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reel {
+    transition: none;
+  }
+}

@@ -94,7 +94,27 @@
   }
 }
 
+/* New content in the same place (another report): it rises a little as it appears. */
+.rise {
+  animation: rise 0.3s ease-out;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+
   .check polyline {
     animation: none;
     stroke-dashoffset: 0;

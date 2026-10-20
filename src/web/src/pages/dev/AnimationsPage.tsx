@@ -1,14 +1,20 @@
-import { Box, Button, Group, Loader, SimpleGrid, Stack, Table, Text, TextInput, Title } from '@mantine/core'
+import { Box, Button, Group, Loader, SimpleGrid, Stack, Switch, Table, Text, TextInput, Title } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { StockStatus } from '../../api/generated/model'
+import { CopySku } from '../../components/CopySku'
 import { Eyebrow } from '../../components/Eyebrow'
+import feedbackClasses from '../../components/feedback.module.css'
+import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { SaveButton } from '../../components/feedback'
 import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
 import { BoxLoader, EmptyBox, PageLoader, ShopImportAnimation, SkeletonRows } from '../../components/loaders'
+import { Odometer } from '../../components/Odometer'
+import { StepButton } from '../../components/StepButton'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
 import stockClasses from '../../components/stock.module.css'
+import { formatNumber } from '../../lib/format'
 import { useArrivals } from '../../lib/useArrivals'
 import { matchesSearch } from '../../lib/search'
 import { useSaved } from '../../lib/useSaved'
@@ -170,6 +176,54 @@ function ShakeDemo() {
   )
 }
 
+function CounterDemo() {
+  const { t, i18n } = useTranslation()
+  const [quantity, setQuantity] = useState(24)
+  return (
+    <Group justify="center" gap="md" py="md">
+      <StepButton label={t('stock.form.decrease')} sign="−" onStep={() => setQuantity((q) => Math.max(0, q - 1))} />
+      <Text ff="monospace" fz={32} fw={500}>
+        <Odometer text={formatNumber(quantity, i18n.language)} />
+      </Text>
+      <StepButton label={t('stock.form.increase')} sign="+" onStep={() => setQuantity((q) => q + 1)} />
+    </Group>
+  )
+}
+
+const DEMO_FILTERS = ['all', 'stock', 'changes'] as const
+
+function PillsDemo() {
+  const { t } = useTranslation()
+  const [filter, setFilter] = useState<(typeof DEMO_FILTERS)[number]>('all')
+  return (
+    <Stack gap="md">
+      <FilterPills label={t('stock.history.filters.label')}>
+        {DEMO_FILTERS.map((value) => (
+          <FilterPill key={value} active={filter === value} onClick={() => setFilter(value)}>
+            {t(`stock.history.filters.${value}`)}
+          </FilterPill>
+        ))}
+      </FilterPills>
+      <Text key={filter} className={feedbackClasses.rise} c="dimmed">
+        {t(`stock.history.filters.${filter}`)}
+      </Text>
+    </Stack>
+  )
+}
+
+function DetailsDemo() {
+  const { t } = useTranslation()
+  const [inactive, setInactive] = useState(false)
+  return (
+    <Stack gap="md" align="flex-start">
+      <Text c="dimmed">
+        <CopySku sku="KF-ETI-250" />
+      </Text>
+      <Switch label={t('items.showInactive')} checked={inactive} onChange={(e) => setInactive(e.currentTarget.checked)} />
+    </Stack>
+  )
+}
+
 export function AnimationsPage() {
   const { t } = useTranslation()
   return (
@@ -215,6 +269,15 @@ export function AnimationsPage() {
           </Specimen>
           <Specimen name="J · useShake">
             <ShakeDemo />
+          </Specimen>
+          <Specimen name="Q · StepButton, Odometer">
+            <CounterDemo />
+          </Specimen>
+          <Specimen name="R · FilterPills, rise">
+            <PillsDemo />
+          </Specimen>
+          <Specimen name="W · CopySku, Switch">
+            <DetailsDemo />
           </Specimen>
           <Specimen name="G · EmptyBox">
             <Stack gap="sm" align="flex-start">

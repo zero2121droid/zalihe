@@ -8,7 +8,7 @@ import { Link, useSearchParams } from 'react-router'
 import { formErrorMessage } from '../../api/errors'
 import type { OrderDto } from '../../api/generated/model'
 import { useListOrders } from '../../api/generated/orders/orders'
-import { FilterPill } from '../../components/FilterPill'
+import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { EmptyBox, SkeletonRows } from '../../components/loaders'
 import { Pager } from '../../components/Pager'
 import { formatDateTime, formatNumber } from '../../lib/format'
@@ -111,14 +111,14 @@ export function OrdersPage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.currentTarget.value)}
         />
-        <Group gap={6} role="group" aria-label={t('orders.filters.label')}>
+        <FilterPills label={t('orders.filters.label')}>
           <FilterPill active={!state.unlinkedOnly} onClick={() => update({ unlinkedOnly: false })}>
             {t('orders.filters.all')}
           </FilterPill>
           <FilterPill active={state.unlinkedOnly} onClick={() => update({ unlinkedOnly: true })}>
             {t('orders.filters.unlinked')}
           </FilterPill>
-        </Group>
+        </FilterPills>
         <Select
           w={200}
           aria-label={t('orders.filters.status')}

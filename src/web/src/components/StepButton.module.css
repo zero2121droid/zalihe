@@ -1,0 +1,41 @@
+/* − and + next to the quantity (DESIGN.md: quantity buttons on surface-2; 44 px on a phone). */
+.step {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--z-surface-2);
+  color: var(--z-text);
+  font: 500 20px var(--mantine-font-family-monospace);
+  user-select: none;
+  touch-action: manipulation;
+  transition:
+    transform 0.12s,
+    background 0.2s;
+}
+
+.step:hover {
+  background: var(--z-selected);
+}
+
+.step:active {
+  transform: scale(0.92);
+}
+
+@media (max-width: 47.99em) {
+  .step {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step {
+    transition: none;
+  }
+
+  .step:active {
+    transform: none;
+  }
+}

@@ -11,9 +11,11 @@ import {
   Modal,
   NavLink,
   SegmentedControl,
+  Switch,
   Table,
 } from '@mantine/core'
 import { ShelfLoader } from './components/loaders'
+import switchClasses from './components/Switch.module.css'
 
 /**
  * Design tokens from docs/DESIGN.md, one set per color scheme. Components use these CSS
@@ -233,6 +235,9 @@ export const theme = createTheme({
         root: { backgroundColor: 'var(--z-surface-2)' },
         indicator: { backgroundColor: 'var(--z-selected)', boxShadow: 'none' },
       },
+    }),
+    Switch: Switch.extend({
+      classNames: { thumb: switchClasses.thumb },
     }),
     Anchor: Anchor.extend({
       defaultProps: { underline: 'never' },

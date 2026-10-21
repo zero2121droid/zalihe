@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { withReducedMotion } from '../test/motion'
 import { mockApi, renderPage } from '../test/render'
 import { HomePage } from './HomePage'
 
@@ -21,14 +22,14 @@ const dashboard = {
 describe('HomePage', () => {
   it('Render_CompanyWithData_ShowsFiguresReordersAndMovements', async () => {
     // Arrange
+    withReducedMotion()
     mockApi({ 'GET /api/dashboard': { status: 200, body: dashboard } })
 
     // Act
     await renderPage(<HomePage />)
 
     // Assert
-    // The figures count up from 0 when the screen opens; wait for their final values.
-    expect(await screen.findByText('1.284.350', undefined, { timeout: 2000 })).toBeInTheDocument()
+    expect(await screen.findByText('1.284.350')).toBeInTheDocument()
     expect(await screen.findByText('312')).toBeInTheDocument()
     expect(screen.getByText('Džezva bakarna 300 ml')).toBeInTheDocument()
     expect(screen.getByText('min. 15 pak')).toBeInTheDocument()

@@ -30,8 +30,11 @@ describe('ItemModal', () => {
     await renderPage(<ItemModal opened onClose={() => {}} />)
 
     // Act
-    await userEvent.type(screen.getByLabelText(/^Naziv/), 'Espresso mešavina')
-    await userEvent.type(screen.getByLabelText(/^Šifra/), 'KF-ESP-1000')
+    // Name and SKU are pasted: only the number fields need typing, and fewer keystrokes keep it quick.
+    await userEvent.click(screen.getByLabelText(/^Naziv/))
+    await userEvent.paste('Espresso mešavina')
+    await userEvent.click(screen.getByLabelText(/^Šifra/))
+    await userEvent.paste('KF-ESP-1000')
     await userEvent.type(screen.getByLabelText('Minimalna zaliha'), '12,5')
     await userEvent.type(screen.getByLabelText('Nabavna cena'), '2.000,00')
     await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj artikal' }))

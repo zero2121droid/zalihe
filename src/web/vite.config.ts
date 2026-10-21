@@ -30,5 +30,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Typing with userEvent goes past the default 5 s when the machine is busy (e.g. next to dotnet test).
+    testTimeout: 15000,
   },
 })

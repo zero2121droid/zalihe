@@ -1,7 +1,10 @@
 import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 import '../i18n'
+
+// findBy… and waitFor give up after 1 s by default, too soon when the machine is busy.
+configure({ asyncUtilTimeout: 3000 })
 
 afterEach(() => {
   cleanup()

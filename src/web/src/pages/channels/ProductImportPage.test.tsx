@@ -1,6 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { withReducedMotion } from '../../test/motion'
 import { mockApi, renderRoutes } from '../../test/render'
 import { ProductImportPage } from './ProductImportPage'
 
@@ -62,6 +63,7 @@ describe('ProductImportPage', () => {
 
   it('Import_Finished_CountsUpThenClosesWithX', async () => {
     // Arrange
+    withReducedMotion()
     mockApi({
       'GET /api/channels/c1/products/preview': { status: 200, body: preview },
       'POST /api/channels/c1/products/import': { status: 200, body: { linkedCount: 1, createdCount: 2, skippedCount: 0 } },
@@ -70,7 +72,7 @@ describe('ProductImportPage', () => {
 
     // Act
     await userEvent.click(await screen.findByRole('button', { name: 'Uvezi' }))
-    const close = await screen.findByRole('button', { name: 'Zatvori' }, { timeout: 2000 })
+    const close = await screen.findByRole('button', { name: 'Zatvori' })
 
     // Assert: the overlay counted to the last number and the list behind it is still locked
     expect(screen.getByTestId('import-count')).toHaveTextContent('3 / 3')
@@ -86,6 +88,7 @@ describe('ProductImportPage', () => {
 
   it('Import_OneProductUnchecked_SendsOnlyCheckedAndShowsResult', async () => {
     // Arrange
+    withReducedMotion()
     const fetchMock = mockApi({
       'GET /api/channels/c1/products/preview': { status: 200, body: preview },
       'POST /api/channels/c1/products/import': { status: 200, body: { linkedCount: 1, createdCount: 1, skippedCount: 1 } },
@@ -97,7 +100,7 @@ describe('ProductImportPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Uvezi' }))
 
     // Assert
-    await userEvent.click(await screen.findByRole('button', { name: 'Zatvori' }, { timeout: 2000 }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Zatvori' }))
     expect(screen.getByText('Uvoz je završen')).toBeInTheDocument()
     expect(screen.getByText('Napravljeno novih artikala: 1')).toBeInTheDocument()
     expect(screen.getByText('Povezano sa postojećim artiklima: 1')).toBeInTheDocument()

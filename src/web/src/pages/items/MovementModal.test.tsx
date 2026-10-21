@@ -59,17 +59,16 @@ describe('MovementModal', () => {
   it('Submit_Saved_ShowsSavedOnButtonBeforeClosing', async () => {
     // Arrange
     mockApi({ 'POST /api/items/item-1/movements': recorded })
-    let closed = false
-    await render('sale', () => (closed = true))
+    // Noted when the modal closes, so a busy machine can't make the test look too late.
+    let savedShownOnClose: boolean | null = null
+    await render('sale', () => (savedShownOnClose = screen.queryByRole('button', { name: 'Sačuvano' }) !== null))
 
     // Act
     await userEvent.type(screen.getByLabelText(/^Prodata količina/), '2')
     await userEvent.click(screen.getByRole('button', { name: 'Zabeleži' }))
 
     // Assert
-    expect(await screen.findByRole('button', { name: 'Sačuvano' })).toBeInTheDocument()
-    expect(closed).toBe(false)
-    await waitFor(() => expect(closed).toBe(true))
+    await waitFor(() => expect(savedShownOnClose).toBe(true))
   })
 
   it('Submit_QuantityMissing_ShakesFieldOnEverySubmit', async () => {

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { mockApi, renderRoutes } from '../../test/render'
@@ -95,7 +95,7 @@ describe('ReportsPage', () => {
     await renderRoutes(routes, '/reports')
 
     // Assert
-    expect(await screen.findAllByRole('alert')).toHaveLength(2)
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2))
     expect(screen.queryByRole('region', { name: 'Pregled zaliha' })).not.toBeInTheDocument()
   })
 })

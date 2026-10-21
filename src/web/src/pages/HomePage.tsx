@@ -222,7 +222,7 @@ function EmptyHome() {
           <Button component={Link} to="/channels">
             {t('home.empty.connectShop')}
           </Button>
-          <Button component={Link} to="/items" variant="default">
+          <Button component={Link} to="/items?new=1" variant="default">
             {t('items.new')}
           </Button>
           <Button component={Link} to="/items/import" variant="default">

@@ -69,6 +69,18 @@ describe('ItemsPage', () => {
     expect(within(row).getAllByRole('cell')).toHaveLength(2)
   })
 
+  it('Render_NewInAddress_OpensTheFormAndDropsItFromTheAddress', async () => {
+    // Arrange
+    mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item()]) })
+
+    // Act
+    const { router } = await renderRoutes(routes, '/items?new=1&status=low')
+
+    // Assert
+    expect(await screen.findByRole('dialog', { name: 'Novi artikal' })).toBeInTheDocument()
+    await waitFor(() => expect(router.state.location.search).toBe('?status=low'))
+  })
+
   it('ColumnHeading_Clicked_SortsByItFromTheLargestThenTurnsTheOrderAround', async () => {
     // Arrange
     const fetchMock = mockApi({ 'GET /api/stock/summary': summary, 'GET /api/items?': page([item()]) })

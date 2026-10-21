@@ -63,9 +63,16 @@ const firstDirection = (column: ItemSort) => (column === ItemSort.name ? SortDir
 
 export function ItemsPage() {
   const { t, i18n } = useTranslation()
-  const [creating, setCreating] = useState(false)
   const phone = usePhone()
   const [params, setParams] = useSearchParams()
+  // `?new=1` (the home page's "New item") opens the form once; the address drops it, so back doesn't reopen it.
+  const [creating, setCreating] = useState(() => params.get('new') === '1')
+  useEffect(() => {
+    if (params.has('new')) {
+      params.delete('new')
+      setParams(params, { replace: true })
+    }
+  }, []) // oxlint-disable-line react-hooks/exhaustive-deps
   const statusParam = params.get('status')
   const state: ListState = {
     search: params.get('q') ?? '',

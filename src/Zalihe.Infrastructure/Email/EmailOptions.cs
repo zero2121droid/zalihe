@@ -26,7 +26,7 @@ public class EmailOptions
     /// <summary>The sender's address, e.g. upozorenja@zalihe.rs.</summary>
     public string? From { get; set; }
 
-    public string FromName { get; set; } = "Zalihe";
+    public string FromName { get; set; } = "Lagerko";
 
     /// <summary>The web app's public address, for links in emails, e.g. https://app.zalihe.rs.</summary>
     public string? AppUrl { get; set; }

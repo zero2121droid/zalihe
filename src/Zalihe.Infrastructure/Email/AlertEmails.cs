@@ -134,9 +134,15 @@ public class AlertEmails(
     private EmailMessage Frame(string company, string subject, string heading, string bodyHtml, string bodyText,
         string button, string path, string footer)
     {
-        var link = $"{options.Value.AppUrl?.TrimEnd('/')}{path}";
+        var appUrl = options.Value.AppUrl?.TrimEnd('/');
+        var link = $"{appUrl}{path}";
+        // A PNG (email clients don't show SVG), served by the web app; the alt text stands in when images are blocked.
+        var logo = string.IsNullOrEmpty(appUrl)
+            ? ""
+            : $"<p style=\"margin:0 0 20px\"><img src=\"{E(appUrl)}/email-logo.png\" width=\"124\" height=\"28\" alt=\"Lagerko\" style=\"display:block;border:0\"></p>";
         var html = "<!doctype html><html><body style=\"margin:0;padding:24px;background:#F5F5EF;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#1B1E16\">"
                    + "<div style=\"max-width:600px;margin:0 auto;background:#FFFFFF;border:1px solid #D9DCCE;border-radius:6px;padding:24px\">"
+                   + logo
                    + $"<p style=\"margin:0 0 4px;font-size:12px;color:#5C6250\">{E(company)}</p>"
                    + $"<h1 style=\"margin:0 0 8px;font-size:20px;font-weight:600\">{E(heading)}</h1>"
                    + bodyHtml

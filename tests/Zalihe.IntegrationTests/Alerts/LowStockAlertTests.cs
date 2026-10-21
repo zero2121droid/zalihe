@@ -82,6 +82,7 @@ public class LowStockAlertTests(ZaliheApiFactory factory)
         email.Text.ShouldNotContain("Kafa Etiopija");
         email.Text.ShouldNotContain("Stari mlin");
         email.Html.ShouldContain("https://app.zalihe.test/items?status=low");
+        email.Html.ShouldContain("<img src=\"https://app.zalihe.test/email-logo.png\"");
     }
 
     [Fact]

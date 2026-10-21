@@ -3,6 +3,7 @@ import {
   Anchor,
   Badge,
   Button,
+  CloseButton,
   type CSSVariablesResolver,
   createTheme,
   Input,
@@ -10,6 +11,7 @@ import {
   type MantineColorsTuple,
   Modal,
   NavLink,
+  PasswordInput,
   SegmentedControl,
   Switch,
   Table,
@@ -200,7 +202,7 @@ export const theme = createTheme({
       defaultProps: { size: 'md' },
       vars: (_theme, props) => ({
         root: {
-          '--button-height': props.size === 'md' || !props.size ? '40px' : undefined,
+          '--button-height': props.size === 'md' || !props.size ? 'var(--z-control)' : undefined,
           '--button-fz': '14px',
           '--button-padding-x': '16px',
           // Primary button: light olive with dark text, never white text (DESIGN.md).
@@ -214,10 +216,17 @@ export const theme = createTheme({
     }),
     ActionIcon: ActionIcon.extend({
       defaultProps: { variant: 'subtle', color: 'gray' },
+      vars: (_theme, props) => ({ root: { '--ai-size': props.size === undefined ? 'var(--z-icon-button)' : undefined } }),
+    }),
+    CloseButton: CloseButton.extend({
+      vars: (_theme, props) => ({ root: { '--cb-size': props.size === undefined ? 'var(--z-icon-button)' : undefined } }),
+    }),
+    PasswordInput: PasswordInput.extend({
+      vars: () => ({ root: { '--psi-button-size': 'calc(var(--z-control) - 8px)' } }),
     }),
     Input: Input.extend({
       defaultProps: { size: 'md' },
-      vars: () => ({ wrapper: { '--input-height': '40px', '--input-fz': '14px' } }),
+      vars: () => ({ wrapper: { '--input-height': 'var(--z-control)', '--input-fz': '14px' } }),
       styles: {
         input: { backgroundColor: 'var(--z-surface)', borderColor: 'var(--z-line)' },
       },
@@ -244,7 +253,7 @@ export const theme = createTheme({
     }),
     NavLink: NavLink.extend({
       styles: {
-        root: { borderRadius: 'var(--mantine-radius-sm)', padding: '9px 10px' },
+        root: { borderRadius: 'var(--mantine-radius-sm)', padding: '9px 10px', minHeight: 'var(--z-control)' },
         label: { fontSize: '14px' },
       },
     }),

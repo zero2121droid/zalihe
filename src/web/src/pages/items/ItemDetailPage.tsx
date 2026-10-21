@@ -26,8 +26,9 @@ import { formatDateTime, formatMoney, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE } from '../../lib/pageSize'
 import { useArrivals } from '../../lib/useArrivals'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
-import { usePhone } from '../../lib/usePhone'
+import { useCompactTables } from '../../lib/usePhone'
 import { ItemImageEditor } from './ItemImageEditor'
+import classes from './ItemDetailPage.module.css'
 import { ItemModal } from './ItemModal'
 import { MovementModal } from './MovementModal'
 
@@ -111,8 +112,8 @@ function ItemDetail({ item }: { item: ItemDto }) {
               </Text>
             </Stack>
           </Group>
-          <Group gap="sm">
-            <Button variant="default" onClick={() => setEditing(true)}>
+          <Group gap="sm" className={classes.actions}>
+            <Button variant="default" className={classes.edit} onClick={() => setEditing(true)}>
               {t('items.detail.edit')}
             </Button>
             {movementKinds.map((kind) => (
@@ -126,6 +127,7 @@ function ItemDetail({ item }: { item: ItemDto }) {
 
       {/* One strip divided by lines, not separate cards (DESIGN.md): the 1 px gaps show the line color. */}
       <SimpleGrid
+        className="z-kpi"
         cols={{ base: 2, md: 4 }}
         spacing={1}
         verticalSpacing={1}
@@ -195,7 +197,7 @@ const historyFilters: ItemHistoryFilter[] = ['all', 'stock', 'changes']
 
 function History({ item }: { item: ItemDto }) {
   const { t, i18n } = useTranslation()
-  const phone = usePhone()
+  const compact = useCompactTables()
   const [filter, setFilter] = useState<ItemHistoryFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE)
@@ -240,7 +242,7 @@ function History({ item }: { item: ItemDto }) {
         </Text>
       ) : (
         <>
-          {phone ? (
+          {compact ? (
             <HistoryList entries={data!.items} item={item} fresh={arrivals} />
           ) : (
             <Table.ScrollContainer minWidth={720}>
@@ -329,7 +331,7 @@ function History({ item }: { item: ItemDto }) {
 }
 
 /**
- * The history on a phone: two columns, what happened (with when, how and who under it) and the
+ * The history in compact tables (a phone or a tablet): two columns, what happened (with when, how and who under it) and the
  * quantity, so the number is in view without scrolling sideways.
  */
 function HistoryList({

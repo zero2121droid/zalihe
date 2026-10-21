@@ -31,6 +31,7 @@ import {
 } from '../../api/generated/model'
 import { getGetStockSummaryQueryKey } from '../../api/generated/stock/stock'
 import { formatNumber } from '../../lib/format'
+import { useCompactTables } from '../../lib/usePhone'
 
 // Mirrors ItemImportField on the server. OpenAPI only sees it as dictionary keys, so it isn't generated.
 const fields = [
@@ -358,6 +359,7 @@ interface PreviewStepProps {
 
 function PreviewStep({ preview, error, importing, onBack, onImport }: PreviewStepProps) {
   const { t, i18n } = useTranslation()
+  const compact = useCompactTables()
 
   return (
     <Stack gap="lg">
@@ -377,46 +379,65 @@ function PreviewStep({ preview, error, importing, onBack, onImport }: PreviewSte
                 {t('items.import.preview.skippedNote')}
               </Text>
             )}
-            <Table.ScrollContainer minWidth={600}>
-              <Table>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th ta="right">{t('items.import.preview.row')}</Table.Th>
-                    <Table.Th>{t('items.columns.sku')}</Table.Th>
-                    <Table.Th>{t('items.columns.item')}</Table.Th>
-                    <Table.Th>{t('items.import.preview.problem')}</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {preview.issues.map((issue) => (
-                    <Table.Tr key={issue.rowNumber}>
-                      <Table.Td ta="right">
-                        <Text ff="monospace" fz="sm" c="dimmed">
-                          {issue.rowNumber}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                          {issue.sku}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text fz="sm">{issue.name}</Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Stack gap={2}>
-                          {issue.errors.map((e, i) => (
-                            <Text key={i} fz="sm" c={issue.skipped ? 'var(--z-status-low)' : 'var(--z-status-out)'}>
-                              {issueText(t, e)}
-                            </Text>
-                          ))}
-                        </Stack>
-                      </Table.Td>
+            {compact ? (
+              // On a phone each row is a block: row number and SKU, the name, then what is wrong.
+              <Stack gap={0}>
+                {preview.issues.map((issue) => (
+                  <Stack key={issue.rowNumber} gap={2} py="sm" style={{ borderTop: '1px solid var(--z-line-soft)' }}>
+                    <Text ff="monospace" fz="xs" c="var(--z-text-2)" truncate>
+                      {t('items.import.preview.row')} {issue.rowNumber} · {issue.sku}
+                    </Text>
+                    <Text fz="sm">{issue.name}</Text>
+                    {issue.errors.map((e, i) => (
+                      <Text key={i} fz="sm" c={issue.skipped ? 'var(--z-status-low)' : 'var(--z-status-out)'}>
+                        {issueText(t, e)}
+                      </Text>
+                    ))}
+                  </Stack>
+                ))}
+              </Stack>
+            ) : (
+              <Table.ScrollContainer minWidth={600}>
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th ta="right">{t('items.import.preview.row')}</Table.Th>
+                      <Table.Th>{t('items.columns.sku')}</Table.Th>
+                      <Table.Th>{t('items.columns.item')}</Table.Th>
+                      <Table.Th>{t('items.import.preview.problem')}</Table.Th>
                     </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {preview.issues.map((issue) => (
+                      <Table.Tr key={issue.rowNumber}>
+                        <Table.Td ta="right">
+                          <Text ff="monospace" fz="sm" c="dimmed">
+                            {issue.rowNumber}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                            {issue.sku}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text fz="sm">{issue.name}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Stack gap={2}>
+                            {issue.errors.map((e, i) => (
+                              <Text key={i} fz="sm" c={issue.skipped ? 'var(--z-status-low)' : 'var(--z-status-out)'}>
+                                {issueText(t, e)}
+                              </Text>
+                            ))}
+                          </Stack>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            )}
           </Stack>
         </Section>
       )}
@@ -425,7 +446,7 @@ function PreviewStep({ preview, error, importing, onBack, onImport }: PreviewSte
         <Section>
           <Stack gap="sm">
             <Title order={2}>{t('items.import.preview.sampleTitle')}</Title>
-            <Table>
+            <Table layout={compact ? 'fixed' : undefined} horizontalSpacing={compact ? 'xs' : undefined}>
               <Table.Tbody>
                 {preview.sample.map((item) => (
                   <Table.Tr key={item.rowNumber}>
@@ -433,14 +454,22 @@ function PreviewStep({ preview, error, importing, onBack, onImport }: PreviewSte
                       <Text fz="sm" fw={500}>
                         {item.name}
                       </Text>
+                      {/* On a phone the SKU goes under the name instead of its own column. */}
+                      {compact && (
+                        <Text ff="monospace" fz="xs" c="var(--z-text-2)" truncate>
+                          {item.sku}
+                        </Text>
+                      )}
                     </Table.Td>
-                    <Table.Td>
-                      <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                        {item.sku}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td ta="right">
-                      <Text ff="monospace" fz="sm">
+                    {!compact && (
+                      <Table.Td>
+                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                          {item.sku}
+                        </Text>
+                      </Table.Td>
+                    )}
+                    <Table.Td ta="right" w={compact ? 88 : undefined}>
+                      <Text ff="monospace" fz="sm" style={{ whiteSpace: 'nowrap' }}>
                         {formatNumber(item.initialStock, i18n.language)}{' '}
                         <Text component="span" fz={11} c="dimmed">
                           {t(`items.units.${item.unit}`)}

@@ -2,6 +2,7 @@ import { Anchor, Box, Button, Checkbox, Group, SimpleGrid, Stack, Table, Text, T
 import { IconArrowLeft } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useState } from 'react'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { formErrorMessage } from '../../api/errors'
@@ -12,13 +13,14 @@ import {
 } from '../../api/generated/channels/channels'
 import { getGetDashboardQueryKey } from '../../api/generated/dashboard/dashboard'
 import { getListItemsQueryKey } from '../../api/generated/items/items'
-import type { ProductImportPreviewDto, ProductImportResultDto } from '../../api/generated/model'
+import type { AppError, ProductImportPreviewDto, ProductImportResultDto } from '../../api/generated/model'
 import { getGetStockSummaryQueryKey } from '../../api/generated/stock/stock'
 import { BoxLoader, ImportOverlay } from '../../components/loaders'
 import loaderClasses from '../../components/loaders.module.css'
 import { formatMoney, formatNumber } from '../../lib/format'
 import { useCountUp } from '../../lib/useCountUp'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
+import { useCompactTables } from '../../lib/usePhone'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
@@ -133,6 +135,7 @@ interface PreviewProps {
 
 function Preview({ preview, importing, result, onCloseResult, error, onImport, images }: PreviewProps) {
   const { t, i18n } = useTranslation()
+  const compact = useCompactTables()
   // Every new product starts checked; the user unchecks what shouldn't become an item.
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set())
   const toCreate = preview.toCreate.filter((p) => !unchecked.has(p.externalId))
@@ -177,11 +180,12 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport, i
 
         {preview.toCreate.length > 0 && (
           <Section title={t('channels.import.create.title')} note={t('channels.import.create.note')}>
-            <Table.ScrollContainer minWidth={640}>
-              <Table>
+            <WideTable compact={compact}>
+              {/* The section already has its padding, so a phone's cells keep only a small gap between them. */}
+              <Table layout={compact ? 'fixed' : undefined} horizontalSpacing={compact ? 'xs' : undefined}>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th w={40}>
+                    <Table.Th w={compact ? 36 : 40}>
                       <Checkbox
                         aria-label={t('channels.import.create.all')}
                         checked={allChecked}
@@ -190,136 +194,174 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport, i
                       />
                     </Table.Th>
                     <Table.Th>{t('items.columns.item')}</Table.Th>
-                    <Table.Th>{t('items.columns.sku')}</Table.Th>
-                    <Table.Th ta="right">{t('channels.import.create.price')}</Table.Th>
-                    <Table.Th ta="right">{t('channels.import.create.stock')}</Table.Th>
+                    {!compact && <Table.Th>{t('items.columns.sku')}</Table.Th>}
+                    <Table.Th ta="right" w={compact ? 104 : undefined}>
+                      {t('channels.import.create.price')}
+                    </Table.Th>
+                    {!compact && <Table.Th ta="right">{t('channels.import.create.stock')}</Table.Th>}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {preview.toCreate.map((product) => (
-                    <Table.Tr key={product.externalId}>
-                      <Table.Td>
-                        <Checkbox
-                          aria-label={product.name}
-                          checked={!unchecked.has(product.externalId)}
-                          onChange={(e) => toggle(product.externalId, e.currentTarget.checked)}
-                        />
-                      </Table.Td>
-                      <Table.Td>
-                        <Text fz="sm" fw={500}>
-                          {product.name}
+                  {preview.toCreate.map((product) => {
+                    const stock = (
+                      <Text ff="monospace" fz="sm" c={product.stock < 0 ? 'var(--z-status-out)' : undefined}>
+                        {formatNumber(product.stock, i18n.language)}{' '}
+                        <Text component="span" fz={11} c="dimmed">
+                          {t('items.units.kom')}
                         </Text>
-                        {product.category && (
-                          <Text fz="xs" c="dimmed">
-                            {product.category}
+                      </Text>
+                    )
+                    return (
+                      <Table.Tr key={product.externalId}>
+                        <Table.Td>
+                          <Checkbox
+                            aria-label={product.name}
+                            checked={!unchecked.has(product.externalId)}
+                            onChange={(e) => toggle(product.externalId, e.currentTarget.checked)}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <Text fz="sm" fw={500}>
+                            {product.name}
                           </Text>
-                        )}
-                      </Table.Td>
-                      <Table.Td>
-                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                          {product.sku}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td ta="right">
-                        <Text ff="monospace" fz="sm" c={product.price === null ? 'dimmed' : undefined}>
-                          {product.price === null ? (
-                            '—'
-                          ) : (
-                            <>
-                              {formatMoney(product.price, i18n.language)}{' '}
-                              <Text component="span" fz={11} c="dimmed">
-                                {t('common.currency')}
-                              </Text>
-                            </>
+                          {compact && (
+                            <Text ff="monospace" fz="xs" c="var(--z-text-2)" truncate>
+                              {product.sku}
+                            </Text>
                           )}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td ta="right">
-                        <Text ff="monospace" fz="sm" c={product.stock < 0 ? 'var(--z-status-out)' : undefined}>
-                          {formatNumber(product.stock, i18n.language)}{' '}
-                          <Text component="span" fz={11} c="dimmed">
-                            {t('items.units.kom')}
+                          {product.category && (
+                            <Text fz="xs" c="dimmed">
+                              {product.category}
+                            </Text>
+                          )}
+                        </Table.Td>
+                        {!compact && (
+                          <Table.Td>
+                            <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                              {product.sku}
+                            </Text>
+                          </Table.Td>
+                        )}
+                        <Table.Td ta="right">
+                          <Text ff="monospace" fz="sm" c={product.price === null ? 'dimmed' : undefined}>
+                            {product.price === null ? (
+                              '—'
+                            ) : (
+                              <>
+                                {formatMoney(product.price, i18n.language)}{' '}
+                                <Text component="span" fz={11} c="dimmed">
+                                  {t('common.currency')}
+                                </Text>
+                              </>
+                            )}
                           </Text>
-                        </Text>
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
+                          {/* On a phone the stock goes under the price instead of its own column. */}
+                          {compact && stock}
+                        </Table.Td>
+                        {!compact && <Table.Td ta="right">{stock}</Table.Td>}
+                      </Table.Tr>
+                    )
+                  })}
                 </Table.Tbody>
               </Table>
-            </Table.ScrollContainer>
+            </WideTable>
           </Section>
         )}
 
         {preview.toLink.length > 0 && (
           <Section title={t('channels.import.link.title')} note={t('channels.import.link.note')}>
-            <Table.ScrollContainer minWidth={640}>
-              <Table>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>{t('channels.import.link.product')}</Table.Th>
-                    <Table.Th>{t('items.columns.sku')}</Table.Th>
-                    <Table.Th>{t('channels.import.link.item')}</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {preview.toLink.map((product) => (
-                    <Table.Tr key={product.externalId}>
-                      <Table.Td>
-                        <Text fz="sm">{product.name}</Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                          {product.sku}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Anchor component={Link} to={`/items/${product.itemId}`} fz="sm">
-                          {product.itemName}
-                        </Anchor>
-                      </Table.Td>
+            {compact ? (
+              <PhoneList>
+                {preview.toLink.map((product) => (
+                  <PhoneListRow key={product.externalId} name={product.name} sku={product.sku}>
+                    <Text fz="xs" c="dimmed">
+                      {t('channels.import.link.item')}:{' '}
+                      <Anchor component={Link} to={`/items/${product.itemId}`} fz="xs">
+                        {product.itemName}
+                      </Anchor>
+                    </Text>
+                  </PhoneListRow>
+                ))}
+              </PhoneList>
+            ) : (
+              <Table.ScrollContainer minWidth={640}>
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>{t('channels.import.link.product')}</Table.Th>
+                      <Table.Th>{t('items.columns.sku')}</Table.Th>
+                      <Table.Th>{t('channels.import.link.item')}</Table.Th>
                     </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {preview.toLink.map((product) => (
+                      <Table.Tr key={product.externalId}>
+                        <Table.Td>
+                          <Text fz="sm">{product.name}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                            {product.sku}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Anchor component={Link} to={`/items/${product.itemId}`} fz="sm">
+                            {product.itemName}
+                          </Anchor>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            )}
           </Section>
         )}
 
         {preview.skipped.length > 0 && (
           <Section title={t('channels.import.skipped.title')}>
-            <Table.ScrollContainer minWidth={640}>
-              <Table>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>{t('channels.import.link.product')}</Table.Th>
-                    <Table.Th>{t('items.columns.sku')}</Table.Th>
-                    <Table.Th>{t('channels.import.skipped.reason')}</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {preview.skipped.map((product) => (
-                    <Table.Tr key={product.externalId}>
-                      <Table.Td>
-                        <Text fz="sm">{product.name}</Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-                          {product.sku ?? '—'}
-                        </Text>
-                      </Table.Td>
-                      <Table.Td>
-                        <Text fz="sm" c="var(--z-status-low)">
-                          {t(`errors.${product.error.code}`, {
-                            ...product.error.params,
-                            defaultValue: t('errors.common.unexpected'),
-                          })}
-                        </Text>
-                      </Table.Td>
+            {compact ? (
+              <PhoneList>
+                {preview.skipped.map((product) => (
+                  <PhoneListRow key={product.externalId} name={product.name} sku={product.sku ?? '—'}>
+                    <Text fz="xs" c="var(--z-status-low)">
+                      {skipReason(t, product.error)}
+                    </Text>
+                  </PhoneListRow>
+                ))}
+              </PhoneList>
+            ) : (
+              <Table.ScrollContainer minWidth={640}>
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>{t('channels.import.link.product')}</Table.Th>
+                      <Table.Th>{t('items.columns.sku')}</Table.Th>
+                      <Table.Th>{t('channels.import.skipped.reason')}</Table.Th>
                     </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {preview.skipped.map((product) => (
+                      <Table.Tr key={product.externalId}>
+                        <Table.Td>
+                          <Text fz="sm">{product.name}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                            {product.sku ?? '—'}
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text fz="sm" c="var(--z-status-low)">
+                            {skipReason(t, product.error)}
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            )}
           </Section>
         )}
 
@@ -461,4 +503,30 @@ function Done({ result }: { result: ProductImportResultDto }) {
       </Stack>
     </Section>
   )
+}
+
+/** Wide tables scroll sideways on a computer's narrow window; a phone gets fewer columns instead. */
+function WideTable({ compact, children }: { compact: boolean; children: ReactNode }) {
+  return compact ? children : <Table.ScrollContainer minWidth={640}>{children}</Table.ScrollContainer>
+}
+
+/** A phone's list in place of a table: each product a block of lines. */
+function PhoneList({ children }: { children: ReactNode }) {
+  return <Stack gap={0}>{children}</Stack>
+}
+
+function PhoneListRow({ name, sku, children }: { name: string; sku: string; children: ReactNode }) {
+  return (
+    <Stack gap={2} py="sm" style={{ borderTop: '1px solid var(--z-line-soft)' }}>
+      <Text fz="sm">{name}</Text>
+      <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+        {sku}
+      </Text>
+      {children}
+    </Stack>
+  )
+}
+
+function skipReason(t: TFunction, error: AppError) {
+  return t(`errors.${error.code}`, { ...error.params, defaultValue: t('errors.common.unexpected') })
 }

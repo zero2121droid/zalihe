@@ -272,7 +272,7 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
             </Text>
           )}
 
-          <Group justify="space-between" gap="sm">
+          <Group justify="space-between" gap="sm" className="z-modal-actions">
             {item ? (
               <Button
                 variant="default"
@@ -285,7 +285,7 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
               <span />
             )}
             <Group gap="sm">
-              <Button variant="default" onClick={close}>
+              <Button variant="default" className="z-modal-cancel" onClick={close}>
                 {t('common.cancel')}
               </Button>
               <SaveButton type="submit" loading={save.isPending} saved={saved.saved}>

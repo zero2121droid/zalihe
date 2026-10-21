@@ -14,7 +14,7 @@ import { Pager } from '../../components/Pager'
 import { formatDateTime, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
-import { usePhone } from '../../lib/usePhone'
+import { useCompactTables } from '../../lib/usePhone'
 import { OrderModal } from './OrderModal'
 import { lineName, shopHost, statusLabel, WOO_STATUSES } from './orderText'
 
@@ -44,7 +44,7 @@ function toParams({ search, page, pageSize, status, unlinkedOnly }: ListState) {
 
 export function OrdersPage() {
   const { t, i18n } = useTranslation()
-  const phone = usePhone()
+  const compact = useCompactTables()
   const [params, setParams] = useSearchParams()
   const [openedId, setOpenedId] = useState<string | null>(null)
   const state: ListState = {
@@ -142,7 +142,7 @@ export function OrdersPage() {
           <EmptyState search={state.search} filtered={filtered} />
         ) : (
           <>
-            {phone ? (
+            {compact ? (
               <OrdersList orders={data!.items} onOpen={setOpenedId} />
             ) : (
               <Table.ScrollContainer minWidth={760}>

@@ -20,7 +20,7 @@ import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { matchesSearch } from '../../lib/search'
 import { useFlipRows } from '../../lib/useFlipRows'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
-import { usePhone } from '../../lib/usePhone'
+import { useCompactTables } from '../../lib/usePhone'
 import { ItemModal } from './ItemModal'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
@@ -63,7 +63,7 @@ const firstDirection = (column: ItemSort) => (column === ItemSort.name ? SortDir
 
 export function ItemsPage() {
   const { t, i18n } = useTranslation()
-  const phone = usePhone()
+  const compact = useCompactTables('lg')
   const [params, setParams] = useSearchParams()
   // `?new=1` (the home page's "New item") opens the form once; the address drops it, so back doesn't reopen it.
   const [creating, setCreating] = useState(() => params.get('new') === '1')
@@ -190,11 +190,11 @@ export function ItemsPage() {
           <EmptyState search={state.search} filtered={state.status !== null} onAdd={() => setCreating(true)} />
         ) : (
           <>
-            {phone ? (
-              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone sorting={sorting} />
+            {compact ? (
+              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} compact sorting={sorting} />
             ) : (
               <Table.ScrollContainer minWidth={900}>
-                <ItemsTable items={data!.items} search={searchInput} narrowing={searching} phone={false} sorting={sorting} />
+                <ItemsTable items={data!.items} search={searchInput} narrowing={searching} compact={false} sorting={sorting} />
               </Table.ScrollContainer>
             )}
             <Pager
@@ -226,20 +226,20 @@ function PillCount({ color, value }: { color: string; value: number | undefined 
 /**
  * `search` is the text in the field right now: while the server looks for it (`narrowing`), rows
  * of this page that can't match fold away, and the typed text is marked in names and SKUs.
- * On a phone only the item and its stock are columns: the SKU goes under the name and the status
- * under the stock, so the number stays in view without scrolling sideways.
+ * In compact tables (a phone or a tablet) only the item and its stock are columns: the SKU and the status go under the name
+ * (in place of the category), so the name has room and the number stays in view without scrolling.
  */
 function ItemsTable({
   items,
   search,
   narrowing,
-  phone,
+  compact,
   sorting,
 }: {
   items: ItemDto[]
   search: string
   narrowing: boolean
-  phone: boolean
+  compact: boolean
   sorting: Sorting
 }) {
   const { t, i18n } = useTranslation()
@@ -254,17 +254,17 @@ function ItemsTable({
 
   return (
     // On a phone the stock column keeps its width and a long name wraps instead.
-    <Table ref={table} layout={phone ? 'fixed' : undefined}>
+    <Table ref={table} layout={compact ? 'fixed' : undefined}>
       <Table.Thead>
         <Table.Tr>
           <SortableTh column={ItemSort.name} sorting={sorting}>
             {t('items.columns.item')}
           </SortableTh>
-          {!phone && <Table.Th>{t('items.columns.sku')}</Table.Th>}
-          <SortableTh column={ItemSort.stock} sorting={sorting} right w={phone ? 136 : undefined}>
+          {!compact && <Table.Th>{t('items.columns.sku')}</Table.Th>}
+          <SortableTh column={ItemSort.stock} sorting={sorting} right w={compact ? 100 : undefined}>
             {t('items.columns.stock')}
           </SortableTh>
-          {!phone && (
+          {!compact && (
             <>
               <Table.Th ta="right">{t('items.columns.minStock')}</Table.Th>
               <Table.Th>{t('items.columns.status')}</Table.Th>
@@ -304,8 +304,8 @@ function ItemsTable({
                           aria-label={t('items.open', { name: item.name })}
                           fw={500}
                           c={item.isActive ? 'var(--z-text)' : 'dimmed'}
-                          truncate={!phone}
-                          maw={phone ? undefined : 420}
+                          truncate={!compact}
+                          maw={compact ? undefined : 420}
                         >
                           <SearchMatch text={item.name} term={search} />
                         </Anchor>
@@ -315,24 +315,30 @@ function ItemsTable({
                           </Badge>
                         )}
                       </Group>
-                      {phone && (
+                      {compact && (
                         <Text ff="monospace" fz="xs" c="var(--z-text-2)" truncate>
                           <SearchMatch text={item.sku} term={search} />
                         </Text>
                       )}
-                      {item.category && (
-                        <Text fz="xs" c="dimmed">
-                          {item.category}
-                        </Text>
+                      {compact ? (
+                        <Box mt={2}>
+                          <StockStatusLabel status={item.status} />
+                        </Box>
+                      ) : (
+                        item.category && (
+                          <Text fz="xs" c="dimmed">
+                            {item.category}
+                          </Text>
+                        )
                       )}
                     </Box>
                   </Group>
                 </SearchCell>
               </Table.Td>
-              {!phone && (
+              {!compact && (
                 <Table.Td>
                   <SearchCell>
-                    <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                    <Text ff="monospace" fz="xs" c="var(--z-text-2)" style={{ whiteSpace: 'nowrap' }}>
                       <SearchMatch text={item.sku} term={search} />
                     </Text>
                   </SearchCell>
@@ -341,14 +347,9 @@ function ItemsTable({
               <Table.Td ta="right">
                 <SearchCell>
                   <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} animate />
-                  {phone && (
-                    <Group justify="flex-end" mt={2} wrap="nowrap" style={{ whiteSpace: 'nowrap' }}>
-                      <StockStatusLabel status={item.status} />
-                    </Group>
-                  )}
                 </SearchCell>
               </Table.Td>
-              {!phone && (
+              {!compact && (
                 <>
                   <Table.Td ta="right">
                     <SearchCell>

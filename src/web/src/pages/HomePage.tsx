@@ -58,6 +58,7 @@ function Overview({ data }: { data: DashboardDto }) {
       <SimpleGrid
         component="section"
         aria-label={t('home.title')}
+        className="z-kpi"
         cols={{ base: 2, md: 4 }}
         spacing={1}
         verticalSpacing={1}
@@ -191,7 +192,7 @@ function RecentRow({ movement }: { movement: RecentMovementDto }) {
 
   return (
     <Group px="lg" py={12} gap="sm" wrap="nowrap" align="flex-start" style={rowStyle}>
-      <Text ff="monospace" fz="xs" c="dimmed" w={48} pt={2} style={{ flexShrink: 0 }}>
+      <Text ff="monospace" fz="xs" c="dimmed" w={56} pt={2} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
         {formatRecentTime(movement.occurredAt, i18n.language, t('home.recent.yesterday'))}
       </Text>
       <Stack gap={2} miw={0} flex={1}>

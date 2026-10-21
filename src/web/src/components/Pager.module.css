@@ -1,7 +1,18 @@
+/* Page buttons 32 px; 44 px on a phone (DESIGN.md: no smaller touch targets there). */
+:root {
+  --z-pager-control: 32px;
+}
+
+@media (max-width: 47.99em) {
+  :root {
+    --z-pager-control: 44px;
+  }
+}
+
 /* Same look as FilterPill: line border, accent border and selected background on the current page. */
 .control {
-  min-width: 32px;
-  height: 32px;
+  min-width: var(--z-pager-control);
+  height: var(--z-pager-control);
   padding: 0 8px;
   border: 1px solid var(--z-line);
   border-radius: var(--mantine-radius-sm);
@@ -35,7 +46,7 @@
 
 /* As high as the page buttons next to it. */
 .sizeInput {
-  --input-height: 32px;
+  --input-height: var(--z-pager-control);
   font-family: var(--mantine-font-family-monospace);
   font-variant-numeric: tabular-nums;
 }

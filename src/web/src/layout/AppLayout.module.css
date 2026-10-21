@@ -49,4 +49,10 @@
   .main {
     padding: 20px 16px 32px;
   }
+
+  /* DESIGN.md: 18-20 px icons on a phone. */
+  .navIcon {
+    width: 18px;
+    height: 18px;
+  }
 }

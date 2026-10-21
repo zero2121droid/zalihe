@@ -1,0 +1,31 @@
+/*
+ * The quantity on a phone, as in the "Prodaja van sajta" mockup: − on the left, the number large
+ * in the middle (DESIGN.md: 48 px mono when entering a quantity on a phone), + on the right.
+ * On a computer the field comes first and the two buttons sit after it.
+ */
+@media (max-width: 47.99em) {
+
+  /* The buttons' group steps aside so each button can take its own place in the row. */
+  .steps {
+    display: contents;
+  }
+
+  .steps > :first-child {
+    order: -1;
+  }
+
+  /* Next to the 72 px field, below its label (26 px): centered on the field, as big as in the mockup. */
+  .steps > * {
+    width: 56px;
+    height: 56px;
+    margin-top: 34px;
+  }
+
+  .quantity {
+    height: 72px;
+    font-family: var(--mantine-font-family-monospace);
+    font-size: 48px;
+    font-weight: 500;
+    text-align: center;
+  }
+}

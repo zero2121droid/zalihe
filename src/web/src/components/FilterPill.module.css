@@ -4,6 +4,15 @@
   z-index: 1;
 }
 
+/* On a phone the pill stays 32 px high, but a finger can hit it anywhere in 44 px. */
+@media (max-width: 47.99em) {
+  .pill::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+}
+
 /* The selected pill's look, drawn once under the row and moved to the chosen pill. */
 .highlight {
   position: absolute;

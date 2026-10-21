@@ -13,10 +13,150 @@
 /* Modal width grows with the screen (DESIGN.md "Oblik i raspored"); phones get the full width. */
 :root {
   --z-modal-width: 760px;
+  /* Buttons and fields 40 px, icon buttons 36 px; on a phone both 44 px, big enough for a finger. */
+  --z-control: 40px;
+  --z-icon-button: 36px;
+}
+
+@media (max-width: 47.99em) {
+  :root {
+    --z-control: 44px;
+    --z-icon-button: 44px;
+  }
+
+  /*
+   * On a phone the larger gaps shrink one step (24 -> 16, 36 -> 24 px), so sections, tables and
+   * cards keep their room for content. Doubled :root beats Mantine's own :root variables.
+   */
+  :root:root {
+    --mantine-spacing-lg: 16px;
+    --mantine-spacing-xl: 24px;
+  }
 }
 
 @media (min-width: 120em) {
   :root {
     --z-modal-width: 880px;
+  }
+}
+
+/* A row of buttons that becomes a column of full-width buttons on a phone. */
+@media (max-width: 47.99em) {
+  .z-phone-stack.z-phone-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/*
+ * Modals on a phone (DESIGN.md: full width): the whole screen, content scrolling inside. The row of
+ * buttons (z-modal-actions) sticks to the bottom so saving is always in reach; Cancel hides there,
+ * since the X in the header does the same, and the main action is 56 px high.
+ */
+@media (max-width: 47.99em) {
+  .mantine-Modal-inner.mantine-Modal-inner {
+    padding: 0;
+  }
+
+  .mantine-Modal-content.mantine-Modal-content {
+    flex-basis: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .z-modal-actions.z-modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    margin: 0 calc(-1 * var(--mb-padding)) calc(-1 * var(--mb-padding));
+    padding: 12px var(--mb-padding) calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--z-line);
+    background: var(--z-surface);
+  }
+
+  .z-modal-actions .mantine-Group-root {
+    flex: 1 1 0;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  .z-modal-actions > *,
+  .z-modal-actions .mantine-Group-root > * {
+    flex: 1 1 0;
+  }
+
+  .z-modal-actions > span:empty,
+  .z-modal-actions .z-modal-cancel {
+    display: none;
+  }
+
+  .z-modal-actions button[type='submit'] {
+    height: 56px;
+  }
+}
+
+/* A full-screen modal on a phone puts its row of buttons at the bottom even when the form is short. */
+@media (max-width: 47.99em) {
+  .mantine-Modal-content.mantine-Modal-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mantine-Modal-body.mantine-Modal-body,
+  .mantine-Modal-body > form,
+  .mantine-Modal-body > form > .mantine-Stack-root {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+  }
+
+  .z-modal-actions.z-modal-actions {
+    margin-top: auto;
+  }
+}
+
+/*
+ * KPI strips (z-kpi): two columns don't hold larger amounts on a phone (1.260.860 RSD at 26 px),
+ * and DESIGN.md doesn't let text shrink with the screen. So on a phone each figure is a row:
+ * label (and hint) on the left, the number on the right.
+ */
+@media (max-width: 47.99em) {
+  .z-kpi.z-kpi {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .z-kpi.z-kpi > * {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 2px;
+  }
+
+  .z-kpi.z-kpi > * > :first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .z-kpi.z-kpi > * > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .z-kpi.z-kpi > * > :nth-child(n + 3) {
+    grid-column: 1;
+  }
+}
+
+/* Steppers on a narrow phone: only the current step keeps its label, so the steps stay on one line. */
+@media (max-width: 25.99em) {
+  .mantine-Stepper-step:not([data-progress]) .mantine-Stepper-stepBody {
+    display: none;
   }
 }

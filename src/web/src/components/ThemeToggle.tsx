@@ -11,7 +11,6 @@ export function ThemeToggle() {
 
   return (
     <ActionIcon
-      size={36}
       aria-label={label}
       title={label}
       onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}

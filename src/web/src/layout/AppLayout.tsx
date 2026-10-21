@@ -52,7 +52,7 @@ export function AppLayout() {
     >
       <AppShell.Header hiddenFrom="sm" className={classes.header}>
         <Group h="100%" px="md" gap="sm">
-          <Burger opened={opened} onClick={toggle} size="sm" aria-label={t('common.nav.openMenu')} />
+          <Burger opened={opened} onClick={toggle} size="sm" w={44} h={44} aria-label={t('common.nav.openMenu')} />
           <Logo />
         </Group>
       </AppShell.Header>
@@ -91,7 +91,6 @@ export function AppLayout() {
             <Group gap={2} wrap="nowrap">
               <ThemeToggle />
               <ActionIcon
-                size={36}
                 aria-label={t('common.logout')}
                 title={t('common.logout')}
                 loading={logout.isPending}

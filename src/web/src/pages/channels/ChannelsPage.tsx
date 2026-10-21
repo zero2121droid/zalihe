@@ -197,7 +197,7 @@ function ChannelCard({ channel }: { channel: SalesChannelDto }) {
           )}
         </Stack>
 
-        <Group gap="sm">
+        <Group gap="sm" className="z-phone-stack">
           <Button component={Link} to={`/channels/${channel.id}/import`}>
             {t('channels.card.importProducts')}
           </Button>

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { formErrorMessage } from '../../api/errors'
 import { useListItemCategories } from '../../api/generated/items/items'
-import type { CategoryValueDto, SlowMoverDto, TopSellerDto } from '../../api/generated/model'
+import type { CategoryValueDto, SlowMoverDto, StockStatus, TopSellerDto, Unit } from '../../api/generated/model'
 import { useGetReportSummary, useListCategoryValues, useListSlowMovers, useListTopSellers } from '../../api/generated/reports/reports'
 import feedbackClasses from '../../components/feedback.module.css'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
@@ -20,6 +20,7 @@ import { formatDateTime, formatMoney, formatNumber, formatPercent } from '../../
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { matchesSearch } from '../../lib/search'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
+import { useCompactTables } from '../../lib/usePhone'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 const number = { ff: 'monospace', fz: 'sm', style: { fontVariantNumeric: 'tabular-nums' } } as const
@@ -108,6 +109,7 @@ export function ReportsPage() {
         <SimpleGrid
           component="section"
           aria-label={t('reports.figures.label')}
+          className="z-kpi"
           cols={{ base: 2, md: 4 }}
           spacing={1}
           verticalSpacing={1}
@@ -246,6 +248,7 @@ function ReportSection<T>({
 }) {
   const { t } = useTranslation()
   const display = useLoadingDisplay(query.isPending)
+  const compact = useCompactTables()
 
   return (
     <Box component="section" aria-label={title} bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
@@ -267,7 +270,8 @@ function ReportSection<T>({
         </Text>
       ) : (
         <>
-          <Table.ScrollContainer minWidth={640}>{children(query.data!.items)}</Table.ScrollContainer>
+          {/* Compact (phone, tablet): the reports draw fewer columns (the rest goes under the item), so nothing scrolls sideways. */}
+          {compact ? children(query.data!.items) : <Table.ScrollContainer minWidth={640}>{children(query.data!.items)}</Table.ScrollContainer>}
           <Pager
             page={page}
             pageSize={pageSize}
@@ -288,7 +292,22 @@ function emptyText(t: TFunction, search: string, category: string | null, none: 
   return none
 }
 
-function ItemCell({ itemId, name, sku, search, hidden }: { itemId: string; name: string; sku: string; search: string; hidden: boolean }) {
+function ItemCell({
+  itemId,
+  name,
+  sku,
+  search,
+  hidden,
+  extra,
+}: {
+  itemId: string
+  name: string
+  sku: string
+  search: string
+  hidden: boolean
+  /** What a phone shows under the item instead of in its own columns. */
+  extra?: ReactNode
+}) {
   const { t } = useTranslation()
   return (
     <Table.Td>
@@ -300,8 +319,8 @@ function ItemCell({ itemId, name, sku, search, hidden }: { itemId: string; name:
           aria-label={t('items.open', { name })}
           fw={500}
           c="var(--z-text)"
-          truncate
-          maw={420}
+          truncate={!extra}
+          maw={extra ? undefined : 420}
           display="block"
         >
           <SearchMatch text={name} term={search} />
@@ -309,6 +328,7 @@ function ItemCell({ itemId, name, sku, search, hidden }: { itemId: string; name:
         <Text ff="monospace" fz={11} c="dimmed">
           <SearchMatch text={sku} term={search} />
         </Text>
+        {extra}
       </SearchCell>
     </Table.Td>
   )
@@ -321,6 +341,7 @@ function TopSellers({ search, searchInput, category, page, pageSize, ...pager }:
     { query: { placeholderData: keepPreviousData } },
   )
   const narrowing = searchInput.trim() !== search || query.isPlaceholderData
+  const compact = useCompactTables()
 
   return (
     <ReportSection<TopSellerDto>
@@ -333,16 +354,22 @@ function TopSellers({ search, searchInput, category, page, pageSize, ...pager }:
       {...pager}
     >
       {(rows) => (
-        <Table>
+        <Table layout={compact ? 'fixed' : undefined}>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th w={56} ta="right">
+              <Table.Th w={compact ? 44 : 56} ta="right">
                 {t('reports.columns.rank')}
               </Table.Th>
               <Table.Th>{t('items.columns.item')}</Table.Th>
-              <Table.Th ta="right">{t('reports.columns.sold')}</Table.Th>
-              <Table.Th ta="right">{t('items.columns.stock')}</Table.Th>
-              <Table.Th>{t('items.columns.status')}</Table.Th>
+              <Table.Th ta="right" w={compact ? 104 : undefined}>
+                {t('reports.columns.sold')}
+              </Table.Th>
+              {!compact && (
+                <>
+                  <Table.Th ta="right">{t('items.columns.stock')}</Table.Th>
+                  <Table.Th>{t('items.columns.status')}</Table.Th>
+                </>
+              )}
             </Table.Tr>
           </Table.Thead>
           <SearchBody narrowing={narrowing}>
@@ -357,22 +384,33 @@ function TopSellers({ search, searchInput, category, page, pageSize, ...pager }:
                       </Text>
                     </SearchCell>
                   </Table.Td>
-                  <ItemCell itemId={row.itemId} name={row.name} sku={row.sku} search={searchInput} hidden={hidden} />
+                  <ItemCell
+                    itemId={row.itemId}
+                    name={row.name}
+                    sku={row.sku}
+                    search={searchInput}
+                    hidden={hidden}
+                    extra={compact && <PhoneStock stock={row.stock} unit={row.unit} status={row.status} />}
+                  />
                   <Table.Td ta="right">
                     <SearchCell>
                       <StockQuantity quantity={row.sold} unit={row.unit} status="inStock" />
                     </SearchCell>
                   </Table.Td>
-                  <Table.Td ta="right">
-                    <SearchCell>
-                      <StockQuantity quantity={row.stock} unit={row.unit} status={row.status} />
-                    </SearchCell>
-                  </Table.Td>
-                  <Table.Td>
-                    <SearchCell>
-                      <StockStatusLabel status={row.status} />
-                    </SearchCell>
-                  </Table.Td>
+                  {!compact && (
+                    <>
+                      <Table.Td ta="right">
+                        <SearchCell>
+                          <StockQuantity quantity={row.stock} unit={row.unit} status={row.status} />
+                        </SearchCell>
+                      </Table.Td>
+                      <Table.Td>
+                        <SearchCell>
+                          <StockStatusLabel status={row.status} />
+                        </SearchCell>
+                      </Table.Td>
+                    </>
+                  )}
                 </SearchRow>
               )
             })}
@@ -390,6 +428,7 @@ function SlowMovers({ search, searchInput, category, page, pageSize, ...pager }:
     { query: { placeholderData: keepPreviousData } },
   )
   const narrowing = searchInput.trim() !== search || query.isPlaceholderData
+  const compact = useCompactTables()
 
   return (
     <ReportSection<SlowMoverDto>
@@ -402,46 +441,71 @@ function SlowMovers({ search, searchInput, category, page, pageSize, ...pager }:
       {...pager}
     >
       {(rows) => (
-        <Table>
+        <Table layout={compact ? 'fixed' : undefined}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>{t('items.columns.item')}</Table.Th>
-              <Table.Th ta="right">{t('items.columns.stock')}</Table.Th>
-              <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
-              <Table.Th>{t('reports.columns.lastSold')}</Table.Th>
+              <Table.Th ta="right" w={compact ? 128 : undefined}>
+                {t('items.columns.stock')}
+              </Table.Th>
+              {!compact && (
+                <>
+                  <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
+                  <Table.Th>{t('reports.columns.lastSold')}</Table.Th>
+                </>
+              )}
             </Table.Tr>
           </Table.Thead>
           <SearchBody narrowing={narrowing}>
             {rows.map((row) => {
               const hidden = !matchesSearch(searchInput, row.name, row.sku)
+              const lastSold = row.lastSoldAt ? formatDateTime(row.lastSoldAt, i18n.language) : t('reports.slowMovers.neverSold')
+              const value =
+                row.value === null ? (
+                  <Text fz="xs" c="dimmed">
+                    {t('items.detail.noPrice')}
+                  </Text>
+                ) : (
+                  <Text {...number} c="var(--z-text-2)">
+                    {formatMoney(row.value, i18n.language)}
+                  </Text>
+                )
               return (
                 <SearchRow key={row.itemId} hidden={hidden}>
-                  <ItemCell itemId={row.itemId} name={row.name} sku={row.sku} search={searchInput} hidden={hidden} />
+                  <ItemCell
+                    itemId={row.itemId}
+                    name={row.name}
+                    sku={row.sku}
+                    search={searchInput}
+                    hidden={hidden}
+                    extra={
+                      compact && (
+                        <Text fz="xs" c="var(--z-text-2)" mt={4}>
+                          {t('reports.columns.lastSold')}: {lastSold}
+                        </Text>
+                      )
+                    }
+                  />
                   <Table.Td ta="right">
                     <SearchCell>
                       <StockQuantity quantity={row.stock} unit={row.unit} status="inStock" />
+                      {compact && value}
                     </SearchCell>
                   </Table.Td>
-                  <Table.Td ta="right">
-                    <SearchCell>
-                      {row.value === null ? (
-                        <Text fz="xs" c="dimmed">
-                          {t('items.detail.noPrice')}
-                        </Text>
-                      ) : (
-                        <Text {...number} c="var(--z-text-2)">
-                          {formatMoney(row.value, i18n.language)}
-                        </Text>
-                      )}
-                    </SearchCell>
-                  </Table.Td>
-                  <Table.Td>
-                    <SearchCell>
-                      <Text fz="sm" c="var(--z-text-2)" ff={row.lastSoldAt ? 'monospace' : undefined} style={{ whiteSpace: 'nowrap' }}>
-                        {row.lastSoldAt ? formatDateTime(row.lastSoldAt, i18n.language) : t('reports.slowMovers.neverSold')}
-                      </Text>
-                    </SearchCell>
-                  </Table.Td>
+                  {!compact && (
+                    <>
+                      <Table.Td ta="right">
+                        <SearchCell>{value}</SearchCell>
+                      </Table.Td>
+                      <Table.Td>
+                        <SearchCell>
+                          <Text fz="sm" c="var(--z-text-2)" ff={row.lastSoldAt ? 'monospace' : undefined} style={{ whiteSpace: 'nowrap' }}>
+                            {lastSold}
+                          </Text>
+                        </SearchCell>
+                      </Table.Td>
+                    </>
+                  )}
                 </SearchRow>
               )
             })}
@@ -460,6 +524,7 @@ function StockValue({
 }: Pick<ListProps, 'page' | 'pageSize' | 'onChange' | 'onPageSizeChange'> & { total: number | undefined }) {
   const { t, i18n } = useTranslation()
   const query = useListCategoryValues({ page, pageSize }, { query: { placeholderData: keepPreviousData } })
+  const compact = useCompactTables()
 
   return (
     <ReportSection<CategoryValueDto>
@@ -472,18 +537,35 @@ function StockValue({
       {...pager}
     >
       {(rows) => (
-        <Table>
+        <Table layout={compact ? 'fixed' : undefined}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>{t('reports.columns.category')}</Table.Th>
-              <Table.Th ta="right">{t('reports.columns.items')}</Table.Th>
-              <Table.Th ta="right">{t('items.columns.value')}</Table.Th>
-              <Table.Th w={200}>{t('reports.columns.share')}</Table.Th>
+              {!compact && <Table.Th ta="right">{t('reports.columns.items')}</Table.Th>}
+              <Table.Th ta="right" w={compact ? 152 : undefined}>
+                {t('items.columns.value')}
+              </Table.Th>
+              {!compact && <Table.Th w={200}>{t('reports.columns.share')}</Table.Th>}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {rows.map((row) => {
               const share = total ? row.value / total : 0
+              const itemCount = (
+                <Text {...number} c="var(--z-text-2)">
+                  {formatNumber(row.itemCount, i18n.language)}
+                </Text>
+              )
+              const shareBar = (
+                <Group gap="sm" wrap="nowrap">
+                  <Box h={4} flex={1} bg="var(--z-line)" style={{ borderRadius: 2 }}>
+                    <Box h={4} w={`${share * 100}%`} bg="var(--z-accent)" style={{ borderRadius: 2 }} />
+                  </Box>
+                  <Text {...number} fz="xs" c="dimmed" w={44} ta="right">
+                    {formatPercent(share, i18n.language)}
+                  </Text>
+                </Group>
+              )
               return (
                 <Table.Tr key={row.category ?? ''}>
                   <Table.Td>
@@ -495,27 +577,22 @@ function StockValue({
                         {t('reports.stockValue.withoutPrice', { count: row.itemsWithoutPrice })}
                       </Text>
                     )}
+                    {compact && (
+                      <Stack gap={6} mt={6}>
+                        <Text fz="xs" c="dimmed">
+                          {t('reports.columns.items')}: {formatNumber(row.itemCount, i18n.language)}
+                        </Text>
+                        {shareBar}
+                      </Stack>
+                    )}
                   </Table.Td>
-                  <Table.Td ta="right">
-                    <Text {...number} c="var(--z-text-2)">
-                      {formatNumber(row.itemCount, i18n.language)}
-                    </Text>
-                  </Table.Td>
+                  {!compact && <Table.Td ta="right">{itemCount}</Table.Td>}
                   <Table.Td ta="right">
                     <Text ff="monospace" fz={18} fw={500} style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                       <Money value={row.value} />
                     </Text>
                   </Table.Td>
-                  <Table.Td>
-                    <Group gap="sm" wrap="nowrap">
-                      <Box h={4} flex={1} bg="var(--z-line)" style={{ borderRadius: 2 }}>
-                        <Box h={4} w={`${share * 100}%`} bg="var(--z-accent)" style={{ borderRadius: 2 }} />
-                      </Box>
-                      <Text {...number} fz="xs" c="dimmed" w={44} ta="right">
-                        {formatPercent(share, i18n.language)}
-                      </Text>
-                    </Group>
-                  </Table.Td>
+                  {!compact && <Table.Td>{shareBar}</Table.Td>}
                 </Table.Tr>
               )
             })}
@@ -523,5 +600,15 @@ function StockValue({
         </Table>
       )}
     </ReportSection>
+  )
+}
+
+/** A phone's line under the item: the stock and its status, which have their own columns on a computer. */
+function PhoneStock({ stock, unit, status }: { stock: number; unit: Unit; status: StockStatus }) {
+  return (
+    <Group gap="sm" mt={4} style={{ rowGap: 2 }}>
+      <StockQuantity quantity={stock} unit={unit} status={status} size={14} />
+      <StockStatusLabel status={status} />
+    </Group>
   )
 }

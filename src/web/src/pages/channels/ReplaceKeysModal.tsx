@@ -48,8 +48,8 @@ export function ReplaceKeysModal({ channel, opened, onClose }: { channel: SalesC
               {formError}
             </Text>
           )}
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={close}>
+          <Group justify="flex-end" gap="sm" className="z-modal-actions">
+            <Button variant="default" className="z-modal-cancel" onClick={close}>
               {t('common.cancel')}
             </Button>
             <Button type="submit" loading={replace.isPending}>

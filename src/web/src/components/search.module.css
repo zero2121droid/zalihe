@@ -19,9 +19,12 @@
     border-color 0.3s ease;
 }
 
-/* Each cell's content sits in a .cell, which is what folds. 80 px is above any row's content. */
+/*
+ * Each cell's content sits in a .cell, which is what folds. 200 px is above any row's content, also
+ * on a narrow phone, where a name wraps onto three lines over the SKU and the status.
+ */
 .cell {
-  max-height: 80px;
+  max-height: 200px;
   transition:
     max-height 0.3s ease,
     opacity 0.25s ease;

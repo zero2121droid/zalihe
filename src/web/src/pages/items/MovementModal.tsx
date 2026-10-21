@@ -13,6 +13,7 @@ import { StepButton } from '../../components/StepButton'
 import { formatDecimalInput, formatNumber, formatSignedQuantity, readDecimal } from '../../lib/format'
 import { useSaved } from '../../lib/useSaved'
 import { useShake } from '../../lib/useShake'
+import classes from './MovementModal.module.css'
 
 interface MovementModalProps {
   item: ItemDto
@@ -111,9 +112,10 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
             </Text>
           </Group>
 
-          <Group gap="xs" align="flex-start" wrap="nowrap">
+          <Group gap="xs" align="flex-start" wrap="nowrap" className={classes.row}>
             <DecimalInput
               flex={1}
+              classNames={{ input: classes.quantity }}
               label={kind ? t(`stock.form.quantity.${kind}`) : ''}
               description={isCount ? t('stock.form.countHint') : undefined}
               inputWrapperOrder={['label', 'input', 'description', 'error']}
@@ -131,7 +133,7 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
               }}
               error={quantityError ?? serverErrors.quantity}
             />
-            <Group gap="xs" wrap="nowrap" mt={kind ? 26 : 0}>
+            <Group gap="xs" wrap="nowrap" mt={kind ? 26 : 0} className={classes.steps}>
               <StepButton label={t('stock.form.decrease')} sign="−" onStep={() => stepBy(-1)} />
               <StepButton label={t('stock.form.increase')} sign="+" onStep={() => stepBy(1)} />
             </Group>
@@ -170,8 +172,8 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
             </Text>
           )}
 
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={close}>
+          <Group justify="flex-end" gap="sm" className="z-modal-actions">
+            <Button variant="default" className="z-modal-cancel" onClick={close}>
               {t('common.cancel')}
             </Button>
             <SaveButton type="submit" loading={record.isPending} saved={saved.saved}>

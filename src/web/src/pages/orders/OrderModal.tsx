@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import type { OrderDto, OrderLineDto } from '../../api/generated/model'
 import { formatDateTime, formatNumber } from '../../lib/format'
+import { usePhone } from '../../lib/usePhone'
 import { lineName, shopHost, statusLabel } from './orderText'
 
 const noteStyle = { borderRadius: 'var(--mantine-radius-sm)' }
@@ -13,6 +14,7 @@ export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () =>
   const { t, i18n } = useTranslation()
   const hasUnlinked = order.lines.some((l) => l.state === 'unlinked')
   const hasLinkedLater = order.lines.some((l) => l.state === 'linkedAfterOrder')
+  const phone = usePhone()
 
   return (
     <Modal opened onClose={onClose} title={t('orders.detail.title', { number: order.number })}>
@@ -33,23 +35,32 @@ export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () =>
           </Text>
         </Group>
 
-        <Table.ScrollContainer minWidth={560}>
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('orders.detail.shopProduct')}</Table.Th>
-                <Table.Th>{t('orders.detail.item')}</Table.Th>
-                <Table.Th ta="right">{t('orders.detail.ordered')}</Table.Th>
-                <Table.Th ta="right">{t('orders.detail.applied')}</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {order.lines.map((line) => (
-                <LineRow key={line.externalProductId} line={line} />
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        {phone ? (
+          // On a phone each product is a block (shop product, item, both quantities), not a wide table row.
+          <Stack gap={0}>
+            {order.lines.map((line) => (
+              <PhoneLine key={line.externalProductId} line={line} />
+            ))}
+          </Stack>
+        ) : (
+          <Table.ScrollContainer minWidth={560}>
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>{t('orders.detail.shopProduct')}</Table.Th>
+                  <Table.Th>{t('orders.detail.item')}</Table.Th>
+                  <Table.Th ta="right">{t('orders.detail.ordered')}</Table.Th>
+                  <Table.Th ta="right">{t('orders.detail.applied')}</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {order.lines.map((line) => (
+                  <LineRow key={line.externalProductId} line={line} />
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        )}
 
         {!order.takesStock && <Note>{t('orders.detail.inactive')}</Note>}
         {hasLinkedLater && <Note>{t('orders.detail.linkedAfterOrder')}</Note>}
@@ -78,25 +89,7 @@ function LineRow({ line }: { line: OrderLineDto }) {
         <Text fz="sm">{lineName(t, line)}</Text>
       </Table.Td>
       <Table.Td>
-        {line.item ? (
-          <>
-            <Anchor component={Link} to={`/items/${line.item.id}`} fz="sm" fw={500} c="var(--z-text)">
-              {line.item.name}
-            </Anchor>
-            <Text ff="monospace" fz="xs" c="var(--z-text-2)">
-              {line.item.sku}
-            </Text>
-            {line.state === 'linkedAfterOrder' && (
-              <Text fz="xs" c="dimmed">
-                {t('orders.lineState.linkedAfterOrder')}
-              </Text>
-            )}
-          </>
-        ) : (
-          <Text fz="sm" c="var(--z-status-low)">
-            {t('orders.lineState.unlinked')}
-          </Text>
-        )}
+        <LinkedItem line={line} />
       </Table.Td>
       <Table.Td ta="right">
         <Quantity value={line.orderedQuantity} unit={unit} language={i18n.language} />
@@ -105,6 +98,64 @@ function LineRow({ line }: { line: OrderLineDto }) {
         <Quantity value={line.appliedQuantity} unit={unit} language={i18n.language} />
       </Table.Td>
     </Table.Tr>
+  )
+}
+
+function PhoneLine({ line }: { line: OrderLineDto }) {
+  const { t, i18n } = useTranslation()
+  const unit = line.item ? t(`items.units.${line.item.unit}`) : null
+
+  return (
+    <Stack gap={6} py="sm" style={{ borderBottom: '1px solid var(--z-line-soft)' }}>
+      <Text fz="xs" c="dimmed">
+        {lineName(t, line)}
+      </Text>
+      <div>
+        <LinkedItem line={line} />
+      </div>
+      <Group gap="lg">
+        <Group gap={6}>
+          <Text fz="xs" c="dimmed">
+            {t('orders.detail.ordered')}
+          </Text>
+          <Quantity value={line.orderedQuantity} unit={unit} language={i18n.language} />
+        </Group>
+        <Group gap={6}>
+          <Text fz="xs" c="dimmed">
+            {t('orders.detail.applied')}
+          </Text>
+          <Quantity value={line.appliedQuantity} unit={unit} language={i18n.language} />
+        </Group>
+      </Group>
+    </Stack>
+  )
+}
+
+/** The item a shop product is linked to, or that it isn't linked yet. */
+function LinkedItem({ line }: { line: OrderLineDto }) {
+  const { t } = useTranslation()
+  return (
+    <>
+      {line.item ? (
+        <>
+          <Anchor component={Link} to={`/items/${line.item.id}`} fz="sm" fw={500} c="var(--z-text)">
+            {line.item.name}
+          </Anchor>
+          <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+            {line.item.sku}
+          </Text>
+          {line.state === 'linkedAfterOrder' && (
+            <Text fz="xs" c="dimmed">
+              {t('orders.lineState.linkedAfterOrder')}
+            </Text>
+          )}
+      </>
+    ) : (
+      <Text fz="sm" c="var(--z-status-low)">
+        {t('orders.lineState.unlinked')}
+      </Text>
+    )}
+    </>
   )
 }
 

@@ -83,6 +83,16 @@ Jedinica mere stoji uz broj, manjom veličinom i `muted` bojom: **31** kom.
 - Veličina teksta i elemenata ne zavisi od širine ekrana. Uvećanje je posao sistema i browsera (zum), da se ne bi sabralo sa njim.
 - Visina dugmadi 40 px na računaru, minimum 44 px na telefonu, 56 px za glavnu akciju na telefonu.
 
+### Telefon i tablet
+
+- Visine kontrola idu preko tokena `--z-control` (dugmad i polja: 40 px, na telefonu 44 px) i `--z-icon-button` (36 / 44 px) u `global.css`, nikad fiksno u komponenti. Straničenje je 44 px na telefonu; filter pilule ostaju 32 px, ali primaju dodir u visini od 44 px.
+- Na telefonu se veći razmaci smanjuju za jedan korak: `lg` 24 → 16 px, `xl` 36 → 24 px.
+- Tabele ne skroluju u stranu: gde je prostor za sadržaj uzak (ispod `md`, a lista artikala ispod `lg`), tabela prelazi na sažet raspored (`useCompactTables`). Ostaju naziv i glavni broj, a šifra, status i ostalo idu ispod naziva. Tabele u modalima i u uvozu na telefonu postaju liste blokova.
+- KPI traka (`z-kpi`) je na telefonu jedna kolona: oznaka levo, broj desno, jer dve kolone ne primaju veće iznose, a tekst se ne smanjuje.
+- Modal na telefonu zauzima ceo ekran. Red sa dugmadi (`z-modal-actions`) je zalepljen za dno, „Otkaži“ se krije (isto radi X), a glavna akcija je 56 px.
+- Unos količine na telefonu je kao u maketi „Prodaja van sajta“: − levo, broj 48 px mono u sredini, + desno (56 px).
+- Red dugmadi koji na telefonu treba da bude kolona dugmadi pune širine dobija klasu `z-phone-stack`; radnje na artiklu su mreža 2 × 2.
+
 ## Ikone
 
 Linijske ikone, debljina 1.8, 16 px u navigaciji i 18-20 px na telefonu. Biblioteka: Tabler Icons ili Lucide, jedna, dosledno. Dugme samo sa ikonom uvek ima `aria-label`.

@@ -32,7 +32,7 @@ describe('ChannelAlert', () => {
     // Assert
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/Veza sa prodavnicom zrno\.rs ne radi od 17\. 10\. 2026\./)
-    expect(alert).toHaveTextContent('stanje iz Zaliha ne stiže u prodavnicu')
+    expect(alert).toHaveTextContent('stanje iz Lagerka ne stiže u prodavnicu')
     expect(screen.getByRole('link', { name: 'Otvori kanale' })).toHaveAttribute('href', '/channels')
   })
 

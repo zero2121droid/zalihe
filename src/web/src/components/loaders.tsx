@@ -3,6 +3,7 @@ import { useWindowEvent } from '@mantine/hooks'
 import type { CSSProperties, HTMLAttributes, ReactNode, Ref } from 'react'
 import { useTranslation } from 'react-i18next'
 import classes from './loaders.module.css'
+import { MARK_BODY, MARK_LID } from './logoMark'
 
 const cx = (...names: Array<string | false | undefined>) => names.filter(Boolean).join(' ')
 
@@ -32,8 +33,18 @@ const LOADER_SIZE = 120
  */
 type LoaderPlacement = 'screen' | 'inline'
 
-/** Both large loaders draw on y 15-41 of the 48-unit grid; this viewBox puts that in the middle. */
-const CENTERED_VIEW_BOX = '0 4 48 48'
+/** Both large loaders draw on y 13-42 of the 48-unit grid; this viewBox puts that in the middle. */
+const CENTERED_VIEW_BOX = '0 3.5 48 48'
+
+/** The logo's box (16-unit grid); `lidClassName` animates the lid on its own. */
+function LogoBox({ lidClassName }: { lidClassName?: string }) {
+  return (
+    <>
+      <path className={lidClassName} d={MARK_LID} />
+      <path d={MARK_BODY} fillRule="evenodd" />
+    </>
+  )
+}
 
 /** A large loader in the middle of its area, with its label under it. */
 function CenteredLoader({ label, placement, children }: { label?: string; placement: LoaderPlacement; children: ReactNode }) {
@@ -49,12 +60,15 @@ function CenteredLoader({ label, placement, children }: { label?: string; placem
   return placement === 'inline' ? <Center py="xl">{content}</Center> : <div className={classes.screen}>{content}</div>
 }
 
-/** One of the stacking boxes: a body with a lid, like the box in BoxLoader and EmptyBox. */
+/** One of the stacking boxes: the logo's box, 16 units wide, its lid's top at `y`. */
 function StackBox({ x, y }: { x: number; y: number }) {
+  // The animation moves the outer group with a CSS transform, which would replace a transform
+  // attribute on the same element, so the position sits on an inner group.
   return (
     <g className={classes.stackBox}>
-      <rect className={cx(classes.line, classes.stackBody)} x={x} y={y + 4} width="16" height="10" rx="1.5" />
-      <rect className={cx(classes.line, classes.stackBody)} x={x - 1.5} y={y} width="19" height="4" rx="1" />
+      <g transform={`translate(${x} ${y - 1})`}>
+        <LogoBox />
+      </g>
     </g>
   )
 }
@@ -81,9 +95,11 @@ function BoxIcon({ size, calm, large }: { size: number; calm?: boolean; large?: 
       viewBox={large ? CENTERED_VIEW_BOX : '0 0 48 48'}
       aria-hidden
     >
-      {!calm && <rect className={classes.peek} x="19" y="20" width="10" height="9" rx="1.5" />}
-      <rect className={cx(classes.line, classes.boxBody)} x="10" y="22" width="28" height="18" rx="2" />
-      <rect className={cx(classes.line, classes.lid)} x="8" y="16" width="32" height="6" rx="1.5" />
+      {/* Between the eyes, so it doesn't show through them while it waits inside the box. */}
+      {!calm && <rect className={classes.peek} x="21" y="20" width="6" height="9" />}
+      <g transform="translate(8 11) scale(2)">
+        <LogoBox lidClassName={classes.lid} />
+      </g>
     </svg>
   )
 }
@@ -176,9 +192,13 @@ export function ShopImportAnimation({ running = true }: { running?: boolean }) {
       <rect className={classes.line} x="18" y="28" width="44" height="32" rx="2" />
       <rect className={classes.line} x="35" y="42" width="10" height="18" rx="1" />
       <line className={cx(classes.line, classes.path)} x1="78" y1="44" x2="244" y2="44" />
-      <rect className={classes.packet} x="74" y="40" width="10" height="8" rx="1.5" />
-      <rect className={classes.packet} x="74" y="40" width="10" height="8" rx="1.5" />
-      <rect className={classes.packet} x="74" y="40" width="10" height="8" rx="1.5" />
+      {[0, 1, 2].map((packet) => (
+        <g key={packet} className={classes.packet}>
+          <g transform="translate(74 39.3) scale(0.625)">
+            <LogoBox />
+          </g>
+        </g>
+      ))}
       <g className={classes.warehouse}>
         <polyline className={classes.line} points="254,30 280,14 306,30" />
         <rect className={classes.line} x="258" y="30" width="44" height="30" rx="2" />

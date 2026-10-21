@@ -12,8 +12,8 @@
   <data name="LowStock_Item" xml:space="preserve"><value>Item</value></data>
   <data name="LowStock_Stock" xml:space="preserve"><value>Stock</value></data>
   <data name="LowStock_Min" xml:space="preserve"><value>Min.</value></data>
-  <data name="LowStock_Open" xml:space="preserve"><value>Open in Zalihe</value></data>
-  <data name="LowStock_Footer" xml:space="preserve"><value>Zalihe sends this email at most once a day, when an item falls to its minimum stock or runs out.</value></data>
+  <data name="LowStock_Open" xml:space="preserve"><value>Open in Lagerko</value></data>
+  <data name="LowStock_Footer" xml:space="preserve"><value>Lagerko sends this email at most once a day, when an item falls to its minimum stock or runs out.</value></data>
   <data name="Unit_Kom" xml:space="preserve"><value>pcs</value></data>
   <data name="Unit_Kg" xml:space="preserve"><value>kg</value></data>
   <data name="Unit_G" xml:space="preserve"><value>g</value></data>
@@ -23,18 +23,18 @@
   <data name="Unit_Pak" xml:space="preserve"><value>pack</value></data>
   <data name="ChannelFailure_Subject" xml:space="preserve"><value>{0} · Shop not working: {1}</value></data>
   <data name="ChannelFailure_Heading" xml:space="preserve"><value>The shop is not working</value></data>
-  <data name="ChannelFailure_Intro" xml:space="preserve"><value>Since {0} Zalihe can't connect to the shop {1}. Until it works again, stock from Zalihe isn't sent to the shop, and orders that didn't arrive right away are applied only once the connection works.</value></data>
+  <data name="ChannelFailure_Intro" xml:space="preserve"><value>Since {0} Lagerko can't connect to the shop {1}. Until it works again, stock from Lagerko isn't sent to the shop, and orders that didn't arrive right away are applied only once the connection works.</value></data>
   <data name="ChannelFailure_Reason" xml:space="preserve"><value>Reason</value></data>
   <data name="ChannelFailure_Reason_channel.unreachable" xml:space="preserve"><value>The shop can't be reached. Check that the site is up.</value></data>
-  <data name="ChannelFailure_Reason_channel.unauthorized" xml:space="preserve"><value>The shop rejected the keys. Check whether they were revoked or their “Read/Write” permission changed, then replace them in Zalihe.</value></data>
+  <data name="ChannelFailure_Reason_channel.unauthorized" xml:space="preserve"><value>The shop rejected the keys. Check whether they were revoked or their “Read/Write” permission changed, then replace them in Lagerko.</value></data>
   <data name="ChannelFailure_Reason_channel.not_woocommerce" xml:space="preserve"><value>WooCommerce is no longer found at the shop's address. Check that the plugin is active.</value></data>
   <data name="ChannelFailure_Reason_channel.unexpected_response" xml:space="preserve"><value>The shop answered unexpectedly. Usually a security plugin (e.g. Wordfence) or a cache is blocking the REST API.</value></data>
   <data name="ChannelFailure_Reason_Unknown" xml:space="preserve"><value>The shop didn't answer as expected.</value></data>
   <data name="ChannelFailure_Open" xml:space="preserve"><value>Open sales channels</value></data>
-  <data name="ChannelFailure_Footer" xml:space="preserve"><value>Once the connection works, Zalihe carries on by itself. This email comes once per outage.</value></data>
-  <data name="Invitation_Subject" xml:space="preserve"><value>{0} invites you to Zalihe</value></data>
+  <data name="ChannelFailure_Footer" xml:space="preserve"><value>Once the connection works, Lagerko carries on by itself. This email comes once per outage.</value></data>
+  <data name="Invitation_Subject" xml:space="preserve"><value>{0} invites you to Lagerko</value></data>
   <data name="Invitation_Heading" xml:space="preserve"><value>Invitation to {0}</value></data>
-  <data name="Invitation_Intro" xml:space="preserve"><value>{0} invites you to join {1} in Zalihe, the stock tracking app. Open the link, enter your name and a password, and you'll see the company's items and stock right away.</value></data>
+  <data name="Invitation_Intro" xml:space="preserve"><value>{0} invites you to join {1} in Lagerko, the stock tracking app. Open the link, enter your name and a password, and you'll see the company's items and stock right away.</value></data>
   <data name="Invitation_Open" xml:space="preserve"><value>Accept the invitation</value></data>
   <data name="Invitation_Footer" xml:space="preserve"><value>The link works until {0} and only once. If you weren't expecting this invitation, just ignore the email.</value></data>
 </root>

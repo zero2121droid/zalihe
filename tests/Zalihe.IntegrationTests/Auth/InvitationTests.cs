@@ -48,7 +48,7 @@ public partial class InvitationTests(ZaliheApiFactory factory)
         invitation.GetProperty("email").GetString().ShouldBe(email);
         invitation.GetProperty("state").GetString().ShouldBe("pending");
         var sent = factory.Emails.SentTo(email).ShouldHaveSingleItem();
-        sent.Subject.ShouldBe("Miljan te poziva u Zalihe");
+        sent.Subject.ShouldBe("Miljan te poziva u Lagerko");
         sent.Html.ShouldContain("https://app.zalihe.test/invite/");
         TokenFrom(sent.Text).Length.ShouldBe(43);
     }

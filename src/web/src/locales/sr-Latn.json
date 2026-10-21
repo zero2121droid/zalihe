@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "zalihe",
+    "appName": "lagerko",
     "languages": {
       "sr-Latn": "Srpski",
       "en": "English"
@@ -162,7 +162,7 @@
     },
     "invitation": {
       "invalid": "Poziv ne važi: link je već iskorišćen, opozvan ili je istekao.",
-      "email_taken": "Ova adresa već ima nalog u Zalihama."
+      "email_taken": "Ova adresa već ima nalog u Lagerku."
     },
     "email": {
       "unavailable": "Email trenutno ne može da se pošalje. Pokušaj ponovo za nekoliko minuta."
@@ -355,7 +355,7 @@
       "title": "Porudžbina #{{number}}",
       "placedAt": "Naručeno {{date}}",
       "shopProduct": "Proizvod u prodavnici",
-      "item": "Artikal u Zalihama",
+      "item": "Artikal u Lagerku",
       "ordered": "Naručeno",
       "applied": "Skinuto sa stanja",
       "inactive": "U ovom statusu porudžbina ne drži robu, pa ništa nije skinuto sa stanja (ili je vraćeno).",
@@ -456,17 +456,17 @@
     },
     "connect": {
       "title": "Poveži WooCommerce prodavnicu",
-      "intro": "Zalihe preko ključeva čitaju proizvode i porudžbine iz prodavnice i vraćaju stanje zaliha. Pre čuvanja proveravamo da li ključevi rade.",
+      "intro": "Lagerko preko ključeva čita proizvode i porudžbine iz prodavnice i vraća stanje zaliha. Pre čuvanja proveravamo da li ključevi rade.",
       "submit": "Poveži prodavnicu"
     },
     "help": {
       "title": "Gde da nađem ključeve?",
       "step1": "U WordPress administraciji otvori WooCommerce → Podešavanja → Napredno → REST API.",
-      "step2": "Klikni „Dodaj ključ”, upiši opis (npr. Zalihe), izaberi svog korisnika i dozvole „Čitanje/Pisanje”.",
+      "step2": "Klikni „Dodaj ključ”, upiši opis (npr. Lagerko), izaberi svog korisnika i dozvole „Čitanje/Pisanje”.",
       "step3": "Klikni „Generiši API ključ” i ovde nalepi Consumer key i Consumer secret. Secret se u WooCommerce-u prikazuje samo jednom.",
       "safety": "Ključevi se čuvaju šifrovani i posle povezivanja se više nigde ne prikazuju. Možeš ih opozvati u WooCommerce-u u svakom trenutku."
     },
-    "privacy": "Iz porudžbina Zalihe čitaju samo artikle, količine i status. Podatke kupaca (ime, adresu, telefon, email) ne preuzimamo i ne čuvamo.",
+    "privacy": "Iz porudžbina Lagerko čita samo artikle, količine i status. Podatke kupaca (ime, adresu, telefon, email) ne preuzimamo i ne čuvamo.",
     "card": {
       "connectedSince": "Povezano {{date}}",
       "checkedAt": "Provereno {{date}}",
@@ -489,7 +489,7 @@
       "retry": "Pokušaj ponovo",
       "figures": {
         "new": "Novi proizvodi",
-        "toLink": "Postoje u Zalihama",
+        "toLink": "Postoje u Lagerku",
         "linked": "Već povezano",
         "skipped": "Preskočeno"
       },
@@ -502,9 +502,9 @@
       },
       "link": {
         "title": "Povezivanje sa postojećim artiklima",
-        "note": "Ovi proizvodi imaju istu šifru kao artikli u Zalihama. Biće povezani, a artikli se ne menjaju: prodavnica preuzima njihovo stanje iz Zaliha.",
+        "note": "Ovi proizvodi imaju istu šifru kao artikli u Lagerku. Biće povezani, a artikli se ne menjaju: prodavnica preuzima njihovo stanje iz Lagerka.",
         "product": "Proizvod u prodavnici",
-        "item": "Artikal u Zalihama"
+        "item": "Artikal u Lagerku"
       },
       "skipped": {
         "title": "Proizvodi koji se preskaču",
@@ -530,7 +530,7 @@
     "alert": {
       "title": "Veza sa prodavnicom {{shop}} ne radi",
       "titleSince": "Veza sa prodavnicom {{shop}} ne radi od {{date}}",
-      "impact": "Dok se ne popravi, stanje iz Zaliha ne stiže u prodavnicu, pa ona može da proda ono čega nema.",
+      "impact": "Dok se ne popravi, stanje iz Lagerka ne stiže u prodavnicu, pa ona može da proda ono čega nema.",
       "open": "Otvori kanale"
     }
   },

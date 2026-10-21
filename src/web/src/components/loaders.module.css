@@ -1,6 +1,6 @@
 /*
- * Loading and empty-state motion. Line icons at stroke 1.8 like the Tabler icons, token colors
- * only. Every animation stops under prefers-reduced-motion; the resting frame is always readable.
+ * Loading and empty-state motion. Boxes are the logo's box (filled, eyes cut out); other drawings
+ * are line icons at stroke 1.8 like the Tabler icons. Token colors only. Every animation stops under prefers-reduced-motion; the resting frame is always readable.
  */
 
 .line {
@@ -30,11 +30,6 @@
   pointer-events: none;
   user-select: none;
   transition: opacity 0.2s ease-out;
-}
-
-/* Large loaders (120 px from a 48-unit grid): a thinner stroke keeps the lines near 2.5 px on screen. */
-.large .line {
-  stroke-width: 1;
 }
 
 /* Default Mantine loader (buttons, small spots): stock levels rising and falling on a shelf. */
@@ -77,13 +72,9 @@
   }
 }
 
-/* Page loader: three boxes with lids stacking up (the box of the empty state, smaller). */
+/* Page loader: three logo boxes stacking up (the box of the empty state, smaller). */
 .stack {
-  color: var(--z-accent-text);
-}
-
-.stackBody {
-  fill: var(--z-surface);
+  fill: var(--z-accent-text);
 }
 
 .stackBox {
@@ -116,15 +107,11 @@
   }
 }
 
-/* Box with a lid: opens while searching, barely moves in an empty state. */
+/* The logo's box: opens while loading one thing, barely moves in an empty state. */
 .box {
-  color: var(--z-accent-text);
+  fill: var(--z-accent-text);
   /* Fully open, the lid's corner reaches above the 48-unit grid; don't clip it. */
   overflow: visible;
-}
-
-.boxBody {
-  fill: var(--z-surface);
 }
 
 /*

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "zalihe",
+    "appName": "lagerko",
     "languages": {
       "sr-Latn": "Srpski",
       "en": "English"
@@ -162,7 +162,7 @@
     },
     "invitation": {
       "invalid": "The invitation isn't valid: the link was already used, revoked or has expired.",
-      "email_taken": "This address already has a Zalihe account."
+      "email_taken": "This address already has a Lagerko account."
     },
     "email": {
       "unavailable": "The email can't be sent right now. Try again in a few minutes."
@@ -355,7 +355,7 @@
       "title": "Order #{{number}}",
       "placedAt": "Placed {{date}}",
       "shopProduct": "Product in the shop",
-      "item": "Item in Zalihe",
+      "item": "Item in Lagerko",
       "ordered": "Ordered",
       "applied": "Taken from stock",
       "inactive": "In this status the order holds no goods, so nothing is taken from stock (or it was returned).",
@@ -456,17 +456,17 @@
     },
     "connect": {
       "title": "Connect a WooCommerce shop",
-      "intro": "With these keys Zalihe reads products and orders from the shop and sends back stock levels. We check that the keys work before saving them.",
+      "intro": "With these keys Lagerko reads products and orders from the shop and sends back stock levels. We check that the keys work before saving them.",
       "submit": "Connect shop"
     },
     "help": {
       "title": "Where do I find the keys?",
       "step1": "In WordPress admin, open WooCommerce → Settings → Advanced → REST API.",
-      "step2": "Click “Add key”, enter a description (e.g. Zalihe), choose your user and “Read/Write” permissions.",
+      "step2": "Click “Add key”, enter a description (e.g. Lagerko), choose your user and “Read/Write” permissions.",
       "step3": "Click “Generate API key” and paste the Consumer key and Consumer secret here. WooCommerce shows the secret only once.",
       "safety": "Keys are stored encrypted and are never shown again after connecting. You can revoke them in WooCommerce at any time."
     },
-    "privacy": "From orders, Zalihe reads only products, quantities and status. Customer data (name, address, phone, email) is never fetched or stored.",
+    "privacy": "From orders, Lagerko reads only products, quantities and status. Customer data (name, address, phone, email) is never fetched or stored.",
     "card": {
       "connectedSince": "Connected {{date}}",
       "checkedAt": "Checked {{date}}",
@@ -489,7 +489,7 @@
       "retry": "Try again",
       "figures": {
         "new": "New products",
-        "toLink": "Already in Zalihe",
+        "toLink": "Already in Lagerko",
         "linked": "Already linked",
         "skipped": "Skipped"
       },
@@ -502,9 +502,9 @@
       },
       "link": {
         "title": "Linking to existing items",
-        "note": "These products have the same SKU as items in Zalihe. They will be linked and the items stay as they are: the shop takes over their stock from Zalihe.",
+        "note": "These products have the same SKU as items in Lagerko. They will be linked and the items stay as they are: the shop takes over their stock from Lagerko.",
         "product": "Shop product",
-        "item": "Item in Zalihe"
+        "item": "Item in Lagerko"
       },
       "skipped": {
         "title": "Products that are skipped",
@@ -530,7 +530,7 @@
     "alert": {
       "title": "The connection to {{shop}} is not working",
       "titleSince": "The connection to {{shop}} has not been working since {{date}}",
-      "impact": "Until it is fixed, stock from Zalihe doesn't reach the shop, so it may sell what is gone.",
+      "impact": "Until it is fixed, stock from Lagerko doesn't reach the shop, so it may sell what is gone.",
       "open": "Open channels"
     }
   },

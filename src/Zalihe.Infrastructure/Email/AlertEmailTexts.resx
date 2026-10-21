@@ -12,8 +12,8 @@
   <data name="LowStock_Item" xml:space="preserve"><value>Artikal</value></data>
   <data name="LowStock_Stock" xml:space="preserve"><value>Stanje</value></data>
   <data name="LowStock_Min" xml:space="preserve"><value>Min.</value></data>
-  <data name="LowStock_Open" xml:space="preserve"><value>Otvori u Zalihama</value></data>
-  <data name="LowStock_Footer" xml:space="preserve"><value>Zalihe šalju ovaj email najviše jednom dnevno, kad neki artikal padne na minimalnu zalihu ili ostane bez zaliha.</value></data>
+  <data name="LowStock_Open" xml:space="preserve"><value>Otvori u Lagerku</value></data>
+  <data name="LowStock_Footer" xml:space="preserve"><value>Lagerko šalje ovaj email najviše jednom dnevno, kad neki artikal padne na minimalnu zalihu ili ostane bez zaliha.</value></data>
   <data name="Unit_Kom" xml:space="preserve"><value>kom</value></data>
   <data name="Unit_Kg" xml:space="preserve"><value>kg</value></data>
   <data name="Unit_G" xml:space="preserve"><value>g</value></data>
@@ -23,18 +23,18 @@
   <data name="Unit_Pak" xml:space="preserve"><value>pak</value></data>
   <data name="ChannelFailure_Subject" xml:space="preserve"><value>{0} · Prodavnica ne radi: {1}</value></data>
   <data name="ChannelFailure_Heading" xml:space="preserve"><value>Prodavnica ne radi</value></data>
-  <data name="ChannelFailure_Intro" xml:space="preserve"><value>Od {0} Zalihe ne mogu da se povežu sa prodavnicom {1}. Dok veza ne proradi, stanje iz Zaliha se ne šalje u prodavnicu, a porudžbine koje nisu odmah stigle obradiće se tek kad veza proradi.</value></data>
+  <data name="ChannelFailure_Intro" xml:space="preserve"><value>Od {0} Lagerko ne može da se poveže sa prodavnicom {1}. Dok veza ne proradi, stanje iz Lagerka se ne šalje u prodavnicu, a porudžbine koje nisu odmah stigle obradiće se tek kad veza proradi.</value></data>
   <data name="ChannelFailure_Reason" xml:space="preserve"><value>Razlog</value></data>
   <data name="ChannelFailure_Reason_channel.unreachable" xml:space="preserve"><value>Prodavnica nije dostupna. Proveri da li sajt radi.</value></data>
-  <data name="ChannelFailure_Reason_channel.unauthorized" xml:space="preserve"><value>Prodavnica je odbila ključeve. Proveri da li su opozvani ili im je promenjena dozvola „Čitanje/Pisanje”, pa ih zameni u Zalihama.</value></data>
+  <data name="ChannelFailure_Reason_channel.unauthorized" xml:space="preserve"><value>Prodavnica je odbila ključeve. Proveri da li su opozvani ili im je promenjena dozvola „Čitanje/Pisanje”, pa ih zameni u Lagerku.</value></data>
   <data name="ChannelFailure_Reason_channel.not_woocommerce" xml:space="preserve"><value>Na adresi prodavnice više nije pronađen WooCommerce. Proveri da li je dodatak uključen.</value></data>
   <data name="ChannelFailure_Reason_channel.unexpected_response" xml:space="preserve"><value>Prodavnica je odgovorila neočekivano. Najčešće sigurnosni dodatak (npr. Wordfence) ili keš blokira REST API.</value></data>
   <data name="ChannelFailure_Reason_Unknown" xml:space="preserve"><value>Prodavnica nije odgovorila kako treba.</value></data>
   <data name="ChannelFailure_Open" xml:space="preserve"><value>Otvori kanale prodaje</value></data>
-  <data name="ChannelFailure_Footer" xml:space="preserve"><value>Kad veza proradi, Zalihe same nastavljaju. Ovaj email stiže jednom po prekidu.</value></data>
-  <data name="Invitation_Subject" xml:space="preserve"><value>{0} te poziva u Zalihe</value></data>
+  <data name="ChannelFailure_Footer" xml:space="preserve"><value>Kad veza proradi, Lagerko sam nastavlja. Ovaj email stiže jednom po prekidu.</value></data>
+  <data name="Invitation_Subject" xml:space="preserve"><value>{0} te poziva u Lagerko</value></data>
   <data name="Invitation_Heading" xml:space="preserve"><value>Poziv u firmu {0}</value></data>
-  <data name="Invitation_Intro" xml:space="preserve"><value>{0} te poziva da se pridružiš firmi {1} u Zalihama, aplikaciji za praćenje zaliha. Otvori link, upiši ime i lozinku i odmah vidiš artikle i stanje firme.</value></data>
+  <data name="Invitation_Intro" xml:space="preserve"><value>{0} te poziva da se pridružiš firmi {1} u Lagerku, aplikaciji za praćenje zaliha. Otvori link, upiši ime i lozinku i odmah vidiš artikle i stanje firme.</value></data>
   <data name="Invitation_Open" xml:space="preserve"><value>Prihvati poziv</value></data>
   <data name="Invitation_Footer" xml:space="preserve"><value>Link važi do {0} i može da se iskoristi jednom. Ako ne očekuješ ovaj poziv, samo zanemari email.</value></data>
 </root>

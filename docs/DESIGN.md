@@ -23,9 +23,9 @@ Dve teme: **tamna** (podrazumevana) i **svetla**. Korisnik bira temu prekidačem
 | `text` | `#E4E7DC` | `#1B1E16` | glavni tekst |
 | `text-2` | `#C4C9B8` | `#3B4033` | sekundarni tekst u tabelama |
 | `muted` | `#9BA18F` | `#5C6250` | opisi, oznake, jedinice mere |
-| `accent` | `#B4C17E` | `#B4C17E` | primarno dugme (tamni tekst na njemu), logo |
+| `accent` | `#B4C17E` | `#B4C17E` | primarno dugme (tamni tekst na njemu) |
 | `accent-hover` | `#CBD69A` | `#A3B16A` | hover za primarno dugme |
-| `accent-text` | `#B4C17E` | `#55621E` | linkovi, ikona aktivne stavke, fokus okvir |
+| `accent-text` | `#B4C17E` | `#55621E` | linkovi, ikona aktivne stavke, fokus okvir, znak u logou |
 | `on-accent` | `#11130E` | `#11130E` | tekst na primarnom dugmetu |
 
 `accent-text` postoji zato što svetla maslinasta nije čitljiva kao tekst na beloj pozadini (kontrast 1,9). U tamnoj temi je isti kao `accent`. Hover za linkove: u tamnoj temi `accent-hover`, u svetloj `text`.
@@ -92,7 +92,7 @@ Linijske ikone, debljina 1.8, 16 px u navigaciji i 18-20 px na telefonu. Bibliot
 Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CSS-a, bez biblioteke.
 
 - Linijske ikone debljine 1.8 u bojama tokena, nikad scene ni ilustracije.
-- Učitavanje: podrazumevani `Loader` su stubići na polici (isti se koristi i u dugmadima). Za celu stranicu služe kutije sa poklopcem koje se slažu (iste kao kutija praznog stanja), za tabele redovi koji „dišu“ (samo providnost, bez preliva), a kad se otvara jedna stvar (artikal, spisak proizvoda iz prodavnice) kutija koja se otvara. Pretraga ne sklanja listu: stari rezultati ostaju, a u polju za pretragu se vrte mali stubići dok ne stignu novi. Loader se ne prikazuje ako odgovor stigne za manje od 200 ms, a kad se jednom pojavi, ostaje najmanje 500 ms, da ne bljesne (`useLoadingDisplay`).
+- Učitavanje: podrazumevani `Loader` su stubići na polici (isti se koristi i u dugmadima). Sve kutije u animacijama su kutija iz logoa (puna, poklopac odvojen procepom, oči kao rupe; `logoMark.ts`). Za celu stranicu služe kutije koje se slažu (iste kao kutija praznog stanja), za tabele redovi koji „dišu“ (samo providnost, bez preliva), a kad se otvara jedna stvar (artikal, spisak proizvoda iz prodavnice) kutija koja se otvara. Pretraga ne sklanja listu: stari rezultati ostaju, a u polju za pretragu se vrte mali stubići dok ne stignu novi. Loader se ne prikazuje ako odgovor stigne za manje od 200 ms, a kad se jednom pojavi, ostaje najmanje 500 ms, da ne bljesne (`useLoadingDisplay`).
 - Pretraga u listi: dok se kuca, redovi trenutne strane koji ne sadrže ukucani tekst (naziv, šifra, barkod) se skupe (0,3 s), a ukucani deo naziva i šifre se istakne (pozadina `selected`, tekst `accent-text`). Kad stignu rezultati sa servera, oni zamene listu (`SearchMatch`, `SearchRow` u `search.tsx`).
 - Promena stanja: broj glatko pređe na novu vrednost (oko 0,5 s), a iznad njega kratko iskoči `+24` ili `−2`. Novo kretanje u istoriji se kratko istakne.
 - Unos količine (prijem, prodaja, povrat, korekcija): pored polja su dugmad − i + (`surface-2`, 40 px, na telefonu 44 px), jedan korak po pritisku, a dok se drži, menja se brže. „Stanje posle” se ne prepisuje odjednom: svaka cifra se zavrti do nove vrednosti kao brojčanik (0,6 s, `Odometer`); separatori i znak stoje.

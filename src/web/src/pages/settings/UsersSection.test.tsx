@@ -63,7 +63,7 @@ describe('UsersSection', () => {
     await userEvent.type(screen.getByLabelText('Pozovi novog korisnika'), 'miljan@zrno.rs')
     await userEvent.click(screen.getByRole('button', { name: 'Pošalji poziv' }))
 
-    expect(await screen.findByText('Ova adresa već ima nalog u Zalihama.')).toBeInTheDocument()
+    expect(await screen.findByText('Ova adresa već ima nalog u Lagerku.')).toBeInTheDocument()
   })
 
   it('Revoke_Invitation_DeletesIt', async () => {

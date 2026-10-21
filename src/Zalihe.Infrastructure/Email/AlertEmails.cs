@@ -50,6 +50,24 @@ public class AlertEmails(
         await sender.SendAsync(message with { To = to, ToName = "" }, ct);
     }
 
+    /// <summary>
+    /// The link for setting a new password, in the user's language. <paramref name="link"/> is the app path
+    /// with the email and token, e.g. "/reset-password?email=…&amp;token=…".
+    /// </summary>
+    public async Task SendPasswordResetAsync(string to, string language, string company, string link,
+        DateTimeOffset expiresAt, CancellationToken ct)
+    {
+        var message = InLanguage(language, culture =>
+        {
+            var until = TimeZoneInfo.ConvertTime(expiresAt, LowStockAlertService.Zone).ToString("g", culture);
+            string intro = texts["PasswordReset_Intro", to];
+            return Frame(company, texts["PasswordReset_Subject"], texts["PasswordReset_Heading"],
+                $"<p style=\"margin:0;font-size:14px;color:#3B4033\">{E(intro)}</p>", intro,
+                texts["PasswordReset_Open"], link, texts["PasswordReset_Footer", until]);
+        });
+        await sender.SendAsync(message with { To = to, ToName = "" }, ct);
+    }
+
     /// <summary>Writes the email for each user of the current company in the user's language and sends it.</summary>
     private async Task SendToCompanyAsync(Func<string, CultureInfo, EmailMessage> write, CancellationToken ct)
     {

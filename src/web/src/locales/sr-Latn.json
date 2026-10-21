@@ -43,7 +43,8 @@
       "rememberMe": "Zapamti me na ovom uređaju",
       "submit": "Prijavi se",
       "noAccount": "Nemaš nalog?",
-      "toRegister": "Registruj firmu"
+      "toRegister": "Registruj firmu",
+      "forgot": "Zaboravljena lozinka?"
     },
     "register": {
       "title": "Registracija firme",
@@ -64,6 +65,23 @@
       "invalidTitle": "Poziv ne važi",
       "invalidText": "Link je već iskorišćen, opozvan ili je istekao. Zamoli da ti pošalju nov poziv.",
       "toLogin": "Na prijavu"
+    },
+    "forgot": {
+      "title": "Zaboravljena lozinka",
+      "subtitle": "Upiši email svog naloga i poslaćemo ti link za novu lozinku.",
+      "submit": "Pošalji link",
+      "sentTitle": "Proveri email",
+      "sentText": "Ako postoji nalog sa adresom {{email}}, poslali smo link za novu lozinku. Link važi dva sata.",
+      "toLogin": "Nazad na prijavu"
+    },
+    "reset": {
+      "title": "Nova lozinka",
+      "subtitle": "Upiši novu lozinku za {{email}}.",
+      "password": "Nova lozinka",
+      "submit": "Sačuvaj i prijavi se",
+      "invalidTitle": "Link ne važi",
+      "invalidText": "Link za novu lozinku je već iskorišćen ili je istekao. Zatraži nov.",
+      "requestNew": "Zatraži nov link"
     }
   },
   "home": {
@@ -125,7 +143,8 @@
       "email_taken": "Nalog sa ovom email adresom već postoji.",
       "password_too_short": "Lozinka mora imati najmanje {{min}} znakova.",
       "antiforgery_invalid": "Sesija je istekla. Osveži stranicu i pokušaj ponovo.",
-      "wrong_password": "Trenutna lozinka nije tačna."
+      "wrong_password": "Trenutna lozinka nije tačna.",
+      "reset_invalid": "Link za novu lozinku ne važi. Zatraži nov."
     },
     "item": {
       "sku_duplicate": "Artikal sa ovom šifrom već postoji.",

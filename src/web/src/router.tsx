@@ -20,15 +20,19 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/login', element: <LoginPage /> },
           { path: '/register', element: <RegisterPage /> },
+          { path: '/forgot-password', lazy: async () => ({ Component: (await import('./pages/ForgotPasswordPage')).ForgotPasswordPage }) },
         ],
       },
     ],
   },
-  // The invitation link works signed in or not: accepting signs in as the new user.
+  // The invitation and password reset links work signed in or not: both sign in as that link's user.
   {
     HydrateFallback: StartingUp,
     element: <AuthLayout />,
-    children: [{ path: '/invite/:token', lazy: async () => ({ Component: (await import('./pages/AcceptInvitationPage')).AcceptInvitationPage }) }],
+    children: [
+      { path: '/invite/:token', lazy: async () => ({ Component: (await import('./pages/AcceptInvitationPage')).AcceptInvitationPage }) },
+      { path: '/reset-password', lazy: async () => ({ Component: (await import('./pages/ResetPasswordPage')).ResetPasswordPage }) },
+    ],
   },
   {
     HydrateFallback: StartingUp,

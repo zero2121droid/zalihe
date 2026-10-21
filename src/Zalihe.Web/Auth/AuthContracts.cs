@@ -26,6 +26,19 @@ public record LoginRequest(
     string Password,
     bool RememberMe = false);
 
+public record ForgotPasswordRequest(
+    [Required(ErrorMessage = "validation.required")]
+    [EmailAddress(ErrorMessage = "validation.email")]
+    string Email);
+
+public record ResetPasswordRequest(
+    [Required(ErrorMessage = "validation.required")]
+    string Email,
+    [Required(ErrorMessage = "validation.required")]
+    string Token,
+    [Required(ErrorMessage = "validation.required")]
+    string NewPassword);
+
 public record CurrentUserResponse(Guid Id, string Name, string Email, string Language, Guid TenantId, string TenantName);
 
 public record UpdateCompanyRequest(

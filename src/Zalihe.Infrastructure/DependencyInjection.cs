@@ -65,6 +65,8 @@ public static class DependencyInjection
         services.AddLocalization();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<AlertEmails>();
+        // Limits how often one account gets a password reset email (AccountService).
+        services.AddMemoryCache();
         services.AddScoped<IAlertEmails>(sp => sp.GetRequiredService<AlertEmails>());
         services.AddSingleton<IShopOrderReader, WooCommerceOrderReader>();
         services.AddSingleton(sp =>

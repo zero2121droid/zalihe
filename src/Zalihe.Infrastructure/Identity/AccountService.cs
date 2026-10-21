@@ -1,10 +1,14 @@
+using System.Buffers.Text;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Tenants;
 using Zalihe.Domain.Users;
+using Zalihe.Infrastructure.Email;
 using Zalihe.Infrastructure.Persistence;
 
 namespace Zalihe.Infrastructure.Identity;
@@ -20,6 +24,9 @@ public partial class AccountService(
     AppDbContext db,
     UserManager<User> userManager,
     IOptions<IdentityOptions> identityOptions,
+    IOptions<DataProtectionTokenProviderOptions> tokenOptions,
+    AlertEmails emails,
+    IMemoryCache cache,
     TimeProvider timeProvider)
 {
     /// <summary>Creates a company together with its owner account.</summary>
@@ -100,6 +107,88 @@ public partial class AccountService(
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return new RegistrationResult(user, []);
+    }
+
+    public const string ResetInvalid = "auth.reset_invalid";
+
+    /// <summary>How often one account can get a reset email, so the form can't flood someone's inbox.</summary>
+    public static readonly TimeSpan PasswordResetEmailInterval = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// Emails a link for setting a new password, in the user's language. An unknown address gets nothing,
+    /// and the caller answers the same either way, so the form doesn't tell which addresses have an account.
+    /// </summary>
+    public async Task RequestPasswordResetAsync(string email, CancellationToken ct)
+    {
+        var user = await userManager.FindByEmailAsync(email.Trim());
+        if (user?.Email is null)
+        {
+            return;
+        }
+
+        var throttleKey = $"password-reset:{user.Id}";
+        if (cache.TryGetValue(throttleKey, out _))
+        {
+            return;
+        }
+
+        cache.Set(throttleKey, true, PasswordResetEmailInterval);
+
+        // Identity's token holds characters that don't belong in an address (+, /, =).
+        var token = Base64Url.EncodeToString(Encoding.UTF8.GetBytes(await userManager.GeneratePasswordResetTokenAsync(user)));
+        var link = $"/reset-password?email={Uri.EscapeDataString(user.Email)}&token={token}";
+        var tenant = await GetTenantAsync(user.TenantId, ct);
+        var expiresAt = timeProvider.GetUtcNow() + tokenOptions.Value.TokenLifespan;
+        await emails.SendPasswordResetAsync(user.Email, user.Language, tenant.Name, link, expiresAt, ct);
+    }
+
+    /// <summary>
+    /// Sets a new password with the token from the emailed link and unlocks the account. Identity then
+    /// changes the security stamp, so the link can't be used again and other devices are signed out.
+    /// </summary>
+    public async Task<RegistrationResult> ResetPasswordAsync(string email, string token, string newPassword)
+    {
+        var user = await userManager.FindByEmailAsync(email.Trim());
+        if (user is null || !TryDecodeToken(token, out var decoded))
+        {
+            return Failed(new AppError(ResetInvalid));
+        }
+
+        var result = await userManager.ResetPasswordAsync(user, decoded, newPassword);
+        if (!result.Succeeded)
+        {
+            return Failed([.. result.Errors.Select(MapPasswordResetError).Distinct()]);
+        }
+
+        // Five wrong passwords lock the account; whoever proved they own the address may come in.
+        await userManager.ResetAccessFailedCountAsync(user);
+        await userManager.SetLockoutEndDateAsync(user, null);
+        return new RegistrationResult(user, []);
+    }
+
+    private static bool TryDecodeToken(string token, out string decoded)
+    {
+        try
+        {
+            decoded = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(token));
+            return true;
+        }
+        catch (FormatException)
+        {
+            decoded = "";
+            return false;
+        }
+    }
+
+    private AppError MapPasswordResetError(IdentityError error)
+    {
+        if (error.Code == nameof(IdentityErrorDescriber.InvalidToken))
+        {
+            return new AppError(ResetInvalid);
+        }
+
+        var mapped = MapIdentityError(error);
+        return mapped.Field == "password" ? mapped with { Field = "newPassword" } : mapped;
     }
 
     public Task<Tenant> GetTenantAsync(Guid tenantId, CancellationToken ct) =>

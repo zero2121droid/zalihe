@@ -40,6 +40,8 @@ Registracija firme, vlasnik plus pozivanje dodatnih korisnika. Bez uloga i prava
 
 Pozivanje: korisnik upiše email, a pozvani dobija link koji važi 7 dana i može da se iskoristi jednom; ponovni poziv šalje nov link, a stari prestaje da važi, a poziv može da se opozove. Pozvani upiše ime i lozinku i ulazi u firmu. Adresa koja već ima nalog ne može da se pozove (jedan korisnik pripada jednoj firmi). U v1 poziva svaki korisnik firme, a sa ulogama admin.
 
+Zaboravljena lozinka: korisnik upiše email i dobija link za novu lozinku (na svom jeziku), koji važi 2 sata i može da se iskoristi jednom. Odgovor je isti i kad adresa nema nalog, a jedan nalog dobija najviše jedan takav email na 2 minuta. Posle nove lozinke korisnik je prijavljen, nalog se otključava (ako je bio zaključan zbog pogrešnih lozinki), a ostali uređaji se odjavljuju.
+
 Podešavanja: naziv firme, a za prijavljenog korisnika ime, jezik i promena lozinke. Email je i korisničko ime i u v1 se ne menja. Kad stignu uloge, naziv firme menja samo admin.
 
 ### 2.8 Van obima v1 (ne implementirati)

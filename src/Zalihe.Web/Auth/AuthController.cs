@@ -54,6 +54,35 @@ public class AuthController(
         return NoContent();
     }
 
+    /// <summary>
+    /// Emails a link for setting a new password. Always 204, whether or not the address has an account,
+    /// so the form doesn't reveal which addresses are registered.
+    /// </summary>
+    [HttpPost("forgot-password", Name = "ForgotPassword")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken ct)
+    {
+        await accountService.RequestPasswordResetAsync(request.Email, ct);
+        return NoContent();
+    }
+
+    /// <summary>Sets a new password with the emailed link's token and signs the user in.</summary>
+    [HttpPost("reset-password", Name = "ResetPassword")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+    {
+        var result = await accountService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            return ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed, result.Errors);
+        }
+
+        await signInManager.SignInAsync(result.User!, isPersistent: false);
+        return NoContent();
+    }
+
     [Authorize]
     [HttpPost("logout", Name = "Logout")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

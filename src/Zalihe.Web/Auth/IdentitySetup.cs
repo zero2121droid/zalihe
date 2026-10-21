@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Zalihe.Infrastructure.Identity;
 using Zalihe.Infrastructure.Persistence;
 
@@ -21,6 +22,9 @@ public static class IdentitySetup
             })
             .AddEntityFrameworkStores<AppDbContext>()
             .AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>();
+
+        // Password reset links (the only Identity tokens in use) are valid for two hours.
+        services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(2));
 
         services.ConfigureApplicationCookie(options =>
         {

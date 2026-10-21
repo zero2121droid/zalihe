@@ -37,4 +37,9 @@
   <data name="Invitation_Intro" xml:space="preserve"><value>{0} te poziva da se pridružiš firmi {1} u Lagerku, aplikaciji za praćenje zaliha. Otvori link, upiši ime i lozinku i odmah vidiš artikle i stanje firme.</value></data>
   <data name="Invitation_Open" xml:space="preserve"><value>Prihvati poziv</value></data>
   <data name="Invitation_Footer" xml:space="preserve"><value>Link važi do {0} i može da se iskoristi jednom. Ako ne očekuješ ovaj poziv, samo zanemari email.</value></data>
+  <data name="PasswordReset_Subject" xml:space="preserve"><value>Nova lozinka za Lagerko</value></data>
+  <data name="PasswordReset_Heading" xml:space="preserve"><value>Postavi novu lozinku</value></data>
+  <data name="PasswordReset_Intro" xml:space="preserve"><value>Neko je zatražio novu lozinku za nalog {0}. Ako si to ti, otvori link i upiši novu lozinku.</value></data>
+  <data name="PasswordReset_Open" xml:space="preserve"><value>Postavi novu lozinku</value></data>
+  <data name="PasswordReset_Footer" xml:space="preserve"><value>Link važi do {0} i može da se iskoristi jednom. Ako zahtev nije od tebe, zanemari ovaj email: stara lozinka i dalje važi.</value></data>
 </root>

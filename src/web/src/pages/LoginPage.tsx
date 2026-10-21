@@ -59,6 +59,9 @@ export function LoginPage() {
           onChange={(e) => setPassword(e.currentTarget.value)}
           error={fieldErrors.password}
         />
+        <Anchor component={Link} to="/forgot-password" fz="sm" style={{ alignSelf: 'flex-start' }}>
+          {t('auth.login.forgot')}
+        </Anchor>
         <Checkbox
           label={t('auth.login.rememberMe')}
           checked={rememberMe}

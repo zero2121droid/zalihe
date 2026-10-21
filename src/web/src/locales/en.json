@@ -43,7 +43,8 @@
       "rememberMe": "Remember me on this device",
       "submit": "Sign in",
       "noAccount": "No account yet?",
-      "toRegister": "Register your company"
+      "toRegister": "Register your company",
+      "forgot": "Forgot your password?"
     },
     "register": {
       "title": "Register your company",
@@ -64,6 +65,23 @@
       "invalidTitle": "The invitation isn't valid",
       "invalidText": "The link was already used, revoked or has expired. Ask for a new invitation.",
       "toLogin": "To sign in"
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "subtitle": "Enter your account's email and we'll send you a link for a new password.",
+      "submit": "Send link",
+      "sentTitle": "Check your email",
+      "sentText": "If there is an account with {{email}}, we sent it a link for a new password. The link is valid for two hours.",
+      "toLogin": "Back to sign in"
+    },
+    "reset": {
+      "title": "New password",
+      "subtitle": "Enter a new password for {{email}}.",
+      "password": "New password",
+      "submit": "Save and sign in",
+      "invalidTitle": "The link is not valid",
+      "invalidText": "The link for a new password was already used or has expired. Ask for a new one.",
+      "requestNew": "Ask for a new link"
     }
   },
   "home": {
@@ -125,7 +143,8 @@
       "email_taken": "An account with this email already exists.",
       "password_too_short": "The password must have at least {{min}} characters.",
       "antiforgery_invalid": "Your session has expired. Refresh the page and try again.",
-      "wrong_password": "The current password is wrong."
+      "wrong_password": "The current password is wrong.",
+      "reset_invalid": "The link for a new password is not valid. Ask for a new one."
     },
     "item": {
       "sku_duplicate": "An item with this SKU already exists.",

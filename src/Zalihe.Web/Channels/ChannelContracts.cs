@@ -27,4 +27,6 @@ public record ReplaceCredentialsRequest(
 public record ImportProductsRequest(
     [Required(ErrorMessage = "validation.required")]
     [MaxLength(ProductImportService.MaxProducts, ErrorMessage = "validation.max_length")]
-    IReadOnlyList<string> CreateExternalIds);
+    IReadOnlyList<string> CreateExternalIds,
+    [MaxLength(ProductImportService.MaxProducts * 5, ErrorMessage = "validation.max_length")]
+    IReadOnlyList<ProductUpdateChoice>? ApplyUpdates = null);

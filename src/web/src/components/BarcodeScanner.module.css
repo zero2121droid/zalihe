@@ -1,0 +1,61 @@
+/* The camera view of the quick search (DESIGN.md "Brza pretraga"): the picture with a frame to aim with. */
+.view {
+  position: relative;
+  margin: 6px;
+  border-radius: var(--mantine-radius-sm);
+  overflow: hidden;
+  background: var(--z-bg);
+  aspect-ratio: 4 / 3;
+  max-height: 50vh;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A wide frame, the shape of a barcode, with a line that moves while it looks. */
+.frame {
+  position: absolute;
+  inset: 30% 12%;
+  border: 2px solid var(--z-accent);
+  border-radius: var(--mantine-radius-sm);
+  pointer-events: none;
+}
+
+.frame::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--z-accent);
+  opacity: 0.7;
+  animation: sweep 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes sweep {
+  from {
+    top: 15%;
+  }
+  to {
+    top: 85%;
+  }
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame::after {
+    animation: none;
+    top: 50%;
+  }
+}

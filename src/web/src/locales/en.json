@@ -10,12 +10,13 @@
     "nav": {
       "main": "Main navigation",
       "home": "Home",
-      "openMenu": "Open menu",
       "items": "Items",
       "orders": "Orders",
       "channels": "Sales channels",
       "reports": "Reports",
-      "settings": "Settings"
+      "settings": "Settings",
+      "more": "More",
+      "phone": "Navigation"
     },
     "logout": "Sign out",
     "cancel": "Cancel",
@@ -32,7 +33,25 @@
     "back": "Back",
     "close": "Close",
     "saved": "Saved",
-    "undo": "Undo"
+    "undo": "Undo",
+    "quickSearch": {
+      "open": "Find an item",
+      "title": "Quick search",
+      "label": "Name, SKU or barcode",
+      "results": "Items",
+      "hint": "Type part of a name, a SKU or a barcode.",
+      "empty": "No item matches “{{search}}”.",
+      "keys": "↑↓ choose · Enter opens · Esc closes",
+      "camera": {
+        "open": "Scan a barcode with the camera",
+        "view": "Camera picture",
+        "hint": "Point the camera at a barcode.",
+        "cancel": "Cancel",
+        "denied": "The camera isn’t allowed. Allow it in the browser settings and try again.",
+        "missing": "This device has no camera.",
+        "failed": "The camera can’t start. Check whether another app is using it."
+      }
+    }
   },
   "auth": {
     "login": {
@@ -86,12 +105,6 @@
   },
   "home": {
     "title": "Home",
-    "empty": {
-      "title": "No items yet",
-      "description": "Once you add items, you'll see stock value, what to reorder and the latest movements here.",
-      "actions": "Connect your WooCommerce shop and import its products, or add items one by one or from a CSV file.",
-      "connectShop": "Connect a shop"
-    },
     "figures": {
       "stockValue": "Stock value",
       "stockValueHint": "at purchase price",
@@ -113,6 +126,37 @@
       "all": "All items",
       "none": "No movements yet.",
       "yesterday": "yesterday"
+    },
+    "setup": {
+      "eyebrow": "First steps",
+      "title": "Two steps to accurate stock",
+      "description": "When both are done, this goes away and the stock overview takes its place.",
+      "progress": "{{done}} of {{total}}",
+      "items": {
+        "title": "Add items",
+        "description": "One by one, from a CSV file or from your web shop. The starting stock is recorded right away.",
+        "done": "Items are added."
+      },
+      "minStock": {
+        "title": "Set minimum stock",
+        "description": "When stock falls to the minimum, the item is marked and an email arrives. Without a minimum there are no alerts.",
+        "action": "Open items",
+        "done": "Minimum stock is set."
+      },
+      "shop": {
+        "title": "Connect a WooCommerce shop",
+        "optional": "optional",
+        "description": "If you have a web shop: orders take stock off by themselves, and the stock goes back to the shop.",
+        "action": "Connect a shop",
+        "done": "The shop is connected."
+      }
+    },
+    "unlinked": {
+      "title_one": "{{count}} order has unlinked products",
+      "title_few": "{{count}} orders have unlinked products",
+      "title_other": "{{count}} orders have unlinked products",
+      "impact": "Those products aren’t linked to items, so the goods from these orders weren’t taken off stock.",
+      "open": "Link the products"
     }
   },
   "errors": {
@@ -454,6 +498,23 @@
         "changes": "Item changes"
       },
       "emptyValue": "empty"
+    },
+    "shop": {
+      "pending_one": "Sending to the shop",
+      "pending_few": "Sending to the shops",
+      "pending_other": "Sending to the shops",
+      "synced_one": "The shop shows this stock",
+      "synced_few": "The shops show this stock",
+      "synced_other": "The shops show this stock"
+    },
+    "chart": {
+      "title": "Stock over time",
+      "period": "Chart period",
+      "days": "{{count}} days",
+      "minimum": "minimum {{value}}",
+      "today": "today",
+      "summary": "Stock over the last {{days}} days: {{start}} at the start, {{end}} now, lowest {{lowest}} {{unit}}.",
+      "legendBelow": "Below minimum"
     }
   },
   "channels": {
@@ -521,7 +582,7 @@
       },
       "link": {
         "title": "Linking to existing items",
-        "note": "These products have the same SKU as items in Lagerko. They will be linked and the items stay as they are: the shop takes over their stock from Lagerko.",
+        "note": "These products have the same SKU as items in Lagerko. They will be linked, and the shop takes their stock from Lagerko. Items change only in the changes you choose below.",
         "product": "Shop product",
         "item": "Item in Lagerko"
       },
@@ -543,14 +604,40 @@
         "linked": "Linked to existing items: {{count}}",
         "skipped": "Products skipped: {{count}}",
         "toItems": "Go to items",
-        "toChannels": "Back to channels"
-      }
+        "toChannels": "Back to channels",
+        "updated": "Items changed: {{count}}"
+      },
+      "updates": {
+        "title": "Differences from the shop",
+        "note": "These items differ from their products in the shop. Changes go only from the shop into Lagerko, and only the checked ones. Only fields that are empty in Lagerko start checked; stock is never taken.",
+        "empty": "empty",
+        "large": "large difference",
+        "apply": "Apply the chosen changes",
+        "applied_one": "{{count}} item was changed.",
+        "applied_few": "{{count}} items were changed.",
+        "applied_other": "{{count}} items were changed."
+      },
+      "summaryUpdates": " · Changes: {{count}}"
     },
     "alert": {
       "title": "The connection to {{shop}} is not working",
       "titleSince": "The connection to {{shop}} has not been working since {{date}}",
       "impact": "Until it is fixed, stock from Lagerko doesn't reach the shop, so it may sell what is gone.",
       "open": "Open channels"
+    },
+    "summary": {
+      "label": "Shop overview",
+      "linked": "Linked products",
+      "unlinked": "Orders with unlinked products",
+      "showOrders": "See the orders",
+      "lastOrder": "Last order",
+      "noOrders": "No orders yet",
+      "orderNumber": "#{{number}}",
+      "stock": "Sending stock",
+      "pendingNone": "Nothing waiting to be sent",
+      "pending_one": "{{count}} product waiting to be sent",
+      "pending_few": "{{count}} products waiting to be sent",
+      "pending_other": "{{count}} products waiting to be sent"
     }
   },
   "reports": {
@@ -611,12 +698,12 @@
     "title": "Settings",
     "save": "Save",
     "company": {
-      "title": "Company",
+      "title": "Company name",
       "description": "The company name every user sees, for example in the menu.",
       "name": "Company name"
     },
     "profile": {
-      "title": "My account",
+      "title": "Name and language",
       "description": "Your name and the app's language. Other users of the company see your name in item history.",
       "name": "Name",
       "email": "Email",
@@ -654,6 +741,12 @@
       "corrected_one": "{{count}} item was corrected. Please tell us, it means there is a bug somewhere:",
       "corrected_few": "{{count}} items were corrected. Please tell us, it means there is a bug somewhere:",
       "corrected_other": "{{count}} items were corrected. Please tell us, it means there is a bug somewhere:"
+    },
+    "sections": "Settings sections",
+    "groups": {
+      "company": "Company",
+      "account": "My account",
+      "maintenance": "Maintenance"
     }
   }
 }

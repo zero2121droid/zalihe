@@ -1,25 +1,38 @@
-import { Box, Center, Group, Stack } from '@mantine/core'
-import { Outlet } from 'react-router'
+import { Box, Group } from '@mantine/core'
+import { useTranslation } from 'react-i18next'
+import { Outlet, ScrollRestoration } from 'react-router'
 import { LanguageSwitch } from '../components/LanguageSwitch'
-import { Logo } from '../components/Logo'
+import { Logo, LogoMark } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
+import classes from './AuthLayout.module.css'
 
-/** Narrow centered column for sign-in and registration. */
+/**
+ * Sign-in, registration and the other pages before the app: the form on the left, the logo and name
+ * large on the right; on a phone the usual logo sits above the form instead.
+ */
 export function AuthLayout() {
+  const { t } = useTranslation()
   return (
-    <Center mih="100vh" px="md" py="xl">
-      <Stack w="100%" maw={400} gap="lg">
-        <Group justify="space-between">
+    <div className={classes.page}>
+      <div className={classes.top}>
+        <div className={classes.small}>
           <Logo />
-          <Group gap="xs">
-            <LanguageSwitch />
-            <ThemeToggle />
-          </Group>
+        </div>
+        <Group gap="xs">
+          <LanguageSwitch />
+          <ThemeToggle />
         </Group>
-        <Box p="lg" bg="var(--z-surface)" bd="1px solid var(--z-line)" style={{ borderRadius: 'var(--mantine-radius-md)' }}>
+      </div>
+      <div className={classes.body}>
+        <Box className={classes.form}>
           <Outlet />
+          <ScrollRestoration />
         </Box>
-      </Stack>
-    </Center>
+        <div className={classes.brand} aria-hidden>
+          <LogoMark size={96} />
+          <span className={classes.name}>{t('common.appName')}</span>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -1,0 +1,19 @@
+/* Choosing a column for a field: that column of the sample lights up for a moment (DESIGN.md "Pokret"). */
+.picked {
+  animation: picked 0.9s ease-out;
+}
+
+@keyframes picked {
+  from {
+    background: var(--z-selected);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picked {
+    animation: none;
+  }
+}

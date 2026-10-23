@@ -102,6 +102,7 @@ docker compose up -d --wait                                # Postgres (localhost
 dotnet run --project src/Zalihe.Web --launch-profile http  # API na http://localhost:5131
 cd src/web && npm run dev                                  # React na http://localhost:5173, /api ide na backend
 cd src/web && npm run dev:slow                             # isto, ali svaki API zahtev kasni 1,5 s (da se vide loaderi i animacije)
+cd src/web && npm run dev:https                            # https na https://<IP Mac-a>:5174 za proveru na telefonu (kamera radi samo na https); telefon jednom upozori na sertifikat
 dotnet test                                                # svi .NET testovi
 cd src/web && npm test                                     # frontend testovi (Vitest)
 cd src/web && npm run build && npm run lint                # frontend build i lint
@@ -125,3 +126,5 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 ```
 
 Postgres iz Dockera je na portu 5433, jer je 5432 zauzet lokalno instaliranim PostgreSQL-om.
+
+Za proveru na telefonu: u `.env` staviti `SHOP_MEDIA_HOST=<IP Mac-a>:8080` (`ipconfig getifaddr en0`), pa `docker compose up -d` i ponovni uvoz proizvoda. Tada WooCommerce vraća slike na toj adresi umesto na `localhost`, pa ih telefon vidi.

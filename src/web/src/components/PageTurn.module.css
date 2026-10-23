@@ -1,0 +1,36 @@
+.next {
+  animation: fromRight 0.25s ease-out;
+}
+
+.previous {
+  animation: fromLeft 0.25s ease-out;
+}
+
+@keyframes fromRight {
+  from {
+    transform: translateX(8px);
+    opacity: 0.5;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes fromLeft {
+  from {
+    transform: translateX(-8px);
+    opacity: 0.5;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .next,
+  .previous {
+    animation: none;
+  }
+}

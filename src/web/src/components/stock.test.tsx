@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppProviders } from '../AppProviders'
 import i18n from '../i18n'
-import { StockQuantity } from './stock'
+import { StockQuantity, StockStatusLabel } from './stock'
 
 function quantity(value: number, animate = true) {
   return (
@@ -91,5 +91,28 @@ describe('StockQuantity', () => {
 
     // Assert
     expect(screen.getByTestId('quantity')).toHaveTextContent(/^55 kom$/)
+  })
+})
+
+describe('StockStatusLabel', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('sr-Latn')
+  })
+
+  it('Rerender_StockFallsBelowMinimum_ShowsNewStatus', () => {
+    // Arrange
+    const label = (status: 'inStock' | 'low') => (
+      <AppProviders>
+        <StockStatusLabel status={status} animate />
+      </AppProviders>
+    )
+    const { rerender } = render(label('inStock'))
+
+    // Act
+    rerender(label('low'))
+
+    // Assert
+    expect(screen.getByText('Ispod minimuma')).toBeInTheDocument()
+    expect(screen.queryByText('Na stanju')).not.toBeInTheDocument()
   })
 })

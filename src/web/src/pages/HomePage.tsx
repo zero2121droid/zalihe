@@ -1,10 +1,11 @@
 import { Anchor, Box, Button, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { IconCheck } from '@tabler/icons-react'
 import { type CSSProperties, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formErrorMessage } from '../api/errors'
 import { useGetDashboard } from '../api/generated/dashboard/dashboard'
-import type { DashboardDto, RecentMovementDto, ReorderItemDto } from '../api/generated/model'
+import type { DashboardDto, RecentMovementDto, ReorderItemDto, SetupDto } from '../api/generated/model'
 import { Eyebrow } from '../components/Eyebrow'
 import { PageLoader } from '../components/loaders'
 import feedbackClasses from '../components/feedback.module.css'
@@ -12,6 +13,7 @@ import { MovementQuantity, StockQuantity } from '../components/stock'
 import { useAnimatedNumber } from '../lib/useAnimatedNumber'
 import { useLoadingDisplay } from '../lib/useLoadingDisplay'
 import { formatLongDate, formatMoney, formatNumber, formatRecentTime } from '../lib/format'
+import classes from './HomePage.module.css'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
@@ -34,10 +36,12 @@ export function HomePage() {
         display === 'loader' && <PageLoader />
       ) : dashboard.isError ? (
         <Text role="alert">{formErrorMessage(t, dashboard.error)}</Text>
-      ) : dashboard.data.activeItems === 0 && dashboard.data.recentMovements.length === 0 ? (
-        <EmptyHome />
       ) : (
-        <Overview data={dashboard.data} />
+        <>
+          {dashboard.data.ordersWithUnlinked > 0 && <UnlinkedOrders count={dashboard.data.ordersWithUnlinked} />}
+          {!(dashboard.data.setup.hasItems && dashboard.data.setup.hasMinStock) && <FirstSteps setup={dashboard.data.setup} />}
+          {(dashboard.data.activeItems > 0 || dashboard.data.recentMovements.length > 0) && <Overview data={dashboard.data} />}
+        </>
       )}
     </Stack>
   )
@@ -208,29 +212,135 @@ function RecentRow({ movement }: { movement: RecentMovementDto }) {
   )
 }
 
-function EmptyHome() {
+/**
+ * Orders whose products took no stock because they aren't linked (DESIGN.md "Početna"): the stock is
+ * off until they are, so it stands above the figures, like a shop that stopped working.
+ */
+function UnlinkedOrders({ count }: { count: number }) {
   const { t } = useTranslation()
   return (
-    <Box component="section" p="lg" bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
-      <Stack gap="sm" align="flex-start">
-        <Stack gap={4}>
-          <Title order={2}>{t('home.empty.title')}</Title>
-          <Text c="dimmed">{t('home.empty.description')}</Text>
-          <Text c="dimmed">{t('home.empty.actions')}</Text>
+    <Box role="alert" p="md" bg="var(--z-surface)" bd="1px solid var(--z-line-strong)" style={sectionStyle}>
+      <Group justify="space-between" align="center" gap="md">
+        <Stack gap={4} flex="1 1 320px">
+          <Group gap={8} wrap="nowrap">
+            <Box w={8} h={8} bg="var(--z-status-low)" style={{ borderRadius: '50%', flexShrink: 0 }} aria-hidden />
+            <Text fw={500} c="var(--z-status-low)">
+              {t('home.unlinked.title', { count })}
+            </Text>
+          </Group>
+          <Text fz="sm" c="var(--z-text-2)">
+            {t('home.unlinked.impact')}
+          </Text>
         </Stack>
-        <Group gap="sm">
-          {/* Most companies start from their WooCommerce shop, so that's the main way in. */}
-          <Button component={Link} to="/channels">
-            {t('home.empty.connectShop')}
-          </Button>
-          <Button component={Link} to="/items?new=1" variant="default">
+        <Button variant="default" component={Link} to="/orders?unlinked=1">
+          {t('home.unlinked.open')}
+        </Button>
+      </Group>
+    </Box>
+  )
+}
+
+/**
+ * The first steps of a new company (DESIGN.md "Prvi koraci"): items, then minimum stock, each checked
+ * off when it is really done. Connecting a shop is offered too, but it is optional: a company without
+ * a web shop works by hand or from CSV, so the checklist goes away once the first two are done.
+ */
+function FirstSteps({ setup }: { setup: SetupDto }) {
+  const { t } = useTranslation()
+  const done = [setup.hasItems, setup.hasMinStock].filter(Boolean).length
+  const total = 2
+
+  return (
+    <Box component="section" aria-label={t('home.setup.eyebrow')} bg="var(--z-surface)" bd="1px solid var(--z-line)" style={sectionStyle}>
+      <Group justify="space-between" align="flex-end" gap="md" px="lg" py="md">
+        <Stack gap={4}>
+          <Eyebrow>{t('home.setup.eyebrow')}</Eyebrow>
+          <Title order={2}>{t('home.setup.title')}</Title>
+          <Text fz="xs" c="dimmed">
+            {t('home.setup.description')}
+          </Text>
+        </Stack>
+        <Stack gap={6} align="flex-end">
+          <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+            {t('home.setup.progress', { done, total })}
+          </Text>
+          <div className={classes.bar} aria-hidden>
+            <div className={classes.fill} style={{ width: `${(done / total) * 100}%` }} />
+          </div>
+        </Stack>
+      </Group>
+
+      <Step number={1} done={setup.hasItems} title={t('home.setup.items.title')} text={t(setup.hasItems ? 'home.setup.items.done' : 'home.setup.items.description')}>
+        <Group gap="xs" className="z-phone-stack">
+          <Button component={Link} to="/items?new=1">
             {t('items.new')}
           </Button>
           <Button component={Link} to="/items/import" variant="default">
             {t('items.importCsv')}
           </Button>
         </Group>
-      </Stack>
+      </Step>
+      <Step
+        number={2}
+        done={setup.hasMinStock}
+        title={t('home.setup.minStock.title')}
+        text={t(setup.hasMinStock ? 'home.setup.minStock.done' : 'home.setup.minStock.description')}
+      >
+        <Button component={Link} to="/items" variant={setup.hasItems ? 'filled' : 'default'}>
+          {t('home.setup.minStock.action')}
+        </Button>
+      </Step>
+      <Step
+        number={3}
+        done={setup.hasShop}
+        title={t('home.setup.shop.title')}
+        optional={t('home.setup.shop.optional')}
+        text={t(setup.hasShop ? 'home.setup.shop.done' : 'home.setup.shop.description')}
+      >
+        <Button component={Link} to="/channels" variant="default">
+          {t('home.setup.shop.action')}
+        </Button>
+      </Step>
     </Box>
+  )
+}
+
+function Step({
+  number,
+  done,
+  title,
+  text,
+  optional,
+  children,
+}: {
+  number: number
+  done: boolean
+  title: string
+  text: string
+  optional?: string
+  children: ReactNode
+}) {
+  return (
+    <div className={classes.step}>
+      <span className={classes.mark} data-done={done || undefined} aria-hidden>
+        {done ? <IconCheck size={14} stroke={2.2} /> : number}
+      </span>
+      <div>
+        <Group gap="xs">
+          <Text fw={500} c={done ? 'var(--z-text-2)' : undefined} td={done ? 'line-through' : undefined}>
+            {title}
+          </Text>
+          {optional && (
+            <Text component="span" fz="xs" c="dimmed">
+              {optional}
+            </Text>
+          )}
+        </Group>
+        <Text fz="xs" c="dimmed">
+          {text}
+        </Text>
+      </div>
+      {!done && children}
+    </div>
   )
 }

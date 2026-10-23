@@ -18,7 +18,9 @@ import type { ItemDto, ItemHistoryEntryDto, ItemHistoryFilter, ManualMovementKin
 import { CopySku } from '../../components/CopySku'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { BoxLoader, SkeletonRows } from '../../components/loaders'
+import { PageTurn } from '../../components/PageTurn'
 import { Pager } from '../../components/Pager'
+import { ShopStockStatus } from '../../components/ShopStockStatus'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
 import stockClasses from '../../components/stock.module.css'
 import { UndoToast } from '../../components/UndoToast'
@@ -31,6 +33,7 @@ import { ItemImageEditor } from './ItemImageEditor'
 import classes from './ItemDetailPage.module.css'
 import { ItemModal } from './ItemModal'
 import { MovementModal } from './MovementModal'
+import { StockChart } from './StockChart'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 const movementKinds: ManualMovementKind[] = ['receipt', 'sale', 'return', 'count']
@@ -137,7 +140,8 @@ function ItemDetail({ item }: { item: ItemDto }) {
       >
         <Figure label={t('items.columns.stock')}>
           <StockQuantity quantity={item.stock} unit={item.unit} status={item.status} size={26} animate />
-          <StockStatusLabel status={item.status} pulse />
+          <StockStatusLabel status={item.status} pulse animate />
+          <ShopStockStatus itemId={item.id} />
         </Figure>
         <Figure label={t('items.detail.minStock')}>
           <StockQuantity quantity={item.minStock} unit={item.unit} status="inStock" size={26} />
@@ -160,6 +164,8 @@ function ItemDetail({ item }: { item: ItemDto }) {
           )}
         </Figure>
       </SimpleGrid>
+
+      <StockChart item={item} />
 
       <History item={item} />
 
@@ -242,78 +248,80 @@ function History({ item }: { item: ItemDto }) {
         </Text>
       ) : (
         <>
-          {compact ? (
-            <HistoryList entries={data!.items} item={item} fresh={arrivals} />
-          ) : (
-            <Table.ScrollContainer minWidth={720}>
-              <Table>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>{t('stock.history.columns.when')}</Table.Th>
-                    <Table.Th>{t('stock.history.columns.type')}</Table.Th>
-                    <Table.Th>{t('stock.history.columns.details')}</Table.Th>
-                    <Table.Th ta="right">{t('stock.history.columns.quantity')}</Table.Th>
-                    <Table.Th>{t('stock.history.columns.user')}</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {data!.items.map((entry) => (
-                    <Table.Tr key={entry.id} className={arrivals.has(entry.id) ? stockClasses.freshRow : undefined}>
-                      <Table.Td>
-                        <Text ff="monospace" fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-                          {formatDateTime(entry.occurredAt, i18n.language)}
-                        </Text>
-                      </Table.Td>
-                      {entry.movement ? (
-                        <>
-                          <Table.Td>
-                            <Text fz="sm">{t(`stock.types.${entry.movement.type}`)}</Text>
-                            <Text fz="xs" c="dimmed">
-                              {t(`stock.sources.${entry.movement.source}`)}
-                              {entry.movement.externalRef && ` #${entry.movement.externalRef}`}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text fz="sm" c="var(--z-text-2)">
-                              {entry.movement.note}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td ta="right">
-                            <MovementQuantity quantity={entry.movement.quantity} />
-                          </Table.Td>
-                        </>
-                      ) : (
-                        <>
-                          <Table.Td>
-                            <Text fz="sm">{t(`items.changes.${entry.change!.kind}`)}</Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Stack gap={2}>
-                              {entry.change!.changes.map((field) => (
-                                <Text key={field.field} fz="sm" c="var(--z-text-2)">
-                                  <Text component="span" fz="sm" c="dimmed">
-                                    {t(`items.form.${field.field}`)}:
-                                  </Text>{' '}
-                                  {formatChangeValue(field.field, field.oldValue, item, t, i18n.language)} →{' '}
-                                  {formatChangeValue(field.field, field.newValue, item, t, i18n.language)}
-                                </Text>
-                              ))}
-                            </Stack>
-                          </Table.Td>
-                          <Table.Td />
-                        </>
-                      )}
-                      <Table.Td>
-                        <Text fz="sm" c="dimmed">
-                          {entry.userName}
-                        </Text>
-                      </Table.Td>
+          <PageTurn page={data!.page}>
+            {compact ? (
+              <HistoryList entries={data!.items} item={item} fresh={arrivals} />
+            ) : (
+              <Table.ScrollContainer minWidth={720}>
+                <Table>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>{t('stock.history.columns.when')}</Table.Th>
+                      <Table.Th>{t('stock.history.columns.type')}</Table.Th>
+                      <Table.Th>{t('stock.history.columns.details')}</Table.Th>
+                      <Table.Th ta="right">{t('stock.history.columns.quantity')}</Table.Th>
+                      <Table.Th>{t('stock.history.columns.user')}</Table.Th>
                     </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
-          )}
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {data!.items.map((entry) => (
+                      <Table.Tr key={entry.id} className={arrivals.has(entry.id) ? stockClasses.freshRow : undefined}>
+                        <Table.Td>
+                          <Text ff="monospace" fz="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                            {formatDateTime(entry.occurredAt, i18n.language)}
+                          </Text>
+                        </Table.Td>
+                        {entry.movement ? (
+                          <>
+                            <Table.Td>
+                              <Text fz="sm">{t(`stock.types.${entry.movement.type}`)}</Text>
+                              <Text fz="xs" c="dimmed">
+                                {t(`stock.sources.${entry.movement.source}`)}
+                                {entry.movement.externalRef && ` #${entry.movement.externalRef}`}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text fz="sm" c="var(--z-text-2)">
+                                {entry.movement.note}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td ta="right">
+                              <MovementQuantity quantity={entry.movement.quantity} />
+                            </Table.Td>
+                          </>
+                        ) : (
+                          <>
+                            <Table.Td>
+                              <Text fz="sm">{t(`items.changes.${entry.change!.kind}`)}</Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Stack gap={2}>
+                                {entry.change!.changes.map((field) => (
+                                  <Text key={field.field} fz="sm" c="var(--z-text-2)">
+                                    <Text component="span" fz="sm" c="dimmed">
+                                      {t(`items.form.${field.field}`)}:
+                                    </Text>{' '}
+                                    {formatChangeValue(field.field, field.oldValue, item, t, i18n.language)} →{' '}
+                                    {formatChangeValue(field.field, field.newValue, item, t, i18n.language)}
+                                  </Text>
+                                ))}
+                              </Stack>
+                            </Table.Td>
+                            <Table.Td />
+                          </>
+                        )}
+                        <Table.Td>
+                          <Text fz="sm" c="dimmed">
+                            {entry.userName}
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
+            )}
+          </PageTurn>
           <Pager
             page={page}
             pageSize={pageSize}

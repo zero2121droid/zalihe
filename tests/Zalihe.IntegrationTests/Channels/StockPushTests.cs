@@ -250,4 +250,57 @@ public class StockPushTests(ZaliheApiFactory factory)
         factory.Shop.Requests.ShouldBeEmpty();
         (await MappingsAsync(channelId))["10"].StockChangedAt.ShouldNotBeNull();
     }
+
+    private static async Task<JsonElement> ShopStockAsync(HttpClient client, string sku)
+    {
+        var id = (await LinkedShop.ItemAsync(client, sku)).GetProperty("id").GetString();
+        return await client.GetFromJsonAsync<JsonElement>($"/api/items/{id}/shop-stock");
+    }
+
+    [Fact]
+    public async Task GetShopStock_ChangeNotSentYet_IsPending()
+    {
+        // Arrange
+        var (client, _) = await LinkedShop.CreateAsync(factory);
+        await MoveAsync(client, "KF-ETI-250", "receipt", 3);
+
+        // Act
+        var status = await ShopStockAsync(client, "KF-ETI-250");
+
+        // Assert
+        status.GetProperty("shops").GetInt32().ShouldBe(1);
+        status.GetProperty("pending").GetBoolean().ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task GetShopStock_ChangeSent_IsNotPending()
+    {
+        // Arrange
+        var (client, channelId) = await LinkedShop.CreateAsync(factory);
+        await MoveAsync(client, "KF-ETI-250", "receipt", 3);
+        ShopAcceptsAll();
+        await PushAsync(channelId);
+
+        // Act
+        var status = await ShopStockAsync(client, "KF-ETI-250");
+
+        // Assert
+        status.GetProperty("shops").GetInt32().ShouldBe(1);
+        status.GetProperty("pending").GetBoolean().ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task GetShopStock_OtherCompanysItem_ReturnsNotFound()
+    {
+        // Arrange
+        var (client, _) = await LinkedShop.CreateAsync(factory);
+        var id = (await LinkedShop.ItemAsync(client, "KF-ETI-250")).GetProperty("id").GetString();
+        var other = await factory.CreateSignedInClientAsync();
+
+        // Act
+        var response = await other.GetAsync($"/api/items/{id}/shop-stock");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 }

@@ -29,12 +29,46 @@ public record ItemHistoryEntryDto(
     StockMovementDto? Movement,
     ItemChangeDto? Change);
 
+public record StockPointDto(DateTimeOffset At, decimal Stock);
+
+/// <summary>
+/// An item's stock over a period, for a chart: the stock at <paramref name="From"/>, then the stock
+/// right after each movement, oldest first. Days are left to the viewer, who knows their time zone.
+/// </summary>
+public record ItemStockHistoryDto(DateTimeOffset From, DateTimeOffset To, decimal StartStock, IReadOnlyList<StockPointDto> Points);
+
 /// <summary>
 /// Everything that happened to an item, newest first: its stock movements and its own changes,
 /// merged and paged in the database.
 /// </summary>
-public class ItemHistoryService(IAppDbContext db, IUserDirectory users)
+public class ItemHistoryService(IAppDbContext db, IUserDirectory users, TimeProvider timeProvider)
 {
+    /// <summary>
+    /// The item's stock over the last <paramref name="days"/> days. Worked back from the current stock,
+    /// which always equals the sum of all movements; null when there is no such item.
+    /// </summary>
+    public async Task<ItemStockHistoryDto?> GetStockAsync(Guid itemId, int days, CancellationToken ct)
+    {
+        var stock = await db.StockLevels.Where(l => l.ItemId == itemId).Select(l => (decimal?)l.Quantity).SingleOrDefaultAsync(ct);
+        if (stock is null)
+        {
+            return null;
+        }
+
+        var to = timeProvider.GetUtcNow();
+        var from = to.AddDays(-days);
+        var movements = await db.StockMovements
+            .Where(m => m.ItemId == itemId && m.OccurredAt > from)
+            .OrderBy(m => m.OccurredAt).ThenBy(m => m.Id)
+            .Select(m => new { m.OccurredAt, m.Quantity })
+            .ToListAsync(ct);
+
+        var start = stock.Value - movements.Sum(m => m.Quantity);
+        var running = start;
+        var points = movements.Select(m => new StockPointDto(m.OccurredAt, running += m.Quantity)).ToList();
+        return new ItemStockHistoryDto(from, to, start, points);
+    }
+
     public async Task<PagedResult<ItemHistoryEntryDto>?> GetAsync(
         Guid itemId, ItemHistoryFilter filter, int page, int pageSize, CancellationToken ct)
     {

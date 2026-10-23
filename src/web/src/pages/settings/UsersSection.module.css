@@ -1,0 +1,55 @@
+/*
+ * Rows of users and invitations (DESIGN.md "Pokret"): a new invitation is highlighted for a moment, a
+ * revoked one folds away. Under reduced motion they simply appear and disappear.
+ */
+.row {
+  display: grid;
+  grid-template-rows: 1fr;
+  border-top: 1px solid var(--z-line-soft);
+  transition:
+    grid-template-rows 0.3s ease,
+    opacity 0.25s ease,
+    border-color 0.3s ease;
+}
+
+.row > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.leaving {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.fresh {
+  animation: arrive 1.2s ease-out;
+}
+
+@keyframes arrive {
+  from {
+    background: var(--z-selected);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+/* "Sent": the check draws itself next to the link. */
+.sent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    transition: none;
+  }
+
+  .fresh {
+    animation: none;
+  }
+}

@@ -16,8 +16,8 @@ namespace Zalihe.Infrastructure.Channels.WooCommerce;
 public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCredentials credentials) : ISalesChannel
 {
     private const int PageSize = 100;
-    private const string ProductFields = "id,name,type,sku,regular_price,price,stock_quantity,cost_of_goods_sold,categories,images";
-    private const string VariationFields = "id,sku,regular_price,price,stock_quantity,cost_of_goods_sold,attributes,image";
+    private const string ProductFields = "id,name,type,sku,global_unique_id,regular_price,price,stock_quantity,cost_of_goods_sold,categories,images";
+    private const string VariationFields = "id,sku,global_unique_id,regular_price,price,stock_quantity,cost_of_goods_sold,attributes,image";
 
     /// <summary>Only what stock needs: the shop doesn't even send the customer's data.</summary>
     private const string OrderFields = "id,status,date_created_gmt,date_modified_gmt,line_items";
@@ -49,14 +49,14 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
             {
                 case "simple":
                     Add(new ExternalProduct(id, null, name, null, Text(product, "sku"), Category(product), Price(product), Cost(product), Stock(product),
-                        ProductImage(product)));
+                        ProductImage(product), Text(product, "global_unique_id")));
                     break;
                 case "variable":
                     await foreach (var variation in PagesAsync($"products/{id}/variations?orderby=id&order=asc&_fields={VariationFields}", ct))
                     {
                         Add(new ExternalProduct(Id(variation), id, VariationName(name, variation), name,
                             Text(variation, "sku"), Category(product), Price(variation), Cost(variation), Stock(variation),
-                            VariationImage(variation) ?? ProductImage(product)));
+                            VariationImage(variation) ?? ProductImage(product), Text(variation, "global_unique_id")));
                     }
                     break;
                 // Grouped and external products hold no stock of their own.

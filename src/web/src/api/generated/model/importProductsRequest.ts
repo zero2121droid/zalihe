@@ -4,7 +4,10 @@
  * Zalihe.Web | v1
  * OpenAPI spec version: 1.0.0
  */
+import type { ProductUpdateChoice } from './productUpdateChoice';
 
 export interface ImportProductsRequest {
   createExternalIds: string[];
+  /** @nullable */
+  applyUpdates?: ProductUpdateChoice[] | null;
 }

@@ -398,4 +398,90 @@ public partial class ProductImportTests(ZaliheApiFactory factory)
         (await FindItemAsync(client, "KF-ETI-250")).GetProperty("imageUrl").GetString().ShouldBe("https://zrno.rs/wp-content/uploads/etiopija-nova.jpeg");
         (await FindItemAsync(client, "BEZ-SLIKE")).GetProperty("imageUrl").GetString().ShouldBe("https://zrno.rs/wp-content/uploads/nova.jpeg");
     }
+
+    private static string WithGtin(string sku, string gtin) =>
+        Products.Replace($"\"sku\":\"{sku}\",", $"\"sku\":\"{sku}\",\"global_unique_id\":\"{gtin}\",");
+
+    [Fact]
+    public async Task Import_NewProductWithGtin_CreatesItemWithThatBarcode()
+    {
+        // Arrange
+        var (client, channelId) = await ConnectedShopAsync();
+        ShopHas(WithGtin("WOO-ONLY-1", " 4006381333931 "));
+
+        // Act
+        (await ImportAsync(client, channelId, "11")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // Assert
+        (await FindItemAsync(client, "WOO-ONLY-1")).GetProperty("barcode").GetString().ShouldBe("4006381333931");
+    }
+
+    [Fact]
+    public async Task Preview_LinkedItemDiffersFromShop_ListsTheDifferences()
+    {
+        // Arrange: the coffee is linked, without a barcode and at another price than in the shop.
+        var (client, channelId) = await ConnectedShopAsync();
+        (await client.PostAsJsonAsync("/api/items", new { name = "Etiopija", sku = "KF-ETI-250", unit = "kom", minStock = 10, salePrice = 4000 }))
+            .StatusCode.ShouldBe(HttpStatusCode.Created);
+        ShopHas(Products);
+        await ImportAsync(client, channelId);
+        ShopHas(WithGtin("KF-ETI-250", "8600123456789"));
+
+        // Act
+        var preview = await PreviewAsync(client, channelId);
+
+        // Assert
+        var update = preview.GetProperty("updates").EnumerateArray().ShouldHaveSingleItem();
+        update.GetProperty("externalId").GetString().ShouldBe("10");
+        var fields = update.GetProperty("fields").EnumerateArray()
+            .ToDictionary(f => f.GetProperty("field").GetString()!, f => (Shop: f.GetProperty("shop").GetString(), FillsEmpty: f.GetProperty("fillsEmpty").GetBoolean(), Large: f.GetProperty("largeChange").GetBoolean()));
+        fields["barcode"].ShouldBe(("8600123456789", true, false));
+        fields["salePrice"].ShouldBe(("1250", false, true));
+        fields["name"].Shop.ShouldBe("Kafa Etiopija");
+    }
+
+    [Fact]
+    public async Task Import_ChosenFields_ChangesOnlyThoseAndLogsThem()
+    {
+        // Arrange
+        var (client, channelId) = await ConnectedShopAsync();
+        (await client.PostAsJsonAsync("/api/items", new { name = "Etiopija", sku = "KF-ETI-250", unit = "kom", minStock = 10, salePrice = 4000 }))
+            .StatusCode.ShouldBe(HttpStatusCode.Created);
+        ShopHas(Products);
+        await ImportAsync(client, channelId);
+        ShopHas(WithGtin("KF-ETI-250", "8600123456789"));
+
+        // Act: the barcode is taken, the price and the name are not.
+        var response = await client.PostAsJsonAsync($"/api/channels/{channelId}/products/import",
+            new { createExternalIds = Array.Empty<string>(), applyUpdates = new[] { new { externalId = "10", field = "barcode" } } });
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("updatedCount").GetInt32().ShouldBe(1);
+        var item = await FindItemAsync(client, "KF-ETI-250");
+        item.GetProperty("barcode").GetString().ShouldBe("8600123456789");
+        item.GetProperty("salePrice").GetDecimal().ShouldBe(4000);
+        item.GetProperty("name").GetString().ShouldBe("Etiopija");
+        var history = await client.GetFromJsonAsync<JsonElement>($"/api/items/{item.GetProperty("id").GetString()}/history?filter=changes");
+        history.GetProperty("items")[0].GetProperty("change").GetProperty("changes")[0].GetProperty("field").GetString().ShouldBe("barcode");
+    }
+
+    [Fact]
+    public async Task Import_NothingChosen_LeavesLinkedItemAsItIs()
+    {
+        // Arrange
+        var (client, channelId) = await ConnectedShopAsync();
+        await CreateItemAsync(client, "KF-ETI-250");
+        ShopHas(Products);
+        await ImportAsync(client, channelId);
+        ShopHas(WithGtin("KF-ETI-250", "8600123456789"));
+
+        // Act
+        await ImportAsync(client, channelId);
+
+        // Assert
+        var item = await FindItemAsync(client, "KF-ETI-250");
+        item.GetProperty("barcode").ValueKind.ShouldBe(JsonValueKind.Null);
+        item.GetProperty("name").GetString().ShouldBe("Etiopija iz Zaliha");
+    }
 }

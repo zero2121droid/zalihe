@@ -86,9 +86,7 @@ public class OrderListService(IAppDbContext db)
 
         if (query.UnlinkedOnly)
         {
-            orders = orders.Where(o => o.Lines.Any(l =>
-                l.ItemId == null && l.OrderedQuantity > 0
-                && !db.ItemChannelMappings.Any(m => m.ChannelId == o.ChannelId && m.ExternalId == l.ExternalProductId)));
+            orders = orders.WithUnlinkedLines(db);
         }
 
         var totalCount = await orders.CountAsync(ct);

@@ -10,12 +10,13 @@
     "nav": {
       "main": "Glavna navigacija",
       "home": "Početna",
-      "openMenu": "Otvori meni",
       "items": "Artikli",
       "orders": "Porudžbine",
       "channels": "Kanali prodaje",
       "reports": "Izveštaji",
-      "settings": "Podešavanja"
+      "settings": "Podešavanja",
+      "more": "Više",
+      "phone": "Navigacija"
     },
     "logout": "Odjavi se",
     "cancel": "Otkaži",
@@ -32,7 +33,25 @@
     "back": "Nazad",
     "close": "Zatvori",
     "saved": "Sačuvano",
-    "undo": "Poništi"
+    "undo": "Poništi",
+    "quickSearch": {
+      "open": "Nađi artikal",
+      "title": "Brza pretraga",
+      "label": "Naziv, šifra ili barkod",
+      "results": "Artikli",
+      "hint": "Upiši deo naziva, šifru ili barkod.",
+      "empty": "Nema artikla za „{{search}}”.",
+      "keys": "↑↓ biraš · Enter otvara · Esc zatvara",
+      "camera": {
+        "open": "Skeniraj barkod kamerom",
+        "view": "Slika kamere",
+        "hint": "Usmeri kameru na barkod.",
+        "cancel": "Otkaži",
+        "denied": "Kamera nije dozvoljena. Dozvoli je u podešavanjima pregledača, pa pokušaj ponovo.",
+        "missing": "Na ovom uređaju nema kamere.",
+        "failed": "Kamera ne može da se pokrene. Proveri da li je koristi neka druga aplikacija."
+      }
+    }
   },
   "auth": {
     "login": {
@@ -86,12 +105,6 @@
   },
   "home": {
     "title": "Početna",
-    "empty": {
-      "title": "Još nema artikala",
-      "description": "Kad dodaš artikle, ovde ćeš videti vrednost zaliha, šta treba naručiti i poslednja kretanja.",
-      "actions": "Poveži WooCommerce prodavnicu i uvezi proizvode iz nje, ili dodaj artikle jedan po jedan ili iz CSV fajla.",
-      "connectShop": "Poveži prodavnicu"
-    },
     "figures": {
       "stockValue": "Vrednost zaliha",
       "stockValueHint": "po nabavnoj ceni",
@@ -113,6 +126,37 @@
       "all": "Svi artikli",
       "none": "Još nema kretanja.",
       "yesterday": "juče"
+    },
+    "setup": {
+      "eyebrow": "Prvi koraci",
+      "title": "Dva koraka do tačnog stanja",
+      "description": "Kad su oba gotova, ovaj deo nestaje i ovde je pregled zaliha.",
+      "progress": "{{done}} od {{total}}",
+      "items": {
+        "title": "Dodaj artikle",
+        "description": "Jedan po jedan, iz CSV fajla ili iz web prodavnice. Početno stanje se upisuje odmah.",
+        "done": "Artikli su dodati."
+      },
+      "minStock": {
+        "title": "Postavi minimalne zalihe",
+        "description": "Kad stanje padne na minimum, artikal dobija oznaku i stiže email. Bez minimuma upozorenja nema.",
+        "action": "Otvori artikle",
+        "done": "Minimalne zalihe su postavljene."
+      },
+      "shop": {
+        "title": "Poveži WooCommerce prodavnicu",
+        "optional": "nije obavezno",
+        "description": "Ako imaš web prodavnicu: porudžbine same skidaju robu sa stanja, a stanje se vraća u prodavnicu.",
+        "action": "Poveži prodavnicu",
+        "done": "Prodavnica je povezana."
+      }
+    },
+    "unlinked": {
+      "title_one": "{{count}} porudžbina ima nepovezane proizvode",
+      "title_few": "{{count}} porudžbine imaju nepovezane proizvode",
+      "title_other": "{{count}} porudžbina ima nepovezane proizvode",
+      "impact": "Ti proizvodi nisu povezani sa artiklima, pa roba iz tih porudžbina nije skinuta sa stanja.",
+      "open": "Poveži proizvode"
     }
   },
   "errors": {
@@ -454,6 +498,23 @@
         "changes": "Izmene artikla"
       },
       "emptyValue": "prazno"
+    },
+    "shop": {
+      "pending_one": "Šalje se u prodavnicu",
+      "pending_few": "Šalje se u prodavnice",
+      "pending_other": "Šalje se u prodavnice",
+      "synced_one": "Isto stanje je u prodavnici",
+      "synced_few": "Isto stanje je u prodavnicama",
+      "synced_other": "Isto stanje je u prodavnicama"
+    },
+    "chart": {
+      "title": "Stanje kroz vreme",
+      "period": "Period grafika",
+      "days": "{{count}} dana",
+      "minimum": "minimum {{value}}",
+      "today": "danas",
+      "summary": "Stanje za poslednjih {{days}} dana: na početku {{start}}, sada {{end}}, najniže {{lowest}} {{unit}}.",
+      "legendBelow": "Ispod minimuma"
     }
   },
   "channels": {
@@ -521,7 +582,7 @@
       },
       "link": {
         "title": "Povezivanje sa postojećim artiklima",
-        "note": "Ovi proizvodi imaju istu šifru kao artikli u Lagerku. Biće povezani, a artikli se ne menjaju: prodavnica preuzima njihovo stanje iz Lagerka.",
+        "note": "Ovi proizvodi imaju istu šifru kao artikli u Lagerku. Biće povezani, a prodavnica preuzima njihovo stanje iz Lagerka. Artikli se menjaju samo u izmenama koje izabereš ispod.",
         "product": "Proizvod u prodavnici",
         "item": "Artikal u Lagerku"
       },
@@ -543,14 +604,40 @@
         "linked": "Povezano sa postojećim artiklima: {{count}}",
         "skipped": "Preskočeno proizvoda: {{count}}",
         "toItems": "Idi na artikle",
-        "toChannels": "Nazad na kanale"
-      }
+        "toChannels": "Nazad na kanale",
+        "updated": "Izmenjeno artikala: {{count}}"
+      },
+      "updates": {
+        "title": "Razlike sa prodavnicom",
+        "note": "Ovi artikli se u nečemu razlikuju od proizvoda u prodavnici. Izmene idu samo iz prodavnice u Lagerko, i to samo štiklirane. Unapred su štiklirana samo polja koja su u Lagerku prazna; stanje se nikad ne preuzima.",
+        "empty": "prazno",
+        "large": "velika razlika",
+        "apply": "Primeni izabrane izmene",
+        "applied_one": "Izmenjen je {{count}} artikal.",
+        "applied_few": "Izmenjena su {{count}} artikla.",
+        "applied_other": "Izmenjeno je {{count}} artikala."
+      },
+      "summaryUpdates": " · Izmene: {{count}}"
     },
     "alert": {
       "title": "Veza sa prodavnicom {{shop}} ne radi",
       "titleSince": "Veza sa prodavnicom {{shop}} ne radi od {{date}}",
       "impact": "Dok se ne popravi, stanje iz Lagerka ne stiže u prodavnicu, pa ona može da proda ono čega nema.",
       "open": "Otvori kanale"
+    },
+    "summary": {
+      "label": "Pregled prodavnice",
+      "linked": "Povezani proizvodi",
+      "unlinked": "Porudžbine sa nepovezanim proizvodima",
+      "showOrders": "Pogledaj porudžbine",
+      "lastOrder": "Poslednja porudžbina",
+      "noOrders": "Još nema porudžbina",
+      "orderNumber": "#{{number}}",
+      "stock": "Slanje stanja",
+      "pendingNone": "Ništa ne čeka slanje",
+      "pending_one": "{{count}} proizvod čeka slanje",
+      "pending_few": "{{count}} proizvoda čekaju slanje",
+      "pending_other": "{{count}} proizvoda čeka slanje"
     }
   },
   "reports": {
@@ -611,12 +698,12 @@
     "title": "Podešavanja",
     "save": "Sačuvaj",
     "company": {
-      "title": "Firma",
+      "title": "Naziv firme",
       "description": "Naziv firme koji vide svi korisnici, na primer u meniju.",
       "name": "Naziv firme"
     },
     "profile": {
-      "title": "Moj nalog",
+      "title": "Ime i jezik",
       "description": "Tvoje ime i jezik aplikacije. Drugi korisnici firme vide tvoje ime u istoriji artikala.",
       "name": "Ime",
       "email": "Email",
@@ -654,6 +741,12 @@
       "corrected_one": "Ispravljen je {{count}} artikal. Javi nam, jer to znači da negde postoji greška:",
       "corrected_few": "Ispravljena su {{count}} artikla. Javi nam, jer to znači da negde postoji greška:",
       "corrected_other": "Ispravljeno je {{count}} artikala. Javi nam, jer to znači da negde postoji greška:"
+    },
+    "sections": "Delovi podešavanja",
+    "groups": {
+      "company": "Firma",
+      "account": "Moj nalog",
+      "maintenance": "Održavanje"
     }
   }
 }

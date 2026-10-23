@@ -1,13 +1,7 @@
 import { Group, UnstyledButton } from '@mantine/core'
-import { createContext, type CSSProperties, type ReactNode, use, useLayoutEffect, useRef, useState } from 'react'
+import { createContext, type CSSProperties, type ReactNode, use, useRef } from 'react'
+import { useSlidingBox } from '../lib/useSlidingBox'
 import classes from './FilterPill.module.css'
-
-interface Box {
-  x: number
-  y: number
-  width: number
-  height: number
-}
 
 /** True inside FilterPills, whose sliding highlight draws the selected pill's background and border. */
 const SlidingGroup = createContext(false)
@@ -41,37 +35,11 @@ export function FilterPill({ active, onClick, children }: { active: boolean; onC
 
 /**
  * A row of FilterPills where one is selected: the selection slides and stretches to the chosen
- * pill instead of jumping (DESIGN.md "Pokret"). It is measured from the pill marked aria-pressed,
- * again whenever the row changes size (fonts loading, wrapping onto two lines on a phone).
+ * pill instead of jumping (DESIGN.md "Pokret"). It is measured from the pill marked aria-pressed.
  */
 export function FilterPills({ label, children }: { label: string; children: ReactNode }) {
   const row = useRef<HTMLDivElement>(null)
-  const [box, setBox] = useState<Box | null>(null)
-  // The first position is set without sliding there from the corner.
-  const [placed, setPlaced] = useState(false)
-
-  useLayoutEffect(() => {
-    const element = row.current
-    if (!element) return
-    const measure = () => {
-      const pill = element.querySelector<HTMLElement>('[aria-pressed="true"]')
-      const next = pill ? { x: pill.offsetLeft, y: pill.offsetTop, width: pill.offsetWidth, height: pill.offsetHeight } : null
-      // Measured after every render (a pill's count may change its width), so only a real move updates.
-      setBox((current) =>
-        current && next && Object.keys(next).every((key) => current[key as keyof Box] === next[key as keyof Box])
-          ? current
-          : next,
-      )
-    }
-    measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(element)
-    return () => observer.disconnect()
-  })
-
-  useLayoutEffect(() => {
-    if (box && !placed) requestAnimationFrame(() => setPlaced(true))
-  }, [box, placed])
+  const { box, placed } = useSlidingBox(row, '[aria-pressed="true"]')
 
   return (
     <SlidingGroup value>

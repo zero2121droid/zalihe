@@ -1,41 +1,123 @@
 import { Box, Group, PasswordInput, SegmentedControl, Stack, Text, TextInput, Title } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
-import { type ReactNode, type SubmitEvent, useState } from 'react'
+import { type CSSProperties, type ReactNode, type SubmitEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Navigate, NavLink, useParams } from 'react-router'
 import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
 import { useChangePassword, useUpdateCompany, useUpdateProfile } from '../../api/generated/account/account'
 import { getGetCurrentUserQueryKey } from '../../api/generated/auth/auth'
 import type { CurrentUserResponse } from '../../api/generated/model'
 import { useCurrentUser } from '../../auth/useCurrentUser'
+import { Eyebrow } from '../../components/Eyebrow'
 import { SaveButton } from '../../components/feedback'
+import feedbackClasses from '../../components/feedback.module.css'
 import { languages } from '../../i18n'
 import { useSaved } from '../../lib/useSaved'
+import { useSlidingBox } from '../../lib/useSlidingBox'
 import { useShake } from '../../lib/useShake'
+import classes from './SettingsPage.module.css'
 import { StockCheckSection } from './StockCheckSection'
 import { UsersSection } from './UsersSection'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
-/** Settings of the company and of the signed-in user: three small forms, each saved on its own. */
+/** The parts of the settings, by group, each at its own address (/settings/users). */
+const groups = [
+  { key: 'company', sections: ['company', 'users'] },
+  { key: 'account', sections: ['profile', 'password'] },
+  { key: 'maintenance', sections: ['stock-check'] },
+] as const
+
+type SettingsSection = (typeof groups)[number]['sections'][number]
+
+const sectionTitleKeys: Record<SettingsSection, string> = {
+  company: 'settings.company.title',
+  users: 'settings.users.title',
+  profile: 'settings.profile.title',
+  password: 'settings.password.title',
+  'stock-check': 'settings.stockCheck.title',
+}
+
+const isSection = (value: string | undefined): value is SettingsSection => !!value && value in sectionTitleKeys
+
+/**
+ * Settings of the company and of the signed-in user, one part at a time beside a menu of all parts
+ * (DESIGN.md "Podešavanja"). Each form is saved on its own. An unknown address opens the first part.
+ */
 export function SettingsPage() {
   const { t } = useTranslation()
   const { user } = useCurrentUser()
+  const { section } = useParams()
+
+  if (!isSection(section)) return <Navigate to="/settings/company" replace />
 
   return (
     <Stack gap="lg">
       <Title order={1} lts="-0.01em">
         {t('settings.title')}
       </Title>
-      {user && (
-        <>
-          <CompanyForm user={user} />
-          <UsersSection user={user} />
-          <ProfileForm user={user} />
-          <PasswordForm />
-          <StockCheckSection />
-        </>
-      )}
+      <div className={classes.layout}>
+        <SettingsMenu />
+        {/* Keyed by the part, so a newly chosen one rises into place (DESIGN.md "Pokret"). */}
+        <div key={section} className={`${classes.content} ${feedbackClasses.rise}`}>
+          {user && <SectionContent section={section} user={user} />}
+        </div>
+      </div>
     </Stack>
+  )
+}
+
+function SectionContent({ section, user }: { section: SettingsSection; user: CurrentUserResponse }) {
+  switch (section) {
+    case 'company':
+      return <CompanyForm user={user} />
+    case 'users':
+      return <UsersSection user={user} />
+    case 'profile':
+      return <ProfileForm user={user} />
+    case 'password':
+      return <PasswordForm />
+    case 'stock-check':
+      return <StockCheckSection />
+  }
+}
+
+/** Links to every part, grouped; the current one's background slides to the chosen link. */
+function SettingsMenu() {
+  const { t } = useTranslation()
+  const menu = useRef<HTMLElement>(null)
+  const current = useSlidingBox(menu, '[aria-current="page"]')
+
+  return (
+    <nav ref={menu} className={classes.menu} aria-label={t('settings.sections')}>
+      {current.box && (
+        <span
+          className={classes.current}
+          data-placed={current.placed || undefined}
+          style={
+            {
+              '--x': `${current.box.x}px`,
+              '--y': `${current.box.y}px`,
+              width: current.box.width,
+              height: current.box.height,
+            } as CSSProperties
+          }
+          aria-hidden
+        />
+      )}
+      {groups.map((group) => (
+        <div key={group.key} className={classes.group}>
+          <span className={classes.groupLabel}>
+            <Eyebrow>{t(`settings.groups.${group.key}`)}</Eyebrow>
+          </span>
+          {group.sections.map((section) => (
+            <NavLink key={section} to={`/settings/${section}`} className={`z-focus ${classes.link}`}>
+              {t(sectionTitleKeys[section])}
+            </NavLink>
+          ))}
+        </div>
+      ))}
+    </nav>
   )
 }
 

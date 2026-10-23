@@ -102,4 +102,27 @@ public class ItemSortTests(ZaliheApiFactory factory)
         error.GetProperty("code").GetString().ShouldBe("validation.invalid");
         error.GetProperty("field").GetString().ShouldBe("sort");
     }
+
+    [Fact]
+    public async Task List_SearchIsAWholeBarcode_PutsThatItemFirst()
+    {
+        // Arrange: the scanned code is also part of two other barcodes, whose names come first by name.
+        var client = await factory.CreateSignedInClientAsync();
+        foreach (var (sku, name, barcode) in new[]
+                 {
+                     ("A-1", "Aaa prvi", "20000000002701"),
+                     ("A-2", "Aab drugi", "120000000002"),
+                     ("Z-9", "Zzz traženi", "2000000000271"),
+                 })
+        {
+            var response = await client.PostAsJsonAsync("/api/items", new { name, sku, unit = "kom", minStock = 0, barcode });
+            response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        }
+
+        // Act
+        var skus = await SkusAsync(client, "?search=2000000000271&pageSize=1");
+
+        // Assert
+        skus.ShouldBe(["Z-9"]);
+    }
 }

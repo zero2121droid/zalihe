@@ -13,6 +13,27 @@ const preview = {
     { externalId: '51', name: 'Majica basic – M, Siva', groupName: 'Majica basic', sku: 'MAJ-M-SI', category: null, price: null, stock: 5 },
   ],
   skipped: [{ externalId: '12', name: 'Bez šifre', sku: null, error: { code: 'channel.product_no_sku', field: 'sku', params: null } }],
+  updates: [],
+}
+
+/** Everything linked; the coffee has no barcode in Lagerko and another price than in the shop. */
+const differences = {
+  linkedCount: 9,
+  toLink: [],
+  toCreate: [],
+  skipped: [],
+  updates: [
+    {
+      externalId: '10',
+      itemId: 'i1',
+      itemName: 'Etiopija 250 g',
+      sku: 'KF-ETI-250',
+      fields: [
+        { field: 'barcode', current: null, shop: '8600123456789', fillsEmpty: true, largeChange: false },
+        { field: 'salePrice', current: '4000', shop: '500', fillsEmpty: false, largeChange: true },
+      ],
+    },
+  ],
 }
 
 function render() {
@@ -105,7 +126,7 @@ describe('ProductImportPage', () => {
     expect(screen.getByText('Napravljeno novih artikala: 1')).toBeInTheDocument()
     expect(screen.getByText('Povezano sa postojećim artiklima: 1')).toBeInTheDocument()
     const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')
-    expect(JSON.parse(post?.[1]?.body as string)).toEqual({ createExternalIds: ['11'] })
+    expect(JSON.parse(post?.[1]?.body as string)).toEqual({ createExternalIds: ['11'], applyUpdates: [] })
   })
 
   it('SelectAll_Unchecked_LeavesOnlyLinking', async () => {
@@ -141,7 +162,7 @@ describe('ProductImportPage', () => {
   it('Preview_EverythingLinked_SaysSoWithoutImportButton', async () => {
     // Arrange
     mockApi({
-      'GET /api/channels/c1/products/preview': { status: 200, body: { linkedCount: 9, toLink: [], toCreate: [], skipped: [] } },
+      'GET /api/channels/c1/products/preview': { status: 200, body: { linkedCount: 9, toLink: [], toCreate: [], skipped: [], updates: [] } },
     })
 
     // Act
@@ -155,7 +176,7 @@ describe('ProductImportPage', () => {
   it('RefreshImages_EverythingLinked_ImportsNothingNewAndSaysHowManyHaveImages', async () => {
     // Arrange
     const fetchMock = mockApi({
-      'GET /api/channels/c1/products/preview': { status: 200, body: { linkedCount: 9, toLink: [], toCreate: [], skipped: [] } },
+      'GET /api/channels/c1/products/preview': { status: 200, body: { linkedCount: 9, toLink: [], toCreate: [], skipped: [], updates: [] } },
       'POST /api/channels/c1/products/import': {
         status: 200,
         body: { linkedCount: 0, createdCount: 0, skippedCount: 0, imageCount: 7 },
@@ -170,5 +191,40 @@ describe('ProductImportPage', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Slike su osvežene: 7 proizvoda ima sliku.')
     const [, init] = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/products/import'))!
     expect(JSON.parse(String(init!.body))).toEqual({ createExternalIds: [] })
+  })
+
+  it('Preview_Differences_ChecksOnlyWhatFillsAnEmptyFieldAndWarnsOfLargeChange', async () => {
+    // Arrange
+    mockApi({ 'GET /api/channels/c1/products/preview': { status: 200, body: differences } })
+
+    // Act
+    await render()
+
+    // Assert
+    const section = await screen.findByRole('region', { name: 'Razlike sa prodavnicom' })
+    expect(within(section).getByRole('checkbox', { name: /Barkod: prazno → 8600123456789/ })).toBeChecked()
+    const price = within(section).getByRole('checkbox', { name: /Prodajna cena: 4\.000 RSD → 500 RSD/ })
+    expect(price).not.toBeChecked()
+    expect(price.closest('.mantine-Checkbox-root')).toHaveTextContent('velika razlika')
+  })
+
+  it('ApplyChanges_OnlyBarcodeChosen_SendsOnlyBarcode', async () => {
+    // Arrange
+    const fetchMock = mockApi({
+      'GET /api/channels/c1/products/preview': { status: 200, body: differences },
+      'POST /api/channels/c1/products/import': {
+        status: 200,
+        body: { linkedCount: 0, createdCount: 0, skippedCount: 0, imageCount: 7, updatedCount: 1 },
+      },
+    })
+    await render()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Primeni izabrane izmene' }))
+
+    // Assert
+    const [, init] = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/products/import'))!
+    expect(JSON.parse(String(init!.body))).toEqual({ createExternalIds: [], applyUpdates: [{ externalId: '10', field: 'barcode' }] })
+    expect(await screen.findByText('Izmenjen je 1 artikal.')).toBeInTheDocument()
   })
 })

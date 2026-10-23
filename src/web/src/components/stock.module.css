@@ -97,6 +97,35 @@
   }
 }
 
+/* A new status: the dot pops with a little spring and the label slides up into place. */
+.dotChanged {
+  animation: pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.2);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.labelChanged {
+  animation: swap 0.3s ease-out;
+}
+
+@keyframes swap {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 /* A movement that just arrived in a history table. */
 .freshRow td {
   animation: arrive 1.2s ease-out;
@@ -118,7 +147,9 @@
   }
 
   .pulse::after,
-  .freshRow td {
+  .freshRow td,
+  .dotChanged,
+  .labelChanged {
     animation: none;
   }
 }

@@ -1,0 +1,65 @@
+/* First steps on the home screen (DESIGN.md "Prvi koraci"). */
+.step {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--z-line-soft);
+}
+
+/* The number of a step, or a check once it is done. */
+.mark {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--z-line-strong);
+  border-radius: 50%;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  color: var(--z-muted);
+}
+
+.mark[data-done] {
+  border-color: var(--z-accent);
+  background: var(--z-selected);
+  color: var(--z-accent-text);
+}
+
+.bar {
+  width: 200px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--z-surface-2);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--z-accent);
+  transition: width 0.5s ease-out;
+}
+
+@media (max-width: 47.99em) {
+  .step {
+    grid-template-columns: 24px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .step > :last-child:not(:nth-child(2)) {
+    grid-column: 2;
+  }
+
+  .bar {
+    width: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}

@@ -9,6 +9,10 @@ namespace Zalihe.Application.Channels;
 /// <param name="Rejected">Products the shop refused, e.g. deleted from it; they are tried again on the next push.</param>
 public record StockPushResult(int Sent, int Unchanged, int Rejected);
 
+/// <param name="Shops">How many shops the item is linked to; 0 when it is in none.</param>
+/// <param name="Pending">Whether a stock change is still on its way to one of them (or the shop refused it).</param>
+public record ItemShopStockDto(int Shops, bool Pending);
+
 /// <summary>
 /// Sends stock to shops (SPEC 7.5): the application is the source of truth, a shop only shows it.
 /// Services that change stock call <see cref="MarkChangedAsync"/> before saving, in the same transaction,
@@ -39,6 +43,15 @@ public class StockPushService(
         }
 
         return mappings.Select(m => m.ChannelId).Distinct().ToList();
+    }
+
+    /// <summary>Whether the shops the item is linked to show its current stock; null when there is no such item.</summary>
+    public async Task<ItemShopStockDto?> GetItemStatusAsync(Guid itemId, CancellationToken ct)
+    {
+        if (!await db.Items.AnyAsync(i => i.Id == itemId, ct)) return null;
+
+        var marks = await db.ItemChannelMappings.Where(m => m.ItemId == itemId).Select(m => m.StockChangedAt).ToListAsync(ct);
+        return new ItemShopStockDto(marks.Count, marks.Any(changedAt => changedAt != null));
     }
 
     /// <summary>Schedules the push to each shop; call after the marks are committed, so the job sees them.</summary>

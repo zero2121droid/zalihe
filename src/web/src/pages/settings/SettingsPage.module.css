@@ -1,0 +1,119 @@
+/*
+ * The settings menu (DESIGN.md "Podešavanja"): groups of links beside the chosen part, and on a phone
+ * one row of links above it. The chosen link's look is .current, drawn once and slid to it.
+ */
+.layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.menu {
+  position: relative;
+  flex: none;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupLabel {
+  padding: 0 12px 6px;
+}
+
+.link {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  min-height: var(--z-control);
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--z-text-2);
+  font-size: var(--mantine-font-size-sm);
+  text-decoration: none;
+}
+
+.link:hover {
+  background: var(--z-surface-2);
+  color: var(--z-text);
+}
+
+.link[aria-current='page'] {
+  background: transparent;
+  color: var(--z-text);
+  font-weight: 500;
+}
+
+.current {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(var(--x), var(--y));
+  border: 1px solid var(--z-accent);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--z-selected);
+  pointer-events: none;
+}
+
+.current[data-placed] {
+  transition:
+    transform 0.3s cubic-bezier(0.3, 0.7, 0.3, 1),
+    width 0.3s cubic-bezier(0.3, 0.7, 0.3, 1),
+    height 0.3s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* On a phone the menu is one wrapping row of links above the chosen part, without group labels. */
+@media (max-width: 47.99em) {
+  .layout {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .menu {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .group {
+    display: contents;
+  }
+
+  .groupLabel {
+    display: none;
+  }
+
+  .link {
+    border: 1px solid var(--z-line);
+    border-radius: var(--mantine-radius-lg);
+  }
+
+  .link[aria-current='page'] {
+    border-color: transparent;
+  }
+
+  .current {
+    border-radius: var(--mantine-radius-lg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .current[data-placed] {
+    transition: none;
+  }
+}

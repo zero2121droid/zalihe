@@ -6,6 +6,7 @@
  */
 import type { ProductToCreateDto } from './productToCreateDto';
 import type { ProductToLinkDto } from './productToLinkDto';
+import type { ProductUpdateDto } from './productUpdateDto';
 import type { SkippedProductDto } from './skippedProductDto';
 
 export interface ProductImportPreviewDto {
@@ -13,4 +14,5 @@ export interface ProductImportPreviewDto {
   toLink: ProductToLinkDto[];
   toCreate: ProductToCreateDto[];
   skipped: SkippedProductDto[];
+  updates: ProductUpdateDto[];
 }

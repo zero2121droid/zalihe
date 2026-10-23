@@ -9,11 +9,33 @@
   border-bottom: 1px solid var(--z-line);
 }
 
-/* React Router marks the current page with aria-current; Mantine reads --nl-* for that state. */
+/*
+ * React Router marks the current page with aria-current; Mantine reads --nl-* for that state. Its
+ * background is .navCurrent, drawn once under the links and moved to the current one.
+ */
 .navLink {
-  --nl-bg: var(--z-surface-2);
+  --nl-bg: transparent;
   --nl-color: var(--z-text);
+  position: relative;
+  z-index: 1;
   color: var(--z-muted);
+}
+
+.navCurrent {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  transform: translateY(var(--y));
+  border-radius: var(--mantine-radius-sm);
+  background: var(--z-surface-2);
+  pointer-events: none;
+}
+
+.navCurrent[data-placed] {
+  transition:
+    transform 0.3s cubic-bezier(0.3, 0.7, 0.3, 1),
+    height 0.3s cubic-bezier(0.3, 0.7, 0.3, 1);
 }
 
 .navLink:hover {
@@ -30,6 +52,32 @@
   color: var(--z-accent-text);
 }
 
+.find {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--z-line);
+  border-radius: var(--mantine-radius-sm);
+  color: var(--z-muted);
+  font-size: 13px;
+}
+
+.find:hover {
+  background: var(--z-surface-2);
+  color: var(--z-text);
+}
+
+.kbd {
+  margin-left: auto;
+  padding: 1px 6px;
+  border: 1px solid var(--z-line-strong);
+  border-radius: 3px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 11px;
+}
+
 .account {
   border-top: 1px solid var(--z-line);
   padding: 12px 10px 0;
@@ -43,6 +91,48 @@
 /* Table screens use more of a wide monitor (see pageWidth.ts). */
 .main[data-width='wide'] {
   max-width: 1920px;
+}
+
+/* The bottom bar on a phone; it never shows from sm up (AppShell.Footer hiddenFrom="sm"). */
+.footer {
+  background-color: var(--z-sidebar);
+  border-top: 1px solid var(--z-line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: 64px;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  color: var(--z-muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.tab[aria-current='page'],
+.tab[data-current] {
+  color: var(--z-text);
+  font-weight: 500;
+}
+
+.tab[aria-current='page'] .tabIcon,
+.tab[data-current] .tabIcon {
+  color: var(--z-accent-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navCurrent[data-placed] {
+    transition: none;
+  }
 }
 
 @media (max-width: 48em) {

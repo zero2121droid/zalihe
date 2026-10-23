@@ -13,7 +13,13 @@ import {
 } from '../../api/generated/channels/channels'
 import { getGetDashboardQueryKey } from '../../api/generated/dashboard/dashboard'
 import { getListItemsQueryKey } from '../../api/generated/items/items'
-import type { AppError, ProductImportPreviewDto, ProductImportResultDto } from '../../api/generated/model'
+import type {
+  AppError,
+  FieldUpdateDto,
+  ProductImportPreviewDto,
+  ProductImportResultDto,
+  ProductUpdateChoice,
+} from '../../api/generated/model'
 import { getGetStockSummaryQueryKey } from '../../api/generated/stock/stock'
 import { BoxLoader, ImportOverlay } from '../../components/loaders'
 import loaderClasses from '../../components/loaders.module.css'
@@ -57,6 +63,18 @@ export function ProductImportPage() {
     mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }) },
   })
 
+  // Taking chosen differences into linked items, also without the overlay; the shop is read again after,
+  // so the list shows what still differs.
+  const applyChanges = useImportProducts({
+    mutation: {
+      onSuccess: () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }),
+          queryClient.invalidateQueries({ queryKey: getPreviewProductImportQueryKey(id) }),
+        ]),
+    },
+  })
+
   return (
     <Stack gap="lg">
       <Stack gap="xs">
@@ -88,17 +106,25 @@ export function ProductImportPage() {
         </Section>
       ) : (
         <Preview
+          // A new reading of the shop starts the choices over.
+          key={preview.dataUpdatedAt}
           preview={preview.data}
           importing={runImport.isPending}
           result={result}
           onCloseResult={() => setOverlayClosed(true)}
           error={formErrorMessage(t, runImport.error)}
-          onImport={(create) => runImport.mutate({ id, data: { createExternalIds: create } })}
+          onImport={(create, updates) => runImport.mutate({ id, data: { createExternalIds: create, applyUpdates: updates } })}
           images={{
             refreshing: refreshImages.isPending,
             count: refreshImages.data?.imageCount ?? null,
             error: formErrorMessage(t, refreshImages.error),
             onRefresh: () => refreshImages.mutate({ id, data: { createExternalIds: [] } }),
+          }}
+          changes={{
+            applying: applyChanges.isPending,
+            count: applyChanges.data?.updatedCount ?? null,
+            error: formErrorMessage(t, applyChanges.error),
+            onApply: (updates) => applyChanges.mutate({ id, data: { createExternalIds: [], applyUpdates: updates } }),
           }}
         />
       )}
@@ -128,12 +154,16 @@ interface PreviewProps {
   result: ProductImportResultDto | null
   onCloseResult: () => void
   error: string | null
-  onImport: (createExternalIds: string[]) => void
+  onImport: (createExternalIds: string[], updates: ProductUpdateChoice[]) => void
   /** Taking the shop's current images for products that are all linked already. */
   images: { refreshing: boolean; count: number | null; error: string | null; onRefresh: () => void }
+  /** Taking chosen differences into items when there is nothing else to import. */
+  changes: { applying: boolean; count: number | null; error: string | null; onApply: (updates: ProductUpdateChoice[]) => void }
 }
 
-function Preview({ preview, importing, result, onCloseResult, error, onImport, images }: PreviewProps) {
+const choiceKey = (externalId: string, field: string) => `${externalId}|${field}`
+
+function Preview({ preview, importing, result, onCloseResult, error, onImport, images, changes }: PreviewProps) {
   const { t, i18n } = useTranslation()
   const compact = useCompactTables()
   // Every new product starts checked; the user unchecks what shouldn't become an item.
@@ -142,6 +172,20 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport, i
   const allChecked = toCreate.length === preview.toCreate.length
   const nothingToDo = preview.toCreate.length === 0 && preview.toLink.length === 0
   const locked = importing || result !== null
+  // Only what fills an empty field starts chosen; anything that would replace a value waits for the user.
+  const [chosen, setChosen] = useState<Set<string>>(
+    () => new Set(preview.updates.flatMap((u) => u.fields.filter((f) => f.fillsEmpty).map((f) => choiceKey(u.externalId, f.field)))),
+  )
+  const chosenUpdates: ProductUpdateChoice[] = preview.updates.flatMap((u) =>
+    u.fields.filter((f) => chosen.has(choiceKey(u.externalId, f.field))).map((f) => ({ externalId: u.externalId, field: f.field })),
+  )
+
+  function choose(key: string, checked: boolean) {
+    const next = new Set(chosen)
+    if (checked) next.add(key)
+    else next.delete(key)
+    setChosen(next)
+  }
 
   function toggle(externalId: string, checked: boolean) {
     const next = new Set(unchecked)
@@ -318,6 +362,36 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport, i
           </Section>
         )}
 
+        {preview.updates.length > 0 && (
+          <Section title={t('channels.import.updates.title')} note={t('channels.import.updates.note')}>
+            <Stack gap={0}>
+              {preview.updates.map((update) => (
+                <Stack key={update.externalId} gap={6} py="sm" style={{ borderTop: '1px solid var(--z-line-soft)' }}>
+                  <Group gap="xs">
+                    <Anchor component={Link} to={`/items/${update.itemId}`} fz="sm" fw={500} c="var(--z-text)">
+                      {update.itemName}
+                    </Anchor>
+                    <Text ff="monospace" fz="xs" c="var(--z-text-2)">
+                      {update.sku}
+                    </Text>
+                  </Group>
+                  {update.fields.map((field) => {
+                    const key = choiceKey(update.externalId, field.field)
+                    return (
+                      <Checkbox
+                        key={key}
+                        checked={chosen.has(key)}
+                        onChange={(e) => choose(key, e.currentTarget.checked)}
+                        label={<FieldChange field={field} />}
+                      />
+                    )
+                  })}
+                </Stack>
+              ))}
+            </Stack>
+          </Section>
+        )}
+
         {preview.skipped.length > 0 && (
           <Section title={t('channels.import.skipped.title')}>
             {compact ? (
@@ -370,6 +444,24 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport, i
             {error}
           </Text>
         )}
+        {nothingToDo && preview.updates.length > 0 && (
+          <Group justify="space-between" gap="md">
+            {changes.error ? (
+              <Text role="alert" c="var(--mantine-color-error)" fz="sm">
+                {changes.error}
+              </Text>
+            ) : changes.count !== null ? (
+              <Text role="status" fz="sm" c="var(--z-accent-text)">
+                {t('channels.import.updates.applied', { count: changes.count })}
+              </Text>
+            ) : (
+              <span />
+            )}
+            <Button onClick={() => changes.onApply(chosenUpdates)} loading={changes.applying} disabled={chosenUpdates.length === 0}>
+              {t('channels.import.updates.apply')}
+            </Button>
+          </Group>
+        )}
         {nothingToDo && preview.linkedCount > 0 ? (
           <Group justify="space-between" gap="md">
             <Stack gap={2}>
@@ -396,9 +488,10 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport, i
           <Group justify="flex-end" gap="md">
             <Text fz="sm" c="dimmed">
               {t('channels.import.summary', { create: toCreate.length, link: preview.toLink.length })}
+              {preview.updates.length > 0 && t('channels.import.summaryUpdates', { count: chosenUpdates.length })}
             </Text>
             <Button
-              onClick={() => onImport(toCreate.map((p) => p.externalId))}
+              onClick={() => onImport(toCreate.map((p) => p.externalId), chosenUpdates)}
               loading={importing}
               disabled={toCreate.length === 0 && preview.toLink.length === 0}
             >
@@ -408,6 +501,32 @@ function Preview({ preview, importing, result, onCloseResult, error, onImport, i
         )}
       </Stack>
     </>
+  )
+}
+
+/** "Barkod: prazno → 8600123456789", with a warning when a price would change a lot. */
+function FieldChange({ field }: { field: FieldUpdateDto }) {
+  const { t, i18n } = useTranslation()
+  const money = field.field === 'salePrice' || field.field === 'purchasePrice'
+  const show = (value: string | null) =>
+    value === null
+      ? t('channels.import.updates.empty')
+      : money
+        ? `${formatMoney(Number(value), i18n.language)} ${t('common.currency')}`
+        : value
+  return (
+    <Text component="span" fz="sm">
+      <Text component="span" fz="sm" c="dimmed">
+        {t(`items.form.${field.field}`)}:
+      </Text>{' '}
+      {show(field.current)} → <strong>{show(field.shop)}</strong>
+      {field.largeChange && (
+        <Text component="span" fz="xs" c="var(--z-status-low)">
+          {' · '}
+          {t('channels.import.updates.large')}
+        </Text>
+      )}
+    </Text>
   )
 }
 
@@ -457,6 +576,7 @@ function ImportStatus({ result, onClose }: { result: ProductImportResultDto | nu
       <Stack gap={2} align="center" mt="xs">
         <Text fz="sm">{t('channels.import.done.created', { count: result.createdCount })}</Text>
         <Text fz="sm">{t('channels.import.done.linked', { count: result.linkedCount })}</Text>
+        {result.updatedCount > 0 && <Text fz="sm">{t('channels.import.done.updated', { count: result.updatedCount })}</Text>}
         {result.skippedCount > 0 && (
           <Text fz="sm" c="dimmed">
             {t('channels.import.done.skipped', { count: result.skippedCount })}
@@ -490,6 +610,7 @@ function Done({ result }: { result: ProductImportResultDto }) {
         <Stack gap={4}>
           <Text>{t('channels.import.done.created', { count: result.createdCount })}</Text>
           <Text>{t('channels.import.done.linked', { count: result.linkedCount })}</Text>
+          {result.updatedCount > 0 && <Text>{t('channels.import.done.updated', { count: result.updatedCount })}</Text>}
           {result.skippedCount > 0 && <Text c="dimmed">{t('channels.import.done.skipped', { count: result.skippedCount })}</Text>}
         </Stack>
         <Group gap="sm">

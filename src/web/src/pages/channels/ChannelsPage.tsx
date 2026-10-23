@@ -17,6 +17,7 @@ import { PageLoader } from '../../components/loaders'
 import { formatDateTime } from '../../lib/format'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { ChannelStatus } from './ChannelStatus'
+import { ChannelSummary } from './ChannelSummary'
 import { KeyFields } from './KeyFields'
 import { emptyKeys, type Keys } from './keys'
 import { ReplaceKeysModal } from './ReplaceKeysModal'
@@ -196,6 +197,8 @@ function ChannelCard({ channel }: { channel: SalesChannelDto }) {
             </Text>
           )}
         </Stack>
+
+        <ChannelSummary channelId={channel.id} />
 
         <Group gap="sm" className="z-phone-stack">
           <Button component={Link} to={`/channels/${channel.id}/import`}>

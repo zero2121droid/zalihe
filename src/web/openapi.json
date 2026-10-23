@@ -1015,6 +1015,149 @@
         }
       }
     },
+    "/api/items/{id}/stock-history": {
+      "get": {
+        "tags": [
+          "Items"
+        ],
+        "operationId": "GetItemStockHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "maximum": 365,
+              "minimum": 7,
+              "type": "integer",
+              "format": "int32",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemStockHistoryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemStockHistoryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemStockHistoryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{id}/shop-stock": {
+      "get": {
+        "tags": [
+          "Items"
+        ],
+        "operationId": "GetItemShopStock",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemShopStockDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemShopStockDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemShopStockDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/items/categories": {
       "get": {
         "tags": [
@@ -1731,6 +1874,67 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/{id}/summary": {
+      "get": {
+        "tags": [
+          "Channels"
+        ],
+        "operationId": "GetChannelSummary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelSummaryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelSummaryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3087,6 +3291,43 @@
           }
         }
       },
+      "ChannelSummaryDto": {
+        "required": [
+          "linkedProducts",
+          "ordersWithUnlinked",
+          "lastOrderAt",
+          "lastOrderNumber",
+          "pendingStock"
+        ],
+        "type": "object",
+        "properties": {
+          "linkedProducts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ordersWithUnlinked": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastOrderAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastOrderNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pendingStock": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "CompanyUserDto": {
         "required": [
           "id",
@@ -3200,7 +3441,9 @@
           "belowMinimum",
           "outOfStock",
           "reorder",
-          "recentMovements"
+          "recentMovements",
+          "ordersWithUnlinked",
+          "setup"
         ],
         "type": "object",
         "properties": {
@@ -3231,6 +3474,43 @@
             "items": {
               "$ref": "#/components/schemas/RecentMovementDto"
             }
+          },
+          "ordersWithUnlinked": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "setup": {
+            "$ref": "#/components/schemas/SetupDto"
+          }
+        }
+      },
+      "FieldUpdateDto": {
+        "required": [
+          "field",
+          "current",
+          "shop",
+          "fillsEmpty",
+          "largeChange"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "current": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shop": {
+            "type": "string"
+          },
+          "fillsEmpty": {
+            "type": "boolean"
+          },
+          "largeChange": {
+            "type": "boolean"
           }
         }
       },
@@ -3409,6 +3689,15 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "applyUpdates": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProductUpdateChoice"
             }
           }
         }
@@ -3773,6 +4062,22 @@
           }
         }
       },
+      "ItemShopStockDto": {
+        "required": [
+          "shops",
+          "pending"
+        ],
+        "type": "object",
+        "properties": {
+          "shops": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pending": {
+            "type": "boolean"
+          }
+        }
+      },
       "ItemSort": {
         "enum": [
           "name",
@@ -3780,6 +4085,35 @@
           "sold30Days",
           "value"
         ]
+      },
+      "ItemStockHistoryDto": {
+        "required": [
+          "from",
+          "to",
+          "startStock",
+          "points"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startStock": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StockPointDto"
+            }
+          }
+        }
       },
       "LoginRequest": {
         "required": [
@@ -4209,7 +4543,8 @@
           "linkedCount",
           "toLink",
           "toCreate",
-          "skipped"
+          "skipped",
+          "updates"
         ],
         "type": "object",
         "properties": {
@@ -4234,6 +4569,12 @@
             "items": {
               "$ref": "#/components/schemas/SkippedProductDto"
             }
+          },
+          "updates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductUpdateDto"
+            }
           }
         }
       },
@@ -4242,7 +4583,8 @@
           "linkedCount",
           "createdCount",
           "skippedCount",
-          "imageCount"
+          "imageCount",
+          "updatedCount"
         ],
         "type": "object",
         "properties": {
@@ -4259,6 +4601,10 @@
             "format": "int32"
           },
           "imageCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedCount": {
             "type": "integer",
             "format": "int32"
           }
@@ -4335,6 +4681,52 @@
           },
           "itemName": {
             "type": "string"
+          }
+        }
+      },
+      "ProductUpdateChoice": {
+        "required": [
+          "externalId",
+          "field"
+        ],
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductUpdateDto": {
+        "required": [
+          "externalId",
+          "itemId",
+          "itemName",
+          "sku",
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldUpdateDto"
+            }
           }
         }
       },
@@ -4631,6 +5023,25 @@
           "wooCommerce"
         ]
       },
+      "SetupDto": {
+        "required": [
+          "hasItems",
+          "hasMinStock",
+          "hasShop"
+        ],
+        "type": "object",
+        "properties": {
+          "hasItems": {
+            "type": "boolean"
+          },
+          "hasMinStock": {
+            "type": "boolean"
+          },
+          "hasShop": {
+            "type": "boolean"
+          }
+        }
+      },
       "SkippedProductDto": {
         "required": [
           "externalId",
@@ -4773,6 +5184,23 @@
           "adjustment",
           "return"
         ]
+      },
+      "StockPointDto": {
+        "required": [
+          "at",
+          "stock"
+        ],
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stock": {
+            "type": "number",
+            "format": "double"
+          }
+        }
       },
       "StockRecalculationDto": {
         "required": [

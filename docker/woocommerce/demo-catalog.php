@@ -163,6 +163,33 @@ foreach ($products as [$sku, , , $price]) {
     $product->save();
 }
 
+// Barcodes ("GTIN, UPC, EAN ili ISBN", WooCommerce 9.2+) on every simple product and variation that has
+// none, so Zalihe can show finding an item by its barcode. EAN-13 from the 200 prefix, which GS1 keeps
+// for in-store use, so no real company's barcode is borrowed: 200 + the product ID + a check digit.
+function nit_ean(int $id): string
+{
+    $digits = '200' . str_pad((string) $id, 9, '0', STR_PAD_LEFT);
+    $sum = 0;
+    foreach (str_split($digits) as $i => $digit) {
+        $sum += (int) $digit * ($i % 2 === 0 ? 1 : 3);
+    }
+    return $digits . ((10 - $sum % 10) % 10);
+}
+
+$with_barcode = 0;
+foreach ($products as [$sku]) {
+    $product = wc_get_product(wc_get_product_id_by_sku($sku));
+    $targets = $product->is_type('variable') ? array_map('wc_get_product', $product->get_children()) : [$product];
+    foreach ($targets as $target) {
+        if (method_exists($target, 'set_global_unique_id') && !$target->get_global_unique_id()) {
+            $target->set_global_unique_id(nit_ean($target->get_id()));
+            $target->save();
+            $with_barcode++;
+        }
+    }
+}
+WP_CLI::log("  barcodes added: $with_barcode");
+
 // The test products from setup.sh and more-products.sh stay (Zalihe can still import them),
 // but are hidden from the shop so it looks like one clothing brand.
 $hidden = 0;

@@ -48,7 +48,7 @@ export function RegisterPage() {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <Stack gap={4}>
-          <Title order={1} fz={22}>
+          <Title order={1} className="z-auth-title">
             {t('auth.register.title')}
           </Title>
           <Text c="dimmed">{t('auth.register.subtitle')}</Text>
@@ -74,7 +74,7 @@ export function RegisterPage() {
           {t('auth.register.submit')}
         </Button>
 
-        <Text fz="sm" c="dimmed" ta="center">
+        <Text fz="sm" c="dimmed">
           {t('auth.register.haveAccount')}{' '}
           <Anchor component={Link} to="/login" fz="sm">
             {t('auth.register.toLogin')}

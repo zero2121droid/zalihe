@@ -160,3 +160,16 @@
     display: none;
   }
 }
+
+/* The title of a sign-in page (DESIGN.md "Prijava i registracija"): large, 30 px on a phone. */
+.z-auth-title.z-auth-title {
+  font-size: 44px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+@media (max-width: 47.99em) {
+  .z-auth-title.z-auth-title {
+    font-size: 30px;
+  }
+}

@@ -16,26 +16,51 @@ const statusColor: Record<StockStatus, string> = {
 
 /**
  * Status as a dot and a label; never color alone. With `pulse`, the dot of a low or empty stock
- * sends out a ring now and then, for places that show one item and should draw the eye.
+ * sends out a ring now and then, for places that show one item and should draw the eye. With
+ * `animate`, a new status (stock crossed the minimum or ran out) pops the dot and slides the label in.
  */
-export function StockStatusLabel({ status, pulse = false }: { status: StockStatus; pulse?: boolean }) {
+export function StockStatusLabel({
+  status,
+  pulse = false,
+  animate = false,
+}: {
+  status: StockStatus
+  pulse?: boolean
+  animate?: boolean
+}) {
   const { t } = useTranslation()
+  const changed = useStatusChange(status, animate)
+  const dotClasses = [classes.dot, pulse && status !== 'inStock' && classes.pulse, changed && classes.dotChanged]
   return (
-    <Group gap={8} wrap="nowrap">
+    <Group gap={8} wrap="nowrap" key={changed}>
       <Box
         w={7}
         h={7}
         bg={statusColor[status]}
         c={statusColor[status]}
-        className={pulse && status !== 'inStock' ? `${classes.dot} ${classes.pulse}` : classes.dot}
+        className={dotClasses.filter(Boolean).join(' ')}
         style={{ borderRadius: '50%', flexShrink: 0 }}
         aria-hidden
       />
-      <Text component="span" fz="sm" c={statusColor[status]}>
+      <Text component="span" fz="sm" c={statusColor[status]} className={changed ? classes.labelChanged : undefined}>
         {t(`stock.status.${status}`)}
       </Text>
     </Group>
   )
+}
+
+/** A number that grows each time the status changes (0 until it does), to replay the change. */
+function useStatusChange(status: StockStatus, enabled: boolean) {
+  const reduceMotion = useReducedMotion()
+  const [seen, setSeen] = useState(status)
+  const [changes, setChanges] = useState(0)
+
+  if (seen !== status) {
+    setSeen(status)
+    if (enabled && !reduceMotion) setChanges(changes + 1)
+  }
+
+  return changes
 }
 
 interface StockChange {

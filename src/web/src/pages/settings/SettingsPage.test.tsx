@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import i18n from '../../i18n'
-import { mockApi, renderPage } from '../../test/render'
+import { mockApi, renderRoutes } from '../../test/render'
 import { SettingsPage } from './SettingsPage'
 
 const me = {
@@ -13,6 +13,9 @@ const me = {
   tenantId: 't1',
   tenantName: 'Zrno',
 }
+
+const routes = [{ path: '/settings/:section', element: <SettingsPage /> }]
+const open = (section: string) => renderRoutes(routes, `/settings/${section}`)
 
 const bodyOf = (fetchMock: ReturnType<typeof mockApi>, url: string) => {
   const call = fetchMock.mock.calls.find(([u]) => String(u) === url)
@@ -28,8 +31,8 @@ describe('SettingsPage', () => {
       'GET /api/auth/me': { status: 200, body: me },
       'PUT /api/account/company': { status: 200, body: { ...me, tenantName: 'Zrno d.o.o.' } },
     })
-    await renderPage(<SettingsPage />)
-    const company = await screen.findByRole('region', { name: 'Firma' })
+    await open('company')
+    const company = await screen.findByRole('region', { name: 'Naziv firme' })
 
     // Act
     const name = within(company).getByLabelText('Naziv firme')
@@ -48,8 +51,8 @@ describe('SettingsPage', () => {
       'GET /api/auth/me': { status: 200, body: me },
       'PUT /api/account/profile': { status: 200, body: { ...me, language: 'en' } },
     })
-    await renderPage(<SettingsPage />)
-    const profile = await screen.findByRole('region', { name: 'Moj nalog' })
+    await open('profile')
+    const profile = await screen.findByRole('region', { name: 'Ime i jezik' })
 
     // Act
     await userEvent.click(within(profile).getByText('English'))
@@ -68,7 +71,7 @@ describe('SettingsPage', () => {
         body: { status: 400, code: 'validation.failed', errors: [{ code: 'auth.wrong_password', field: 'currentPassword', params: null }] },
       },
     })
-    await renderPage(<SettingsPage />)
+    await open('password')
     const password = await screen.findByRole('region', { name: 'Lozinka' })
 
     // Act
@@ -86,7 +89,7 @@ describe('SettingsPage', () => {
       'GET /api/auth/me': { status: 200, body: me },
       'POST /api/account/password': { status: 204 },
     })
-    await renderPage(<SettingsPage />)
+    await open('password')
     const password = await screen.findByRole('region', { name: 'Lozinka' })
     const current = within(password).getByLabelText('Trenutna lozinka')
     const next = within(password).getByLabelText('Nova lozinka')
@@ -100,5 +103,37 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(current).toHaveValue(''))
     expect(next).toHaveValue('')
     expect(bodyOf(fetchMock, '/api/account/password')).toEqual({ currentPassword: 'sigurna-lozinka', newPassword: 'nova-sigurna-lozinka' })
+  })
+
+  it('Menu_UsersClicked_ShowsOnlyUsers', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/auth/me': { status: 200, body: me },
+      'GET /api/account/users': { status: 200, body: { items: [], totalCount: 0, page: 1, pageSize: 100 } },
+      'GET /api/account/invitations': { status: 200, body: { items: [], totalCount: 0, page: 1, pageSize: 100 } },
+    })
+    const { router } = await open('company')
+    const menu = await screen.findByRole('navigation', { name: 'Delovi podešavanja' })
+
+    // Act
+    await userEvent.click(within(menu).getByRole('link', { name: 'Korisnici' }))
+
+    // Assert
+    expect(await screen.findByRole('region', { name: 'Korisnici' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Naziv firme' })).not.toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/settings/users')
+    expect(within(menu).getByRole('link', { name: 'Korisnici' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('Render_UnknownSection_OpensCompany', async () => {
+    // Arrange
+    mockApi({ 'GET /api/auth/me': { status: 200, body: me } })
+
+    // Act
+    const { router } = await open('nema-toga')
+
+    // Assert
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/company'))
+    expect(await screen.findByRole('region', { name: 'Naziv firme' })).toBeInTheDocument()
   })
 })

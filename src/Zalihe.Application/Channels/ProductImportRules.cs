@@ -1,3 +1,4 @@
+using System.Globalization;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Items;
 
@@ -18,8 +19,26 @@ public enum ProductImportKind
     Skipped,
 }
 
-/// <summary>An existing item the import can link to.</summary>
-public record ExistingItem(Guid Id, string Name, string Sku);
+/// <summary>An existing item the import can link to, with the fields a shop product can update.</summary>
+public record ExistingItem(
+    Guid Id,
+    string Name,
+    string Sku,
+    string? Barcode = null,
+    string? Category = null,
+    decimal? SalePrice = null,
+    decimal? PurchasePrice = null);
+
+/// <summary>
+/// A field of an item that differs from its shop product. Values are language-neutral, as in the item's
+/// change log ("1990.5"). <see cref="FillsEmpty"/>: the item has no value yet, so taking the shop's
+/// is safe and is offered checked; <see cref="LargeChange"/>: a price more than twice as high or low,
+/// more often a mistake in the shop than a real change.
+/// </summary>
+public record FieldUpdateDto(string Field, string? Current, string Shop, bool FillsEmpty, bool LargeChange);
+
+/// <summary>A field the user chose to take from the shop for the item linked to <see cref="ExternalId"/>.</summary>
+public record ProductUpdateChoice(string ExternalId, string Field);
 
 public record ProductImportRow(ExternalProduct Product, ProductImportKind Kind, ExistingItem? Item = null, AppError? Error = null);
 
@@ -85,6 +104,46 @@ public static class ProductImportRules
         value = value.Trim();
         return value.Length <= maxLength ? value : value[..maxLength].TrimEnd();
     }
+
+    /// <summary>
+    /// A shop's GTIN (EAN, UPC, ISBN) as an item barcode: trimmed, null when empty or too long for the
+    /// field, since a shortened barcode would be a wrong one.
+    /// </summary>
+    public static string? Barcode(string? value) =>
+        Sku(value) is { } barcode && barcode.Length <= Item.BarcodeMaxLength ? barcode : null;
+
+    /// <summary>The fields an import can take from the shop.</summary>
+    public static readonly string[] UpdatableFields = ["name", "barcode", "category", "salePrice", "purchasePrice"];
+
+    /// <summary>
+    /// Where the item differs from its shop product, field by field. Only what the shop has counts: an
+    /// empty field in the shop never offers to clear the item's value. Stock is never compared; the
+    /// application is the source of truth for it.
+    /// </summary>
+    public static IReadOnlyList<FieldUpdateDto> Differences(ExternalProduct product, ExistingItem item)
+    {
+        var updates = new List<FieldUpdateDto>();
+        void Text(string field, string? current, string? shop)
+        {
+            if (shop is not null && shop != current) updates.Add(new FieldUpdateDto(field, current, shop, current is null, false));
+        }
+        void Money(string field, decimal? current, decimal? shop)
+        {
+            if (shop is not { } value || value == current) return;
+            var large = current is > 0 && value > 0 && Math.Max(value, current.Value) / Math.Min(value, current.Value) > 2;
+            updates.Add(new FieldUpdateDto(field, Invariant(current), Invariant(value)!, current is null, large));
+        }
+
+        Text("name", item.Name, Fit(product.Name, Item.NameMaxLength));
+        Text("barcode", item.Barcode, Barcode(product.Barcode));
+        Text("category", item.Category, Fit(product.Category, Item.CategoryMaxLength));
+        Money("salePrice", item.SalePrice, Price(product.Price));
+        Money("purchasePrice", item.PurchasePrice, Price(product.Cost));
+        return updates;
+    }
+
+    // Same as the item's change log, so both read alike.
+    private static string? Invariant(decimal? value) => value?.ToString("G29", CultureInfo.InvariantCulture);
 
     /// <summary>A shop price as an item price: two decimals, null when missing or negative.</summary>
     public static decimal? Price(decimal? value) =>

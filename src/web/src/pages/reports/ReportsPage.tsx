@@ -13,6 +13,7 @@ import { useGetReportSummary, useListCategoryValues, useListSlowMovers, useListT
 import feedbackClasses from '../../components/feedback.module.css'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { SkeletonRows } from '../../components/loaders'
+import { PageTurn } from '../../components/PageTurn'
 import { Pager } from '../../components/Pager'
 import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
 import { StockQuantity, StockStatusLabel } from '../../components/stock'
@@ -222,6 +223,7 @@ interface ListProps {
 interface Paged<T> {
   items: T[]
   totalCount: number
+  page: number
 }
 
 /** The report's section: title, then a loader, the error, the empty text or the table with its pager. */
@@ -271,7 +273,9 @@ function ReportSection<T>({
       ) : (
         <>
           {/* Compact (phone, tablet): the reports draw fewer columns (the rest goes under the item), so nothing scrolls sideways. */}
-          {compact ? children(query.data!.items) : <Table.ScrollContainer minWidth={640}>{children(query.data!.items)}</Table.ScrollContainer>}
+          <PageTurn page={query.data!.page}>
+            {compact ? children(query.data!.items) : <Table.ScrollContainer minWidth={640}>{children(query.data!.items)}</Table.ScrollContainer>}
+          </PageTurn>
           <Pager
             page={page}
             pageSize={pageSize}

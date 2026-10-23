@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Zalihe.Application.Channels;
 using Zalihe.Application.Common;
 using Zalihe.Application.Items;
 using Zalihe.Domain.Items;
@@ -13,7 +14,11 @@ namespace Zalihe.Web.Items;
 [Authorize]
 [Route("api/items")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
-public class ItemsController(ItemService itemService, ItemHistoryService historyService, ItemImageService imageService) : ControllerBase
+public class ItemsController(
+    ItemService itemService,
+    ItemHistoryService historyService,
+    ItemImageService imageService,
+    StockPushService stockPush) : ControllerBase
 {
     /// <summary>
     /// Items of the current company, paged, searchable by name, SKU or barcode.
@@ -56,6 +61,27 @@ public class ItemsController(ItemService itemService, ItemHistoryService history
         [FromQuery, Range(1, Paging.MaxPageSize, ErrorMessage = "validation.out_of_range")] int pageSize = Paging.DefaultPageSize,
         CancellationToken ct = default) =>
         await historyService.GetAsync(id, filter, page, pageSize, ct) is { } history ? history : NotFound();
+
+    /// <summary>The item's stock over the last <paramref name="days"/> days (7 to 365), for the chart on its page.</summary>
+    [HttpGet("{id:guid}/stock-history", Name = "GetItemStockHistory")]
+    [ProducesResponseType<ItemStockHistoryDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<ActionResult<ItemStockHistoryDto>> StockHistory(
+        Guid id,
+        [FromQuery, Range(7, 365, ErrorMessage = "validation.out_of_range")] int days = 30,
+        CancellationToken ct = default) =>
+        await historyService.GetStockAsync(id, days, ct) is { } history ? history : NotFound();
+
+    /// <summary>
+    /// Whether the shops the item is linked to already show its current stock. A change is sent a little
+    /// after it is made (SPEC 7.5), so the item page asks again until nothing is pending.
+    /// </summary>
+    [HttpGet("{id:guid}/shop-stock", Name = "GetItemShopStock")]
+    [ProducesResponseType<ItemShopStockDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<ActionResult<ItemShopStockDto>> ShopStock(Guid id, CancellationToken ct) =>
+        await stockPush.GetItemStatusAsync(id, ct) is { } status ? status : NotFound();
 
     /// <summary>Categories in use, for suggestions in the item form.</summary>
     [HttpGet("categories", Name = "ListItemCategories")]

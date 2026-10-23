@@ -1,0 +1,78 @@
+/*
+ * Sign-in pages (DESIGN.md "Prijava i registracija"): the form on the left, the logo large on the
+ * right. On a phone and a narrow tablet the large logo gives way to the usual one above the form.
+ */
+.page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 72px;
+}
+
+.top {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.small {
+  display: none;
+}
+
+/* At most as wide as a form page (1180 px) and centered, so on a wide screen the form and the logo stay together. */
+.body {
+  flex: 1;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 72px;
+  align-items: center;
+}
+
+.form {
+  width: 100%;
+  max-width: 420px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.name {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 80px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+@media (max-width: 61.99em) {
+  .page {
+    padding: 20px 16px 32px;
+  }
+
+  .top {
+    justify-content: space-between;
+  }
+
+  .small {
+    display: block;
+  }
+
+  .body {
+    display: flex;
+    justify-content: center;
+    padding-top: 24px;
+  }
+
+  .brand {
+    display: none;
+  }
+}

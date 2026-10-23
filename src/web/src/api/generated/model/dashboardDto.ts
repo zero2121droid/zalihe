@@ -6,6 +6,7 @@
  */
 import type { RecentMovementDto } from './recentMovementDto';
 import type { ReorderItemDto } from './reorderItemDto';
+import type { SetupDto } from './setupDto';
 
 export interface DashboardDto {
   stockValue: number;
@@ -14,4 +15,6 @@ export interface DashboardDto {
   outOfStock: number;
   reorder: ReorderItemDto[];
   recentMovements: RecentMovementDto[];
+  ordersWithUnlinked: number;
+  setup: SetupDto;
 }

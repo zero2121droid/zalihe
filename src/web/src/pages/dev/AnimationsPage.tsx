@@ -11,12 +11,15 @@ import { SaveButton } from '../../components/feedback'
 import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
 import { BoxLoader, EmptyBox, PageLoader, ShopImportAnimation, SkeletonRows } from '../../components/loaders'
 import { Odometer } from '../../components/Odometer'
+import { PageTurn } from '../../components/PageTurn'
 import { StepButton } from '../../components/StepButton'
+import { ThemeToggle } from '../../components/ThemeToggle'
 import { MovementQuantity, StockQuantity, StockStatusLabel } from '../../components/stock'
 import stockClasses from '../../components/stock.module.css'
 import { formatNumber } from '../../lib/format'
 import { useArrivals } from '../../lib/useArrivals'
 import { matchesSearch } from '../../lib/search'
+import { useLeaving } from '../../lib/useLeaving'
 import { useSaved } from '../../lib/useSaved'
 import { useShake } from '../../lib/useShake'
 
@@ -65,7 +68,7 @@ function StockChangeDemo() {
     <Stack gap="md">
       <Group gap="xl" align="center">
         <StockQuantity quantity={quantity} unit="kom" status={statusOf(quantity)} size={26} animate />
-        <StockStatusLabel status={statusOf(quantity)} pulse />
+        <StockStatusLabel status={statusOf(quantity)} pulse animate />
       </Group>
       <Group gap="xs">
         <Button variant="default" onClick={() => move(24)} rightSection={<MovementQuantity quantity={24} />}>
@@ -211,6 +214,39 @@ function PillsDemo() {
   )
 }
 
+function LeavingDemo() {
+  const { t } = useTranslation()
+  const [page, setPage] = useState(1)
+  const [removed, setRemoved] = useState<string[]>([])
+  const onPage = SEARCH_ITEMS.slice((page - 1) * 3, page * 3).filter(([, sku]) => !removed.includes(sku))
+  const rows = useLeaving(onPage, ([, sku]) => sku, String(page))
+  return (
+    <Stack gap="sm">
+      <Group gap="xs">
+        <Button variant="default" onClick={() => setPage(page === 1 ? 2 : 1)}>
+          {t(page === 1 ? 'common.nextPage' : 'common.previousPage')}
+        </Button>
+        <Button variant="default" onClick={() => setRemoved([])}>
+          {t('common.undo')}
+        </Button>
+      </Group>
+      <PageTurn page={page}>
+        <Table>
+          <SearchBody narrowing={rows.some((r) => r.leaving)}>
+            {rows.map(({ item: [name, sku], leaving }) => (
+              <SearchRow key={sku} hidden={leaving} onClick={() => setRemoved((list) => [...list, sku])} style={{ cursor: 'pointer' }}>
+                <Table.Td>
+                  <SearchCell>{name}</SearchCell>
+                </Table.Td>
+              </SearchRow>
+            ))}
+          </SearchBody>
+        </Table>
+      </PageTurn>
+    </Stack>
+  )
+}
+
 function DetailsDemo() {
   const { t } = useTranslation()
   const [inactive, setInactive] = useState(false)
@@ -220,6 +256,7 @@ function DetailsDemo() {
         <CopySku sku="KF-ETI-250" />
       </Text>
       <Switch label={t('items.showInactive')} checked={inactive} onChange={(e) => setInactive(e.currentTarget.checked)} />
+      <ThemeToggle />
     </Stack>
   )
 }
@@ -249,7 +286,7 @@ export function AnimationsPage() {
               <SkeletonRows rows={4} />
             </Box>
           </Specimen>
-          <Specimen name="D · StockQuantity animate, StockStatusLabel pulse, freshRow">
+          <Specimen name="D · StockQuantity animate, StockStatusLabel pulse animate, freshRow">
             <StockChangeDemo />
           </Specimen>
           <Specimen name="E · ShopImportAnimation">
@@ -276,7 +313,10 @@ export function AnimationsPage() {
           <Specimen name="R · FilterPills, rise">
             <PillsDemo />
           </Specimen>
-          <Specimen name="W · CopySku, Switch">
+          <Specimen name="L · useLeaving, PageTurn">
+            <LeavingDemo />
+          </Specimen>
+          <Specimen name="W · CopySku, Switch, ThemeToggle">
             <DetailsDemo />
           </Specimen>
           <Specimen name="G · EmptyBox">

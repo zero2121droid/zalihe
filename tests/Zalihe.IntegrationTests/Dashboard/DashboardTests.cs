@@ -90,4 +90,50 @@ public class DashboardTests(ZaliheApiFactory factory)
     {
         (await factory.CreateClient().GetAsync("/api/dashboard")).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
+
+    [Fact]
+    public async Task Get_NewCompany_HasNoFirstStepsDone()
+    {
+        // Arrange
+        var client = await factory.CreateSignedInClientAsync();
+
+        // Act
+        var setup = (await DashboardAsync(client)).GetProperty("setup");
+
+        // Assert
+        setup.GetProperty("hasItems").GetBoolean().ShouldBeFalse();
+        setup.GetProperty("hasMinStock").GetBoolean().ShouldBeFalse();
+        setup.GetProperty("hasShop").GetBoolean().ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Get_ItemsWithoutMinimum_HasItemsButNoMinStock()
+    {
+        // Arrange
+        var client = await factory.CreateSignedInClientAsync();
+        await ItemAsync(client, "NO-MIN", minStock: 0, purchasePrice: null, receipt: 3);
+
+        // Act
+        var setup = (await DashboardAsync(client)).GetProperty("setup");
+
+        // Assert
+        setup.GetProperty("hasItems").GetBoolean().ShouldBeTrue();
+        setup.GetProperty("hasMinStock").GetBoolean().ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Get_ConnectedShop_HasShopAndItemsWithMinimum()
+    {
+        // Arrange
+        var (client, _) = await LinkedShop.CreateAsync(factory);
+        await ItemAsync(client, "MIN", minStock: 5, purchasePrice: null, receipt: 1);
+
+        // Act
+        var setup = (await DashboardAsync(client)).GetProperty("setup");
+
+        // Assert
+        setup.GetProperty("hasShop").GetBoolean().ShouldBeTrue();
+        setup.GetProperty("hasItems").GetBoolean().ShouldBeTrue();
+        setup.GetProperty("hasMinStock").GetBoolean().ShouldBeTrue();
+    }
 }

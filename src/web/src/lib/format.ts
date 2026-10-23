@@ -86,3 +86,8 @@ export function readDecimal(input: string): number | null | 'invalid' {
   if (input.trim() === '') return null
   return parseDecimal(input) ?? 'invalid'
 }
+
+/** A day and month for a chart axis: "24.10." in sr-Latn, "10/24" in English. */
+export function formatShortDate(value: string | Date, language: string): string {
+  return new Intl.DateTimeFormat(language, { day: 'numeric', month: 'numeric' }).format(new Date(value))
+}

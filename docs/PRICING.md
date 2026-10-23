@@ -91,6 +91,6 @@ Ručno označavanje uplata traži operatera koji vidi sve firme. Takva uloga ne 
 
 ## 6. Veza sa stavkama van v1
 
-- **SEF**: moje fakture se izdaju van aplikacije; SEF kao funkcija za korisnike ostaje van v1 (SPEC 2.8, 11.5).
+- **SEF**: moje fakture se izdaju van aplikacije; SEF kao funkcija za korisnike ostaje van v1 (SPEC 2.8, 11.6).
 - **Više magacina**: kandidat za osobinu višeg plana kad se napravi, ne pre.
 - **Uloge (SPEC 11.2)**: preduslov da broj korisnika bude stvarna razlika među planovima.

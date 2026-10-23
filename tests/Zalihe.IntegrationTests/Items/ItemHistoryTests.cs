@@ -129,4 +129,51 @@ public class ItemHistoryTests(ZaliheApiFactory factory)
         // Assert
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task GetStockHistory_ReceiptThenSale_ReturnsStockAfterEachMovement()
+    {
+        // Arrange
+        var client = await factory.CreateSignedInClientAsync();
+        var id = await CreateAsync(client);
+        await client.PostAsJsonAsync($"/api/items/{id}/movements", new { kind = "receipt", quantity = 24 });
+        await client.PostAsJsonAsync($"/api/items/{id}/movements", new { kind = "sale", quantity = 2.5m });
+
+        // Act
+        var history = await client.GetFromJsonAsync<JsonElement>($"/api/items/{id}/stock-history?days=30");
+
+        // Assert
+        history.GetProperty("startStock").GetDecimal().ShouldBe(0);
+        history.GetProperty("points").EnumerateArray().Select(p => p.GetProperty("stock").GetDecimal()).ShouldBe([24m, 21.5m]);
+        (history.GetProperty("to").GetDateTimeOffset() - history.GetProperty("from").GetDateTimeOffset()).TotalDays.ShouldBe(30, 0.001);
+    }
+
+    [Fact]
+    public async Task GetStockHistory_TooManyDays_ReturnsValidationError()
+    {
+        // Arrange
+        var client = await factory.CreateSignedInClientAsync();
+        var id = await CreateAsync(client);
+
+        // Act
+        var response = await client.GetAsync($"/api/items/{id}/stock-history?days=1000");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GetStockHistory_OtherCompanysItem_ReturnsNotFound()
+    {
+        // Arrange
+        var owner = await factory.CreateSignedInClientAsync();
+        var id = await CreateAsync(owner);
+        var other = await factory.CreateSignedInClientAsync();
+
+        // Act
+        var response = await other.GetAsync($"/api/items/{id}/stock-history");
+
+        // Assert
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
 }

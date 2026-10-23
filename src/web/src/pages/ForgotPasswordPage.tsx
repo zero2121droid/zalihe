@@ -25,7 +25,7 @@ export function ForgotPasswordPage() {
   if (forgot.isSuccess) {
     return (
       <Stack gap="sm">
-        <Title order={1} fz={22}>
+        <Title order={1} className="z-auth-title">
           {t('auth.forgot.sentTitle')}
         </Title>
         <Text c="dimmed">{t('auth.forgot.sentText', { email: email.trim() })}</Text>
@@ -40,7 +40,7 @@ export function ForgotPasswordPage() {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <Stack gap={4}>
-          <Title order={1} fz={22}>
+          <Title order={1} className="z-auth-title">
             {t('auth.forgot.title')}
           </Title>
           <Text c="dimmed">{t('auth.forgot.subtitle')}</Text>
@@ -65,7 +65,7 @@ export function ForgotPasswordPage() {
           {t('auth.forgot.submit')}
         </Button>
 
-        <Text fz="sm" ta="center">
+        <Text fz="sm">
           <Anchor component={Link} to="/login" fz="sm">
             {t('auth.forgot.toLogin')}
           </Anchor>

@@ -86,4 +86,43 @@ describe('UsersSection', () => {
       expect(fetchMock.mock.calls.some(([url, i]) => String(url) === '/api/account/invitations/i1' && i?.method === 'DELETE')).toBe(true),
     )
   })
+
+  it('Resend_Invitation_SaysSentThenOffersItAgain', async () => {
+    // Arrange
+    const invitation = { id: 'i1', email: 'ana@zrno.rs', sentAt: '2026-10-19T09:00:00Z', expiresAt: '2026-10-26T09:00:00Z', state: 'pending' }
+    mockApi({
+      'GET /api/account/users': users,
+      'GET /api/account/invitations': page([invitation]),
+      'POST /api/account/invitations': { status: 200, body: invitation },
+    })
+    await renderPage(<UsersSection user={me} />)
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Pošalji ponovo' }))
+
+    // Assert
+    expect(await screen.findByRole('button', { name: 'Poslato' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Pošalji ponovo' }, { timeout: 3000 })).toBeInTheDocument()
+  })
+
+  it('Revoke_Invitation_RemovesItsRow', async () => {
+    // Arrange
+    let revoked = false
+    mockApi({
+      'GET /api/account/users': users,
+      'GET /api/account/invitations': () =>
+        page(revoked ? [] : [{ id: 'i1', email: 'ana@zrno.rs', sentAt: '2026-10-19T09:00:00Z', expiresAt: '2026-10-26T09:00:00Z', state: 'pending' }]),
+      'DELETE /api/account/invitations/i1': () => {
+        revoked = true
+        return { status: 204 }
+      },
+    })
+    await renderPage(<UsersSection user={me} />)
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Opozovi poziv za ana@zrno.rs' }))
+
+    // Assert
+    await waitFor(() => expect(screen.queryByText('ana@zrno.rs')).not.toBeInTheDocument())
+  })
 })

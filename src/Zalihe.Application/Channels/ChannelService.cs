@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
+using Zalihe.Application.Orders;
 using Zalihe.Domain.Channels;
 
 namespace Zalihe.Application.Channels;
@@ -16,6 +17,14 @@ public record SalesChannelDto(
     DateTimeOffset? FailingSince,
     DateTimeOffset? LastSyncedAt,
     DateTimeOffset CreatedAt);
+
+/// <summary>How a connected shop is doing, for its card.</summary>
+/// <param name="LinkedProducts">Shop products linked to items.</param>
+/// <param name="OrdersWithUnlinked">Orders with a product that is still not linked to any item (as the "unlinked" filter of Orders).</param>
+/// <param name="LastOrderAt">When the last order arrived from the shop; null before the first.</param>
+/// <param name="LastOrderNumber">That order's number in the shop.</param>
+/// <param name="PendingStock">Products whose new stock the shop doesn't have yet.</param>
+public record ChannelSummaryDto(int LinkedProducts, int OrdersWithUnlinked, DateTimeOffset? LastOrderAt, string? LastOrderNumber, int PendingStock);
 
 public record ChannelResult(SalesChannelDto? Channel, IReadOnlyList<AppError> Errors, bool NotFound = false)
 {
@@ -41,6 +50,29 @@ public class ChannelService(
 {
     public async Task<IReadOnlyList<SalesChannelDto>> ListAsync(CancellationToken ct) =>
         (await db.SalesChannels.AsNoTracking().OrderBy(c => c.CreatedAt).ToListAsync(ct)).Select(ToDto).ToList();
+
+    /// <summary>The shop's linked products, orders and stock waiting to be sent; null when there is no such shop.</summary>
+    public async Task<ChannelSummaryDto?> GetSummaryAsync(Guid channelId, CancellationToken ct)
+    {
+        if (!await db.SalesChannels.AnyAsync(c => c.Id == channelId, ct))
+        {
+            return null;
+        }
+
+        var mappings = db.ItemChannelMappings.Where(m => m.ChannelId == channelId);
+        var orders = db.ExternalOrders.Where(o => o.ChannelId == channelId);
+        var lastOrder = await orders
+            .OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id)
+            .Select(o => new { o.CreatedAt, o.ExternalId })
+            .FirstOrDefaultAsync(ct);
+
+        return new ChannelSummaryDto(
+            LinkedProducts: await mappings.CountAsync(ct),
+            OrdersWithUnlinked: await orders.WithUnlinkedLines(db).CountAsync(ct),
+            LastOrderAt: lastOrder?.CreatedAt,
+            LastOrderNumber: lastOrder?.ExternalId,
+            PendingStock: await mappings.CountAsync(m => m.StockChangedAt != null, ct));
+    }
 
     /// <summary>Connects a WooCommerce shop with manually entered keys (one shop per company in v1).</summary>
     public async Task<ChannelResult> ConnectWooCommerceAsync(string baseUrl, string consumerKey, string consumerSecret, CancellationToken ct)

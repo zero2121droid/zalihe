@@ -1,6 +1,12 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
+
+// npm run dev:https (scripts/dev-https.mjs): https on the local network, so a phone can use its camera.
+const https = process.env.DEV_HTTPS
+  ? { key: readFileSync('.cert/key.pem'), cert: readFileSync('.cert/cert.pem') }
+  : undefined
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -20,6 +26,7 @@ export default defineConfig({
     },
   },
   server: {
+    https,
     proxy: {
       // Backend runs outside Docker via the "http" launch profile of Zalihe.Web.
       // API_URL points the proxy elsewhere, e.g. a second backend on another port.

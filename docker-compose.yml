@@ -45,6 +45,9 @@ services:
       WORDPRESS_DB_NAME: wordpress
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
+      # Address the shop reports its images at, instead of localhost:8080, so a phone on the same
+      # network can load them. Set in .env, e.g. SHOP_MEDIA_HOST=192.168.1.3:8080; empty = localhost.
+      SHOP_MEDIA_HOST: ${SHOP_MEDIA_HOST:-}
     ports:
       - "8080:80"
     volumes:

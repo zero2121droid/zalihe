@@ -1,4 +1,4 @@
-import { Anchor, Button, Checkbox, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core'
+import { Anchor, Button, Checkbox, Group, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -38,7 +38,7 @@ export function LoginPage() {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <Stack gap={4}>
-          <Title order={1} fz={22}>
+          <Title order={1} className="z-auth-title">
             {t('auth.login.title')}
           </Title>
           <Text c="dimmed">{t('auth.login.subtitle')}</Text>
@@ -59,14 +59,17 @@ export function LoginPage() {
           onChange={(e) => setPassword(e.currentTarget.value)}
           error={fieldErrors.password}
         />
-        <Anchor component={Link} to="/forgot-password" fz="sm" style={{ alignSelf: 'flex-start' }}>
-          {t('auth.login.forgot')}
-        </Anchor>
-        <Checkbox
-          label={t('auth.login.rememberMe')}
-          checked={rememberMe}
-          onChange={(e) => setRememberMe(e.currentTarget.checked)}
-        />
+        {/* Remember me belongs to the form, so it comes first (also for Tab); the way out is on the right. */}
+        <Group justify="space-between" gap="sm">
+          <Checkbox
+            label={t('auth.login.rememberMe')}
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.currentTarget.checked)}
+          />
+          <Anchor component={Link} to="/forgot-password" fz="sm">
+            {t('auth.login.forgot')}
+          </Anchor>
+        </Group>
 
         {formError && (
           <Text role="alert" c="var(--mantine-color-error)" fz="sm">
@@ -78,7 +81,7 @@ export function LoginPage() {
           {t('auth.login.submit')}
         </Button>
 
-        <Text fz="sm" c="dimmed" ta="center">
+        <Text fz="sm" c="dimmed">
           {t('auth.login.noAccount')}{' '}
           <Anchor component={Link} to="/register" fz="sm">
             {t('auth.login.toRegister')}

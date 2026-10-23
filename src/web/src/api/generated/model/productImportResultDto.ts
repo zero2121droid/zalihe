@@ -10,4 +10,5 @@ export interface ProductImportResultDto {
   createdCount: number;
   skippedCount: number;
   imageCount: number;
+  updatedCount: number;
 }

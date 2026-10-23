@@ -1,0 +1,93 @@
+/* Quick search (DESIGN.md "Brza pretraga"): an input, the matching items under it, keys at the bottom. */
+.query {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--z-line);
+  color: var(--z-muted);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--z-text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  min-height: 56px;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--z-text);
+  text-decoration: none;
+}
+
+.option[aria-selected='true'] {
+  border-color: var(--z-accent);
+  background: var(--z-selected);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.note {
+  padding: 12px;
+}
+
+.keys {
+  padding: 10px 16px;
+  border-top: 1px solid var(--z-line);
+}
+
+.kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--z-line-strong);
+  border-radius: 3px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 11px;
+  color: var(--z-muted);
+  white-space: nowrap;
+}
+
+/* Only a phone needs it: elsewhere Escape or a click outside closes the window. */
+.close {
+  display: none;
+}
+
+/* On a phone there is no keyboard to explain, and the status already shows under the name. */
+@media (max-width: 47.99em) {
+  .keys,
+  .query .kbd {
+    display: none;
+  }
+
+  .close {
+    display: flex;
+    width: var(--z-icon-button);
+    height: var(--z-icon-button);
+    margin-right: -8px;
+  }
+}

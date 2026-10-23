@@ -25,6 +25,7 @@ import type {
 
 import type {
   ApiProblemDetails,
+  ChannelSummaryDto,
   ConnectWooCommerceRequest,
   ImportProductsRequest,
   ProblemDetails,
@@ -140,6 +141,100 @@ export function useListChannels<TData = Awaited<ReturnType<typeof listChannels>>
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListChannelsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetChannelSummaryUrl = (id: string,) => {
+
+
+
+
+  return `/api/channels/${id}/summary`
+}
+
+export const getChannelSummary = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ChannelSummaryDto> => {
+
+  return customFetch<ChannelSummaryDto>(getGetChannelSummaryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChannelSummaryQueryKey = (id: string,) => {
+    return [
+    `/api/channels/${id}/summary`
+    ] as const;
+    }
+
+
+export const getGetChannelSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getChannelSummary>>, TError = ErrorType<ProblemDetails>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChannelSummaryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChannelSummary>>> = ({ signal }) => getChannelSummary(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelSummary>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetChannelSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelSummary>>>
+export type GetChannelSummaryQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetChannelSummary<TData = Awaited<ReturnType<typeof getChannelSummary>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelSummary>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChannelSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getChannelSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChannelSummary<TData = Awaited<ReturnType<typeof getChannelSummary>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelSummary>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChannelSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getChannelSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChannelSummary<TData = Awaited<ReturnType<typeof getChannelSummary>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetChannelSummary<TData = Awaited<ReturnType<typeof getChannelSummary>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetChannelSummaryQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

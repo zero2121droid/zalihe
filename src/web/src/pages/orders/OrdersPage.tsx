@@ -10,9 +10,13 @@ import type { OrderDto } from '../../api/generated/model'
 import { useListOrders } from '../../api/generated/orders/orders'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { EmptyBox, SkeletonRows } from '../../components/loaders'
+import { Odometer } from '../../components/Odometer'
+import { PageTurn } from '../../components/PageTurn'
 import { Pager } from '../../components/Pager'
+import { SearchBody, SearchCell, SearchRow } from '../../components/search'
 import { formatDateTime, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
+import { type Shown, useLeaving } from '../../lib/useLeaving'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { useCompactTables } from '../../lib/usePhone'
 import { OrderModal } from './OrderModal'
@@ -81,6 +85,13 @@ export function OrdersPage() {
   const filtered = state.status !== null || state.unlinkedOnly
   // The row's data is the modal's data; it stays open while the list refreshes behind it.
   const opened = data?.items.find((o) => o.id === openedId)
+  // An order whose products got linked (in the import, then back here) folds out of "unlinked".
+  const rows = useLeaving(
+    data?.items ?? [],
+    (o) => o.id,
+    JSON.stringify(toParams(state)),
+    !orders.isPlaceholderData && !orders.isPending,
+  )
 
   return (
     <Stack gap="lg">
@@ -117,6 +128,11 @@ export function OrdersPage() {
           </FilterPill>
           <FilterPill active={state.unlinkedOnly} onClick={() => update({ unlinkedOnly: true })}>
             {t('orders.filters.unlinked')}
+            {state.unlinkedOnly && data && !state.search && state.status === null && (
+              <Text component="span" ff="monospace" fz="xs" c="dimmed">
+                <Odometer text={formatNumber(data.totalCount, i18n.language)} />
+              </Text>
+            )}
           </FilterPill>
         </FilterPills>
         <Select
@@ -142,13 +158,15 @@ export function OrdersPage() {
           <EmptyState search={state.search} filtered={filtered} />
         ) : (
           <>
-            {compact ? (
-              <OrdersList orders={data!.items} onOpen={setOpenedId} />
-            ) : (
-              <Table.ScrollContainer minWidth={760}>
-                <OrdersTable orders={data!.items} onOpen={setOpenedId} />
-              </Table.ScrollContainer>
-            )}
+            <PageTurn page={data!.page}>
+              {compact ? (
+                <OrdersList rows={rows} onOpen={setOpenedId} />
+              ) : (
+                <Table.ScrollContainer minWidth={760}>
+                  <OrdersTable rows={rows} onOpen={setOpenedId} />
+                </Table.ScrollContainer>
+              )}
+            </PageTurn>
             <Pager
               page={state.page}
               pageSize={state.pageSize}
@@ -165,9 +183,15 @@ export function OrdersPage() {
   )
 }
 
-function OrdersTable({ orders, onOpen }: { orders: OrderDto[]; onOpen: (id: string) => void }) {
+interface RowsProps {
+  rows: Shown<OrderDto>[]
+  onOpen: (id: string) => void
+}
+
+function OrdersTable({ rows, onOpen }: RowsProps) {
   const { t, i18n } = useTranslation()
-  const severalShops = new Set(orders.map((o) => o.channelId)).size > 1
+  const severalShops = new Set(rows.map((r) => r.item.channelId)).size > 1
+  const folding = rows.some((r) => r.leaving)
 
   return (
     <Table>
@@ -179,35 +203,43 @@ function OrdersTable({ orders, onOpen }: { orders: OrderDto[]; onOpen: (id: stri
           <Table.Th>{t('orders.columns.products')}</Table.Th>
         </Table.Tr>
       </Table.Thead>
-      <Table.Tbody>
-        {orders.map((order) => (
+      <SearchBody narrowing={folding}>
+        {rows.map(({ item: order, leaving }) => (
           // The whole row opens the order for mouse users; the number is the real button for keyboards.
-          <Table.Tr key={order.id} onClick={() => onOpen(order.id)} style={{ cursor: 'pointer' }}>
+          <SearchRow key={order.id} hidden={leaving} onClick={() => onOpen(order.id)} style={{ cursor: 'pointer' }}>
             <Table.Td>
-              <OrderNumber order={order} onOpen={onOpen} />
-              {severalShops && (
-                <Text fz="xs" c="dimmed">
-                  {shopHost(order.shopUrl)}
+              <SearchCell>
+                <OrderNumber order={order} onOpen={onOpen} leaving={leaving} />
+                {severalShops && (
+                  <Text fz="xs" c="dimmed">
+                    {shopHost(order.shopUrl)}
+                  </Text>
+                )}
+              </SearchCell>
+            </Table.Td>
+            <Table.Td>
+              <SearchCell>
+                <Text ff="monospace" fz="sm" c="var(--z-text-2)" style={{ whiteSpace: 'nowrap' }}>
+                  {formatDateTime(order.placedAt, i18n.language)}
                 </Text>
-              )}
+              </SearchCell>
             </Table.Td>
             <Table.Td>
-              <Text ff="monospace" fz="sm" c="var(--z-text-2)" style={{ whiteSpace: 'nowrap' }}>
-                {formatDateTime(order.placedAt, i18n.language)}
-              </Text>
+              <SearchCell>
+                <Text fz="sm">{statusLabel(t, order.status)}</Text>
+                <Text fz="xs" c="dimmed">
+                  {order.takesStock ? t('orders.takesStock') : t('orders.doesNotTakeStock')}
+                </Text>
+              </SearchCell>
             </Table.Td>
             <Table.Td>
-              <Text fz="sm">{statusLabel(t, order.status)}</Text>
-              <Text fz="xs" c="dimmed">
-                {order.takesStock ? t('orders.takesStock') : t('orders.doesNotTakeStock')}
-              </Text>
+              <SearchCell>
+                <ProductsSummary order={order} />
+              </SearchCell>
             </Table.Td>
-            <Table.Td>
-              <ProductsSummary order={order} />
-            </Table.Td>
-          </Table.Tr>
+          </SearchRow>
         ))}
-      </Table.Tbody>
+      </SearchBody>
     </Table>
   )
 }
@@ -216,40 +248,42 @@ function OrdersTable({ orders, onOpen }: { orders: OrderDto[]; onOpen: (id: stri
  * The orders on a phone: one cell per order, number and time on top, status under them and the
  * products below, so nothing hides past the edge of the screen.
  */
-function OrdersList({ orders, onOpen }: { orders: OrderDto[]; onOpen: (id: string) => void }) {
+function OrdersList({ rows, onOpen }: RowsProps) {
   const { t, i18n } = useTranslation()
-  const severalShops = new Set(orders.map((o) => o.channelId)).size > 1
+  const severalShops = new Set(rows.map((r) => r.item.channelId)).size > 1
 
   return (
     <Table>
-      <Table.Tbody>
-        {orders.map((order) => (
-          <Table.Tr key={order.id} onClick={() => onOpen(order.id)} style={{ cursor: 'pointer' }}>
+      <SearchBody narrowing={rows.some((r) => r.leaving)}>
+        {rows.map(({ item: order, leaving }) => (
+          <SearchRow key={order.id} hidden={leaving} onClick={() => onOpen(order.id)} style={{ cursor: 'pointer' }}>
             <Table.Td>
-              <Group justify="space-between" gap="sm" wrap="nowrap" align="baseline">
-                <OrderNumber order={order} onOpen={onOpen} />
-                <Text ff="monospace" fz="xs" c="var(--z-text-2)" style={{ whiteSpace: 'nowrap' }}>
-                  {formatDateTime(order.placedAt, i18n.language)}
+              <SearchCell>
+                <Group justify="space-between" gap="sm" wrap="nowrap" align="baseline">
+                  <OrderNumber order={order} onOpen={onOpen} leaving={leaving} />
+                  <Text ff="monospace" fz="xs" c="var(--z-text-2)" style={{ whiteSpace: 'nowrap' }}>
+                    {formatDateTime(order.placedAt, i18n.language)}
+                  </Text>
+                </Group>
+                <Text fz="xs" c="dimmed" mb={6}>
+                  {[
+                    statusLabel(t, order.status),
+                    order.takesStock ? t('orders.takesStock') : t('orders.doesNotTakeStock'),
+                    ...(severalShops ? [shopHost(order.shopUrl)] : []),
+                  ].join(' · ')}
                 </Text>
-              </Group>
-              <Text fz="xs" c="dimmed" mb={6}>
-                {[
-                  statusLabel(t, order.status),
-                  order.takesStock ? t('orders.takesStock') : t('orders.doesNotTakeStock'),
-                  ...(severalShops ? [shopHost(order.shopUrl)] : []),
-                ].join(' · ')}
-              </Text>
-              <ProductsSummary order={order} />
+                <ProductsSummary order={order} />
+              </SearchCell>
             </Table.Td>
-          </Table.Tr>
+          </SearchRow>
         ))}
-      </Table.Tbody>
+      </SearchBody>
     </Table>
   )
 }
 
 /** The whole row opens the order for mouse and touch users; the number is the real button for keyboards. */
-function OrderNumber({ order, onOpen }: { order: OrderDto; onOpen: (id: string) => void }) {
+function OrderNumber({ order, onOpen, leaving }: { order: OrderDto; onOpen: (id: string) => void; leaving: boolean }) {
   const { t } = useTranslation()
   return (
     <Anchor
@@ -259,6 +293,7 @@ function OrderNumber({ order, onOpen }: { order: OrderDto; onOpen: (id: string) 
         e.stopPropagation()
         onOpen(order.id)
       }}
+      tabIndex={leaving ? -1 : undefined}
       aria-label={t('orders.open', { number: order.number })}
       ff="monospace"
       fw={500}

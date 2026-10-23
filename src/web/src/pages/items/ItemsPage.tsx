@@ -12,6 +12,7 @@ import { useGetStockSummary } from '../../api/generated/stock/stock'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { ItemImage } from '../../components/ItemImage'
 import { EmptyBox, SkeletonRows } from '../../components/loaders'
+import { PageTurn } from '../../components/PageTurn'
 import { Pager } from '../../components/Pager'
 import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
 import { StockQuantity, StockStatusLabel } from '../../components/stock'
@@ -190,13 +191,15 @@ export function ItemsPage() {
           <EmptyState search={state.search} filtered={state.status !== null} onAdd={() => setCreating(true)} />
         ) : (
           <>
-            {compact ? (
-              <ItemsTable items={data!.items} search={searchInput} narrowing={searching} compact sorting={sorting} />
-            ) : (
-              <Table.ScrollContainer minWidth={900}>
-                <ItemsTable items={data!.items} search={searchInput} narrowing={searching} compact={false} sorting={sorting} />
-              </Table.ScrollContainer>
-            )}
+            <PageTurn page={data!.page}>
+              {compact ? (
+                <ItemsTable items={data!.items} search={searchInput} narrowing={searching} compact sorting={sorting} />
+              ) : (
+                <Table.ScrollContainer minWidth={900}>
+                  <ItemsTable items={data!.items} search={searchInput} narrowing={searching} compact={false} sorting={sorting} />
+                </Table.ScrollContainer>
+              )}
+            </PageTurn>
             <Pager
               page={state.page}
               pageSize={state.pageSize}
@@ -322,7 +325,7 @@ function ItemsTable({
                       )}
                       {compact ? (
                         <Box mt={2}>
-                          <StockStatusLabel status={item.status} />
+                          <StockStatusLabel status={item.status} animate />
                         </Box>
                       ) : (
                         item.category && (
@@ -360,7 +363,7 @@ function ItemsTable({
                   </Table.Td>
                   <Table.Td>
                     <SearchCell>
-                      <StockStatusLabel status={item.status} />
+                      <StockStatusLabel status={item.status} animate />
                     </SearchCell>
                   </Table.Td>
                   <Table.Td ta="right">

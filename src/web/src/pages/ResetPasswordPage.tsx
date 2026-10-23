@@ -37,7 +37,7 @@ export function ResetPasswordPage() {
   if (linkInvalid) {
     return (
       <Stack gap="sm">
-        <Title order={1} fz={22}>
+        <Title order={1} className="z-auth-title">
           {t('auth.reset.invalidTitle')}
         </Title>
         <Text c="dimmed">{t('auth.reset.invalidText')}</Text>
@@ -60,7 +60,7 @@ export function ResetPasswordPage() {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <Stack gap={4}>
-          <Title order={1} fz={22}>
+          <Title order={1} className="z-auth-title">
             {t('auth.reset.title')}
           </Title>
           <Text c="dimmed">{t('auth.reset.subtitle', { email })}</Text>

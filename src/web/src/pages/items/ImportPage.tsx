@@ -16,7 +16,7 @@ import {
 import { IconArrowLeft, IconFileTypeCsv } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
-import { useState } from 'react'
+import { type CSSProperties, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { type ApiErrorItem, fieldErrorMessages, formErrorMessage } from '../../api/errors'
@@ -30,8 +30,12 @@ import {
   Unit,
 } from '../../api/generated/model'
 import { getGetStockSummaryQueryKey } from '../../api/generated/stock/stock'
+import feedbackClasses from '../../components/feedback.module.css'
 import { formatNumber } from '../../lib/format'
+import { useAnimatedNumber } from '../../lib/useAnimatedNumber'
+import { useCountUp } from '../../lib/useCountUp'
 import { useCompactTables } from '../../lib/usePhone'
+import classes from './ImportPage.module.css'
 
 // Mirrors ItemImportField on the server. OpenAPI only sees it as dictionary keys, so it isn't generated.
 const fields = [
@@ -50,6 +54,8 @@ type ItemImportField = (typeof fields)[number]
 type Mapping = Partial<Record<ItemImportField, number>>
 
 const requiredFields: ItemImportField[] = ['name', 'sku']
+/** Problem rows after this many appear together, so a long list doesn't keep the user waiting. */
+const STAGGERED_ISSUES = 12
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
 /** Form field names of the API for each field, e.g. "name" → "NameColumn". */
@@ -266,6 +272,9 @@ function ColumnsStep(props: ColumnsStepProps) {
     ...analysis.columns.map((name, i) => ({ value: String(i), label: `${columnLetter(i)} · ${name || '—'}` })),
   ]
   const canCheck = requiredFields.every((f) => mapping[f] !== undefined)
+  // The column just chosen for a field, and how many times one was, to replay the highlight.
+  const [picked, setPicked] = useState<{ column: number; times: number } | null>(null)
+  const pickedClass = (column: number) => (picked?.column === column ? classes.picked : undefined)
 
   return (
     <Stack gap="lg">
@@ -285,6 +294,7 @@ function ColumnsStep(props: ColumnsStepProps) {
                   if (value) next[field] = Number(value)
                   else delete next[field]
                   onMappingChange(next)
+                  if (value) setPicked((last) => ({ column: Number(value), times: (last?.times ?? 0) + 1 }))
                 }}
                 allowDeselect={false}
               />
@@ -306,11 +316,12 @@ function ColumnsStep(props: ColumnsStepProps) {
             {t('items.import.columns.rows', { count: analysis.rowCount, formattedCount: formatNumber(analysis.rowCount, i18n.language) })}
           </Text>
           <Table.ScrollContainer minWidth={600}>
-            <Table>
+            {/* Keyed by the pick, so choosing the same column again lights it up again. */}
+            <Table key={picked?.times}>
               <Table.Thead>
                 <Table.Tr>
                   {analysis.columns.map((name, i) => (
-                    <Table.Th key={i}>{`${columnLetter(i)} · ${name}`}</Table.Th>
+                    <Table.Th key={i} className={pickedClass(i)}>{`${columnLetter(i)} · ${name}`}</Table.Th>
                   ))}
                 </Table.Tr>
               </Table.Thead>
@@ -318,7 +329,7 @@ function ColumnsStep(props: ColumnsStepProps) {
                 {analysis.sampleRows.map((row, r) => (
                   <Table.Tr key={r}>
                     {row.map((cell, c) => (
-                      <Table.Td key={c}>
+                      <Table.Td key={c} className={pickedClass(c)}>
                         <Text fz="sm" c="var(--z-text-2)">
                           {cell}
                         </Text>
@@ -382,8 +393,14 @@ function PreviewStep({ preview, error, importing, onBack, onImport }: PreviewSte
             {compact ? (
               // On a phone each row is a block: row number and SKU, the name, then what is wrong.
               <Stack gap={0}>
-                {preview.issues.map((issue) => (
-                  <Stack key={issue.rowNumber} gap={2} py="sm" style={{ borderTop: '1px solid var(--z-line-soft)' }}>
+                {preview.issues.map((issue, index) => (
+                  <Stack
+                    key={issue.rowNumber}
+                    gap={2}
+                    py="sm"
+                    className={feedbackClasses.enter}
+                    style={{ borderTop: '1px solid var(--z-line-soft)', ...stagger(index) }}
+                  >
                     <Text ff="monospace" fz="xs" c="var(--z-text-2)" truncate>
                       {t('items.import.preview.row')} {issue.rowNumber} · {issue.sku}
                     </Text>
@@ -408,8 +425,8 @@ function PreviewStep({ preview, error, importing, onBack, onImport }: PreviewSte
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
-                    {preview.issues.map((issue) => (
-                      <Table.Tr key={issue.rowNumber}>
+                    {preview.issues.map((issue, index) => (
+                      <Table.Tr key={issue.rowNumber} className={feedbackClasses.enter} style={stagger(index)}>
                         <Table.Td ta="right">
                           <Text ff="monospace" fz="sm" c="dimmed">
                             {issue.rowNumber}
@@ -507,15 +524,22 @@ function PreviewStep({ preview, error, importing, onBack, onImport }: PreviewSte
   )
 }
 
+/** Problem rows appear one after another (DESIGN.md "Pokret"), the late ones together. */
+function stagger(index: number) {
+  return { '--i': Math.min(index, STAGGERED_ISSUES) } as CSSProperties
+}
+
+/** A count of the preview; it counts up from 0 when the preview opens, like the home screen figures. */
 function Figure({ label, value, color }: { label: string; value: number; color?: string }) {
   const { i18n } = useTranslation()
+  const shown = useAnimatedNumber(value, 0)
   return (
     <Stack gap={6} p="md" px="lg" bg="var(--z-surface)">
       <Text fz="xs" c="dimmed">
         {label}
       </Text>
       <Text ff="monospace" fz={26} fw={500} c={color} style={{ fontVariantNumeric: 'tabular-nums' }}>
-        {formatNumber(value, i18n.language)}
+        {formatNumber(shown, i18n.language)}
       </Text>
     </Stack>
   )
@@ -524,10 +548,18 @@ function Figure({ label, value, color }: { label: string; value: number; color?:
 function Done({ result, onRestart }: { result: ImportResultDto; onRestart: () => void }) {
   const { t } = useTranslation()
   const skipped = result.errorCount + result.skippedCount
+  // The real number of imported items, counted one by one, like the shop import.
+  const imported = useCountUp(result.importedCount)
   return (
     <Section>
       <Stack gap="md" align="flex-start">
-        <Title order={2}>{t('items.import.done.title', { count: result.importedCount })}</Title>
+        <Title order={2} aria-live="polite">
+          {imported.finished ? (
+            t('items.import.done.title', { count: result.importedCount })
+          ) : (
+            <span aria-hidden>{t('items.import.done.title', { count: imported.value })}</span>
+          )}
+        </Title>
         {skipped > 0 && <Text c="dimmed">{t('items.import.done.skipped', { count: skipped })}</Text>}
         <Group gap="sm">
           <Button component={Link} to="/items">

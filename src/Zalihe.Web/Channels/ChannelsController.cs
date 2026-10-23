@@ -16,6 +16,13 @@ public class ChannelsController(ChannelService channelService, ProductImportServ
     [ProducesResponseType<IReadOnlyList<SalesChannelDto>>(StatusCodes.Status200OK)]
     public Task<IReadOnlyList<SalesChannelDto>> List(CancellationToken ct) => channelService.ListAsync(ct);
 
+    /// <summary>Linked products, orders with unlinked products, the last order and stock waiting to be sent.</summary>
+    [HttpGet("{id:guid}/summary", Name = "GetChannelSummary")]
+    [ProducesResponseType<ChannelSummaryDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<ActionResult<ChannelSummaryDto>> Summary(Guid id, CancellationToken ct) =>
+        await channelService.GetSummaryAsync(id, ct) is { } summary ? summary : NotFound();
+
     /// <summary>
     /// Connects a WooCommerce shop with keys entered by hand. The shop is contacted first;
     /// nothing is saved unless the keys work.
@@ -52,15 +59,16 @@ public class ChannelsController(ChannelService channelService, ProductImportServ
         Respond(await productImport.PreviewAsync(id, ct));
 
     /// <summary>
-    /// Links shop products to items with the same SKU and creates the chosen new products as items,
-    /// with the shop's stock as opening stock. Existing items are not changed.
+    /// Links shop products to items with the same SKU, creates the chosen new products as items, with the
+    /// shop's stock as opening stock, and takes the chosen fields (name, barcode, category, prices) from the
+    /// shop into linked items. Nothing else of an existing item changes, and stock never comes from the shop.
     /// </summary>
     [HttpPost("{id:guid}/products/import", Name = "ImportProducts")]
     [ProducesResponseType<ProductImportResultDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<IActionResult> ImportProducts(Guid id, ImportProductsRequest request, CancellationToken ct) =>
-        Respond(await productImport.ImportAsync(id, request.CreateExternalIds, ct));
+        Respond(await productImport.ImportAsync(id, request.CreateExternalIds, ct, request.ApplyUpdates));
 
     private IActionResult Respond<T>(ProductImportResult<T> result)
     {

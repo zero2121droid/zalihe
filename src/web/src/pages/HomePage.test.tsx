@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { withReducedMotion } from '../test/motion'
 import { mockApi, renderPage } from '../test/render'
@@ -17,6 +17,8 @@ const dashboard = {
     { id: 'm1', itemId: 'c', itemName: 'Kafa Etiopija 250 g', type: 'sale', quantity: -2, occurredAt: new Date().toISOString(), source: 'wooCommerce', externalRef: '1048', note: null },
     { id: 'm2', itemId: 'd', itemName: 'Kafa Kolumbija 250 g', type: 'receipt', quantity: 24, occurredAt: '2020-01-05T10:00:00Z', source: 'manual', externalRef: null, note: 'Dobavljač' },
   ],
+  ordersWithUnlinked: 0,
+  setup: { hasItems: true, hasMinStock: true, hasShop: true },
 }
 
 describe('HomePage', () => {
@@ -40,12 +42,21 @@ describe('HomePage', () => {
     expect(screen.getByRole('link', { name: 'Svi artikli ispod minimuma' })).toHaveAttribute('href', '/items?status=low')
   })
 
-  it('Render_NewCompany_OffersToAddOrImportItems', async () => {
+  it('Render_NewCompany_ShowsFirstStepsWithShopAsOptional', async () => {
     // Arrange
     mockApi({
       'GET /api/dashboard': {
         status: 200,
-        body: { stockValue: 0, activeItems: 0, belowMinimum: 0, outOfStock: 0, reorder: [], recentMovements: [] },
+        body: {
+          stockValue: 0,
+          activeItems: 0,
+          belowMinimum: 0,
+          outOfStock: 0,
+          reorder: [],
+          recentMovements: [],
+          ordersWithUnlinked: 0,
+          setup: { hasItems: false, hasMinStock: false, hasShop: false },
+        },
       },
     })
 
@@ -53,9 +64,66 @@ describe('HomePage', () => {
     await renderPage(<HomePage />)
 
     // Assert
-    expect(await screen.findByText('Još nema artikala')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Poveži prodavnicu' })).toHaveAttribute('href', '/channels')
-    expect(screen.getByRole('link', { name: 'Novi artikal' })).toHaveAttribute('href', '/items?new=1')
-    expect(screen.getByRole('link', { name: 'Uvezi CSV' })).toHaveAttribute('href', '/items/import')
+    const steps = await screen.findByRole('region', { name: 'Prvi koraci' })
+    expect(within(steps).getByText('0 od 2')).toBeInTheDocument()
+    expect(within(steps).getByRole('link', { name: 'Novi artikal' })).toHaveAttribute('href', '/items?new=1')
+    expect(within(steps).getByRole('link', { name: 'Uvezi CSV' })).toHaveAttribute('href', '/items/import')
+    expect(within(steps).getByText('nije obavezno')).toBeInTheDocument()
+    expect(within(steps).getByRole('link', { name: 'Poveži prodavnicu' })).toHaveAttribute('href', '/channels')
+    expect(screen.queryByText('Vrednost zaliha')).not.toBeInTheDocument()
+  })
+
+  it('Render_ItemsWithoutMinimum_ChecksOffItemsAndShowsOverview', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/dashboard': {
+        status: 200,
+        body: {
+          stockValue: 0,
+          activeItems: 3,
+          belowMinimum: 0,
+          outOfStock: 0,
+          reorder: [],
+          recentMovements: [],
+          ordersWithUnlinked: 0,
+          setup: { hasItems: true, hasMinStock: false, hasShop: false },
+        },
+      },
+    })
+
+    // Act
+    await renderPage(<HomePage />)
+
+    // Assert
+    const steps = await screen.findByRole('region', { name: 'Prvi koraci' })
+    expect(within(steps).getByText('1 od 2')).toBeInTheDocument()
+    expect(within(steps).getByText('Artikli su dodati.')).toBeInTheDocument()
+    expect(within(steps).queryByRole('link', { name: 'Novi artikal' })).not.toBeInTheDocument()
+    expect(within(steps).getByRole('link', { name: 'Otvori artikle' })).toHaveAttribute('href', '/items')
+  })
+
+  it('Render_OrdersWithUnlinkedProducts_WarnsAndLinksToThem', async () => {
+    // Arrange
+    mockApi({ 'GET /api/dashboard': { status: 200, body: { ...dashboard, ordersWithUnlinked: 3 } } })
+
+    // Act
+    await renderPage(<HomePage />)
+
+    // Assert
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('3 porudžbine imaju nepovezane proizvode')
+    expect(within(alert).getByRole('link', { name: 'Poveži proizvode' })).toHaveAttribute('href', '/orders?unlinked=1')
+  })
+
+  it('Render_NoUnlinkedOrders_ShowsNoWarning', async () => {
+    // Arrange
+    mockApi({ 'GET /api/dashboard': { status: 200, body: dashboard } })
+
+    // Act
+    await renderPage(<HomePage />)
+
+    // Assert
+    await screen.findByText('Treba naručiti')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

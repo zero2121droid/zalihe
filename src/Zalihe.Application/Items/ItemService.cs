@@ -111,7 +111,8 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
         };
 
         var totalCount = await rows.CountAsync(ct);
-        var page = await Sorted(rows, query.Sort, query.Direction)
+        var exact = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim().ToLower();
+        var page = await Sorted(rows, query.Sort, query.Direction, exact)
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync(ct);
@@ -293,19 +294,22 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
     /// The list in the chosen order, ending in name, SKU and ID, so every page is the same each time
     /// it's asked for. When roles come (SPEC 11.2), sorting by value is not allowed for an employee who
     /// can't see purchase prices: the order alone would give the prices away.
+    /// An item whose whole SKU or barcode is <paramref name="exact"/> comes first in any order: a barcode
+    /// scanner types the whole code, and that item must not drop off the page behind partial matches.
     /// </summary>
-    private static IOrderedQueryable<ItemWithStock> Sorted(IQueryable<ItemWithStock> rows, ItemSort sort, SortDirection direction)
+    private static IOrderedQueryable<ItemWithStock> Sorted(IQueryable<ItemWithStock> rows, ItemSort sort, SortDirection direction, string? exact)
     {
         var desc = direction == SortDirection.Desc;
+        var first = rows.OrderByDescending(r => exact != null && (r.Item.Sku.ToLower() == exact || r.Item.Barcode == exact));
         IOrderedQueryable<ItemWithStock> sorted = sort switch
         {
-            ItemSort.Stock => desc ? rows.OrderByDescending(r => r.Stock) : rows.OrderBy(r => r.Stock),
-            ItemSort.Sold30Days => desc ? rows.OrderByDescending(r => r.Sold30Days) : rows.OrderBy(r => r.Sold30Days),
+            ItemSort.Stock => desc ? first.ThenByDescending(r => r.Stock) : first.ThenBy(r => r.Stock),
+            ItemSort.Sold30Days => desc ? first.ThenByDescending(r => r.Sold30Days) : first.ThenBy(r => r.Sold30Days),
             // Same value as ToDto: stock, when positive, times the purchase price.
             ItemSort.Value => desc
-                ? rows.OrderBy(r => r.Item.PurchasePrice == null).ThenByDescending(r => (r.Stock > 0 ? r.Stock : 0) * r.Item.PurchasePrice)
-                : rows.OrderBy(r => r.Item.PurchasePrice == null).ThenBy(r => (r.Stock > 0 ? r.Stock : 0) * r.Item.PurchasePrice),
-            _ => desc ? rows.OrderByDescending(r => r.Item.Name) : rows.OrderBy(r => r.Item.Name),
+                ? first.ThenBy(r => r.Item.PurchasePrice == null).ThenByDescending(r => (r.Stock > 0 ? r.Stock : 0) * r.Item.PurchasePrice)
+                : first.ThenBy(r => r.Item.PurchasePrice == null).ThenBy(r => (r.Stock > 0 ? r.Stock : 0) * r.Item.PurchasePrice),
+            _ => desc ? first.ThenByDescending(r => r.Item.Name) : first.ThenBy(r => r.Item.Name),
         };
         return sorted.ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Sku).ThenBy(r => r.Item.Id);
     }

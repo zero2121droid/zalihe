@@ -43,6 +43,14 @@ const changeEntry = (kind: string, changes: object[] = [], userName: string | nu
   change: { kind, changes },
 })
 
+// The chart's request; without it the fake API would answer it with the item, as its URL starts the same.
+const stockHistory = {
+  'GET /api/items/item-1/stock-history': {
+    status: 200,
+    body: { from: '2026-09-23T00:00:00Z', to: '2026-10-23T00:00:00Z', startStock: 0, points: [{ at: '2026-10-01T09:20:00Z', stock: 4 }] },
+  },
+}
+
 const historyPage = (items: object[]) => ({ status: 200, body: { items, totalCount: items.length, page: 1, pageSize: 20 } })
 
 describe('ItemDetailPage', () => {
@@ -58,6 +66,7 @@ describe('ItemDetailPage', () => {
         ]),
         changeEntry('created', [], null),
       ]),
+      ...stockHistory,
       'GET /api/items/item-1': { status: 200, body: item },
     })
 
@@ -83,6 +92,7 @@ describe('ItemDetailPage', () => {
         movementEntry({ type: 'sale', quantity: -2, source: 'wooCommerce', externalRef: '1048', note: 'Popis' }),
         changeEntry('updated', [{ field: 'minStock', oldValue: '10', newValue: '12.5' }]),
       ]),
+      ...stockHistory,
       'GET /api/items/item-1': { status: 200, body: item },
     })
 
@@ -104,6 +114,7 @@ describe('ItemDetailPage', () => {
     // Arrange
     const fetchMock = mockApi({
       'GET /api/items/item-1/history': historyPage([changeEntry('created')]),
+      ...stockHistory,
       'GET /api/items/item-1': { status: 200, body: item },
     })
     await renderRoutes(routes, '/items/item-1')
@@ -124,6 +135,7 @@ describe('ItemDetailPage', () => {
     const fetchMock = mockApi({
       'GET /api/items/categories': { status: 200, body: [] },
       'GET /api/items/item-1/history': historyPage([]),
+      ...stockHistory,
       'GET /api/items/item-1': { status: 200, body: item },
       'POST /api/items/item-1/deactivate': { status: 204 },
       'POST /api/items/item-1/activate': { status: 204 },
@@ -146,6 +158,7 @@ describe('ItemDetailPage', () => {
     const fetchMock = mockApi({
       'GET /api/items/categories': { status: 200, body: [] },
       'GET /api/items/item-1/history': historyPage([]),
+      ...stockHistory,
       'GET /api/items/item-1': { status: 200, body: item },
       'POST /api/items/item-1/deactivate': { status: 204 },
     })
@@ -178,6 +191,7 @@ describe('ItemDetailPage', () => {
     // Arrange
     mockApi({
       'GET /api/items/item-1/history': historyPage([]),
+      ...stockHistory,
       'GET /api/items/item-1': { status: 200, body: item },
     })
     await renderRoutes(routes, '/items/item-1')
@@ -188,5 +202,71 @@ describe('ItemDetailPage', () => {
     // Assert
     expect(await screen.findByText('Prijem robe')).toBeInTheDocument()
     expect(screen.getByLabelText(/^Primljena količina/)).toBeInTheDocument()
+  })
+
+  it('Render_StockNotInShopYet_SaysItIsBeingSent', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/items/item-1/history': historyPage([]),
+      'GET /api/items/item-1/shop-stock': { status: 200, body: { shops: 1, pending: true } },
+      ...stockHistory,
+      'GET /api/items/item-1': { status: 200, body: item },
+    })
+
+    // Act
+    await renderRoutes(routes, '/items/item-1')
+
+    // Assert
+    expect(await screen.findByText('Šalje se u prodavnicu')).toBeInTheDocument()
+  })
+
+  it('Render_StockInShop_SaysShopShowsIt', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/items/item-1/history': historyPage([]),
+      'GET /api/items/item-1/shop-stock': { status: 200, body: { shops: 2, pending: false } },
+      ...stockHistory,
+      'GET /api/items/item-1': { status: 200, body: item },
+    })
+
+    // Act
+    await renderRoutes(routes, '/items/item-1')
+
+    // Assert
+    expect(await screen.findByText('Isto stanje je u prodavnicama')).toBeInTheDocument()
+  })
+
+  it('Render_ItemInNoShop_SaysNothingAboutShops', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/items/item-1/history': historyPage([]),
+      'GET /api/items/item-1/shop-stock': { status: 200, body: { shops: 0, pending: false } },
+      ...stockHistory,
+      'GET /api/items/item-1': { status: 200, body: item },
+    })
+
+    // Act
+    await renderRoutes(routes, '/items/item-1')
+
+    // Assert
+    await screen.findByRole('heading', { name: 'Kafa Etiopija 250 g' })
+    expect(screen.queryByText(/prodavnic/)).not.toBeInTheDocument()
+  })
+
+  it('ChartPeriod_NinetyDaysClicked_AsksForNinetyDays', async () => {
+    // Arrange
+    const fetchMock = mockApi({
+      'GET /api/items/item-1/history': historyPage([]),
+      ...stockHistory,
+      'GET /api/items/item-1': { status: 200, body: item },
+    })
+    await renderRoutes(routes, '/items/item-1')
+    const chart = await screen.findByRole('region', { name: 'Stanje kroz vreme' })
+
+    // Act
+    await userEvent.click(within(chart).getByRole('button', { name: '90 dana' }))
+
+    // Assert
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url) === '/api/items/item-1/stock-history?days=90')).toBe(true))
   })
 })

@@ -37,7 +37,7 @@ export function AcceptInvitationPage() {
   if (invitation.isError) {
     return (
       <Stack gap="sm">
-        <Title order={1} fz={22}>
+        <Title order={1} className="z-auth-title">
           {t('auth.invitation.invalidTitle')}
         </Title>
         <Text c="dimmed">{t('auth.invitation.invalidText')}</Text>
@@ -62,7 +62,7 @@ export function AcceptInvitationPage() {
     <form onSubmit={handleSubmit} noValidate>
       <Stack gap="md">
         <Stack gap={4}>
-          <Title order={1} fz={22}>
+          <Title order={1} className="z-auth-title">
             {t('auth.invitation.title', { company: info.companyName })}
           </Title>
           <Text c="dimmed">{t('auth.invitation.subtitle', { name: info.invitedBy, company: info.companyName })}</Text>

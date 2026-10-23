@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
+using Zalihe.Application.Orders;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Stock;
 
@@ -18,14 +19,23 @@ public record RecentMovementDto(
     string? ExternalRef,
     string? Note);
 
+/// <summary>Which first steps the company has taken, for the home screen's checklist.</summary>
+/// <param name="HasItems">Has at least one active item.</param>
+/// <param name="HasMinStock">An active item has a minimum stock, so alerts can work.</param>
+/// <param name="HasShop">A shop is connected; optional, a company without a web shop works by hand or CSV.</param>
+public record SetupDto(bool HasItems, bool HasMinStock, bool HasShop);
+
 /// <param name="StockValue">Value of active items at purchase price (only positive stock with a price counts).</param>
+/// <param name="OrdersWithUnlinked">Orders from shops whose products took no stock because they aren't linked yet.</param>
 public record DashboardDto(
     decimal StockValue,
     int ActiveItems,
     int BelowMinimum,
     int OutOfStock,
     IReadOnlyList<ReorderItemDto> Reorder,
-    IReadOnlyList<RecentMovementDto> RecentMovements);
+    IReadOnlyList<RecentMovementDto> RecentMovements,
+    int OrdersWithUnlinked,
+    SetupDto Setup);
 
 /// <summary>The home screen overview of the current company, in a handful of queries.</summary>
 public class DashboardService(IAppDbContext db)
@@ -69,6 +79,14 @@ public class DashboardService(IAppDbContext db)
             .Take(RecentMovementCount)
             .ToListAsync(ct);
 
-        return new DashboardDto(decimal.Round(stockValue, Item.MoneyDecimals), activeItems, belowMinimum, outOfStock, reorder, recent);
+        var setup = new SetupDto(
+            HasItems: activeItems > 0,
+            HasMinStock: await active.AnyAsync(a => a.MinStock > 0, ct),
+            HasShop: await db.SalesChannels.AnyAsync(ct));
+
+        var ordersWithUnlinked = await db.ExternalOrders.WithUnlinkedLines(db).CountAsync(ct);
+
+        return new DashboardDto(
+            decimal.Round(stockValue, Item.MoneyDecimals), activeItems, belowMinimum, outOfStock, reorder, recent, ordersWithUnlinked, setup);
     }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Channels;
@@ -14,14 +15,20 @@ public record ProductToCreateDto(string ExternalId, string Name, string? GroupNa
 
 public record SkippedProductDto(string ExternalId, string Name, string? Sku, AppError Error);
 
+/// <summary>An item, linked or about to be linked, whose data differs from its shop product.</summary>
+public record ProductUpdateDto(string ExternalId, Guid ItemId, string ItemName, string Sku, IReadOnlyList<FieldUpdateDto> Fields);
+
+/// <param name="Updates">Items whose name, barcode, category or prices differ from the shop's; nothing changes unless chosen.</param>
 public record ProductImportPreviewDto(
     int LinkedCount,
     IReadOnlyList<ProductToLinkDto> ToLink,
     IReadOnlyList<ProductToCreateDto> ToCreate,
-    IReadOnlyList<SkippedProductDto> Skipped);
+    IReadOnlyList<SkippedProductDto> Skipped,
+    IReadOnlyList<ProductUpdateDto> Updates);
 
 /// <param name="ImageCount">Products linked to items that have an image in the shop, after the import.</param>
-public record ProductImportResultDto(int LinkedCount, int CreatedCount, int SkippedCount, int ImageCount);
+/// <param name="UpdatedCount">Items that took chosen fields from the shop.</param>
+public record ProductImportResultDto(int LinkedCount, int CreatedCount, int SkippedCount, int ImageCount, int UpdatedCount);
 
 public record ProductImportResult<T>(T? Value, AppError? Error, bool NotFound = false)
 {
@@ -31,8 +38,9 @@ public record ProductImportResult<T>(T? Value, AppError? Error, bool NotFound = 
 /// <summary>
 /// Imports a shop's products: links them to items with the same SKU and creates the new ones the
 /// user picked, with the shop's stock as opening stock and its cost as purchase price. Like the CSV import it reads the source
-/// again on import, so nothing is kept between preview and import. Existing items never change; the
-/// shop's product images are kept on the links, and every import refreshes them.
+/// again on import, so nothing is kept between preview and import. Existing items change only in the
+/// fields the user picked from the differences; the shop's product images are kept on the links, and
+/// every import refreshes them.
 /// </summary>
 public class ProductImportService(
     IAppDbContext db,
@@ -61,13 +69,19 @@ public class ProductImportService(
             rows.Where(r => r.Kind == ProductImportKind.New).Select(ToCreate).ToList(),
             rows.Where(r => r.Kind == ProductImportKind.Skipped)
                 .Select(r => new SkippedProductDto(r.Product.ExternalId, r.Product.Name, ProductImportRules.Sku(r.Product.Sku), r.Error!))
+                .ToList(),
+            rows.Where(r => r.Kind is ProductImportKind.Linked or ProductImportKind.Match && r.Item is not null)
+                .Select(r => new ProductUpdateDto(r.Product.ExternalId, r.Item!.Id, r.Item.Name, r.Item.Sku, ProductImportRules.Differences(r.Product, r.Item)))
+                .Where(u => u.Fields.Count > 0)
                 .ToList());
         return new(preview, null);
     }
 
     /// <param name="createExternalIds">The new products the user chose to create; others are left out.</param>
+    /// <param name="updates">Fields of linked items the user chose to take from the shop; a field that no longer differs is left alone.</param>
     public async Task<ProductImportResult<ProductImportResultDto>> ImportAsync(
-        Guid channelId, IReadOnlyCollection<string> createExternalIds, CancellationToken ct)
+        Guid channelId, IReadOnlyCollection<string> createExternalIds, CancellationToken ct,
+        IReadOnlyCollection<ProductUpdateChoice>? updates = null)
     {
         var read = await ReadAsync(channelId, ct);
         if (read.NotFound) return ProductImportResult<ProductImportResultDto>.Missing;
@@ -101,11 +115,14 @@ public class ProductImportService(
             mapping.SetImageUrl(linkedImages[mapping.ExternalId]);
         }
 
+        var updated = await ApplyUpdatesAsync(rows, updates ?? [], userId, now, ct);
+
         var toCreate = rows.Where(r => r.Kind == ProductImportKind.New && selected.Contains(r.Product.ExternalId)).ToList();
         foreach (var row in toCreate)
         {
             var data = ToCreate(row);
             var item = new Item(tenant.TenantId, data.Name, data.Sku, Unit.Kom, 0, now,
+                barcode: ProductImportRules.Barcode(row.Product.Barcode),
                 category: data.Category, groupName: data.GroupName,
                 purchasePrice: ProductImportRules.Price(row.Product.Cost), salePrice: data.Price);
             var level = new StockLevel(item, now);
@@ -128,7 +145,7 @@ public class ProductImportService(
         if (matches.Count > 0) stockPush.Schedule([channel.Id]);
         var skipped = rows.Count(r => r.Kind == ProductImportKind.Skipped);
         var images = await db.ItemChannelMappings.CountAsync(m => m.ChannelId == channel.Id && m.ImageUrl != null, ct);
-        return new(new ProductImportResultDto(matches.Count, toCreate.Count, skipped, images), null);
+        return new(new ProductImportResultDto(matches.Count, toCreate.Count, skipped, images, updated), null);
     }
 
     private sealed record ShopProducts(SalesChannel Channel, IReadOnlyList<ProductImportRow> Rows);
@@ -161,7 +178,7 @@ public class ProductImportService(
         var linkedIds = linked.Values.ToList();
         var items = await db.Items
             .Where(i => skus.Contains(i.Sku) || linkedIds.Contains(i.Id))
-            .Select(i => new ExistingItem(i.Id, i.Name, i.Sku))
+            .Select(i => new ExistingItem(i.Id, i.Name, i.Sku, i.Barcode, i.Category, i.SalePrice, i.PurchasePrice))
             .ToListAsync(ct);
 
         return new(new ShopProducts(channel, ProductImportRules.Classify(products, items, linked)), null);
@@ -175,6 +192,51 @@ public class ProductImportService(
         ProductImportRules.Fit(row.Product.Category, Item.CategoryMaxLength),
         ProductImportRules.Price(row.Product.Price),
         ProductImportRules.OpeningStock(row.Product.Stock));
+
+    /// <summary>
+    /// Takes the chosen fields from the shop into linked items, each change logged like an edit by the
+    /// importing user. Returns how many items changed.
+    /// </summary>
+    private async Task<int> ApplyUpdatesAsync(
+        IReadOnlyList<ProductImportRow> rows, IReadOnlyCollection<ProductUpdateChoice> updates, Guid? userId, DateTimeOffset now, CancellationToken ct)
+    {
+        var chosen = updates
+            .GroupBy(u => u.ExternalId, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Select(u => u.Field).ToHashSet(StringComparer.Ordinal), StringComparer.Ordinal);
+        var toUpdate = rows
+            .Where(r => r.Kind is ProductImportKind.Linked or ProductImportKind.Match && r.Item is not null && chosen.ContainsKey(r.Product.ExternalId))
+            .ToList();
+        if (toUpdate.Count == 0) return 0;
+
+        var ids = toUpdate.Select(r => r.Item!.Id).ToList();
+        var items = await db.Items.Where(i => ids.Contains(i.Id)).ToDictionaryAsync(i => i.Id, ct);
+        var updated = 0;
+        foreach (var row in toUpdate)
+        {
+            var fields = chosen[row.Product.ExternalId];
+            var taken = ProductImportRules.Differences(row.Product, row.Item!)
+                .Where(d => fields.Contains(d.Field))
+                .ToDictionary(d => d.Field, d => d.Shop, StringComparer.Ordinal);
+            if (taken.Count == 0) continue;
+
+            var item = items[row.Item!.Id];
+            string? Text(string field, string? current) => taken.GetValueOrDefault(field) ?? current;
+            decimal? Money(string field, decimal? current) =>
+                taken.TryGetValue(field, out var value) ? decimal.Parse(value, CultureInfo.InvariantCulture) : current;
+
+            var changes = item.Update(
+                Text("name", item.Name)!, item.Sku, item.Unit, item.MinStock,
+                Text("barcode", item.Barcode), Text("category", item.Category), item.GroupName,
+                Money("purchasePrice", item.PurchasePrice), Money("salePrice", item.SalePrice));
+            if (ItemChange.Updated(item, changes, userId, now) is { } change)
+            {
+                db.ItemChanges.Add(change);
+                updated++;
+            }
+        }
+
+        return updated;
+    }
 
     private static ItemChannelMapping Mapping(Item item, SalesChannel channel, ExternalProduct product, DateTimeOffset now)
     {

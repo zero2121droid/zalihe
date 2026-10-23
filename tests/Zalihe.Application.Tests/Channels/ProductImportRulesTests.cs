@@ -130,4 +130,67 @@ public class ProductImportRulesTests
     {
         ProductImportRules.Fit(" " + new string('a', 210) + " ", 200)!.Length.ShouldBe(200);
     }
+
+    private static ExternalProduct ShopProduct(string name = "Kafa Etiopija", string? barcode = null, string? category = null, decimal? price = null, decimal? cost = null) =>
+        new("10", null, name, null, "KF-ETI-250", category, price, cost, 5, null, barcode);
+
+    private static ExistingItem Linked(string name = "Kafa Etiopija", string? barcode = null, string? category = null, decimal? salePrice = null, decimal? purchasePrice = null) =>
+        new(Guid.NewGuid(), name, "KF-ETI-250", barcode, category, salePrice, purchasePrice);
+
+    [Fact]
+    public void Differences_SameData_IsEmpty()
+    {
+        ProductImportRules.Differences(ShopProduct(barcode: "8600123456789", price: 1250), Linked(barcode: "8600123456789", salePrice: 1250))
+            .ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Differences_ItemWithoutBarcode_OffersShopsBarcodeAsFillingEmpty()
+    {
+        // Act
+        var update = ProductImportRules.Differences(ShopProduct(barcode: " 8600123456789 "), Linked()).ShouldHaveSingleItem();
+
+        // Assert
+        update.ShouldBe(new FieldUpdateDto("barcode", null, "8600123456789", FillsEmpty: true, LargeChange: false));
+    }
+
+    [Fact]
+    public void Differences_OtherPrice_OffersItButNotAsFillingEmpty()
+    {
+        // Act
+        var update = ProductImportRules.Differences(ShopProduct(price: 1390), Linked(salePrice: 1250)).ShouldHaveSingleItem();
+
+        // Assert
+        update.ShouldBe(new FieldUpdateDto("salePrice", "1250", "1390", FillsEmpty: false, LargeChange: false));
+    }
+
+    [Fact]
+    public void Differences_PriceMoreThanTwiceApart_IsALargeChange()
+    {
+        // Act
+        var update = ProductImportRules.Differences(ShopProduct(price: 500), Linked(salePrice: 4000)).ShouldHaveSingleItem();
+
+        // Assert
+        update.LargeChange.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Differences_ShopHasNoValue_NeverOffersToClearTheItems()
+    {
+        ProductImportRules.Differences(ShopProduct(), Linked(barcode: "8600123456789", category: "Kafa", salePrice: 1250, purchasePrice: 600))
+            .ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Differences_RenamedAndRecategorized_OffersBoth()
+    {
+        // Act
+        var updates = ProductImportRules.Differences(ShopProduct(name: "Kafa Etiopija 250 g", category: "Kafa · zrno"), Linked(category: "Kafa"));
+
+        // Assert
+        updates.Select(u => (u.Field, u.Current, u.Shop)).ShouldBe([
+            ("name", "Kafa Etiopija", "Kafa Etiopija 250 g"),
+            ("category", "Kafa", "Kafa · zrno"),
+        ]);
+    }
 }

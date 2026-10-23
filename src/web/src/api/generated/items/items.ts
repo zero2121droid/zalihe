@@ -26,8 +26,11 @@ import type {
 import type {
   ApiProblemDetails,
   GetItemHistoryParams,
+  GetItemStockHistoryParams,
   ItemDto,
   ItemRequest,
+  ItemShopStockDto,
+  ItemStockHistoryDto,
   ListItemsParams,
   PagedResultOfItemDto,
   PagedResultOfItemHistoryEntryDto,
@@ -514,6 +517,209 @@ export function useGetItemHistory<TData = Awaited<ReturnType<typeof getItemHisto
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetItemHistoryQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetItemStockHistoryUrl = (id: string,
+    params?: GetItemStockHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/items/${id}/stock-history?${stringifiedParams}` : `/api/items/${id}/stock-history`
+}
+
+export const getItemStockHistory = async (id: string,
+    params?: GetItemStockHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<ItemStockHistoryDto> => {
+
+  return customFetch<ItemStockHistoryDto>(getGetItemStockHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetItemStockHistoryQueryKey = (id: string,
+    params?: GetItemStockHistoryParams,) => {
+    return [
+    `/api/items/${id}/stock-history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetItemStockHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getItemStockHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(id: string,
+    params?: GetItemStockHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemStockHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetItemStockHistoryQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItemStockHistory>>> = ({ signal }) => getItemStockHistory(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItemStockHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetItemStockHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getItemStockHistory>>>
+export type GetItemStockHistoryQueryError = ErrorType<ApiProblemDetails | ProblemDetails>
+
+
+export function useGetItemStockHistory<TData = Awaited<ReturnType<typeof getItemStockHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params: undefined |  GetItemStockHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemStockHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemStockHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getItemStockHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemStockHistory<TData = Awaited<ReturnType<typeof getItemStockHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params?: GetItemStockHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemStockHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemStockHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getItemStockHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemStockHistory<TData = Awaited<ReturnType<typeof getItemStockHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params?: GetItemStockHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemStockHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetItemStockHistory<TData = Awaited<ReturnType<typeof getItemStockHistory>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ id: string,
+    params?: GetItemStockHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemStockHistory>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetItemStockHistoryQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetItemShopStockUrl = (id: string,) => {
+
+
+
+
+  return `/api/items/${id}/shop-stock`
+}
+
+export const getItemShopStock = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ItemShopStockDto> => {
+
+  return customFetch<ItemShopStockDto>(getGetItemShopStockUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetItemShopStockQueryKey = (id: string,) => {
+    return [
+    `/api/items/${id}/shop-stock`
+    ] as const;
+    }
+
+
+export const getGetItemShopStockQueryOptions = <TData = Awaited<ReturnType<typeof getItemShopStock>>, TError = ErrorType<ProblemDetails>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemShopStock>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetItemShopStockQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItemShopStock>>> = ({ signal }) => getItemShopStock(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItemShopStock>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetItemShopStockQueryResult = NonNullable<Awaited<ReturnType<typeof getItemShopStock>>>
+export type GetItemShopStockQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetItemShopStock<TData = Awaited<ReturnType<typeof getItemShopStock>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemShopStock>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemShopStock>>,
+          TError,
+          Awaited<ReturnType<typeof getItemShopStock>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemShopStock<TData = Awaited<ReturnType<typeof getItemShopStock>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemShopStock>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getItemShopStock>>,
+          TError,
+          Awaited<ReturnType<typeof getItemShopStock>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetItemShopStock<TData = Awaited<ReturnType<typeof getItemShopStock>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemShopStock>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetItemShopStock<TData = Awaited<ReturnType<typeof getItemShopStock>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getItemShopStock>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetItemShopStockQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

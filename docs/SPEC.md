@@ -24,7 +24,8 @@ Uvoz artikala sa početnim stanjem. Korisnik mapira kolone, vidi pregled pre uvo
 
 ### 2.4 WooCommerce integracija
 - Povezivanje shopa bez ručnog kopiranja ključeva (WooCommerce auth endpoint)
-- Uvoz proizvoda i varijacija, sa povezivanjem po SKU-u
+- Uvoz proizvoda i varijacija, sa povezivanjem po SKU-u; novi artikli dobijaju barkod iz WooCommerce polja „GTIN, UPC, EAN ili ISBN“
+- Razlike povezanih artikala i proizvoda (naziv, barkod, kategorija, prodajna i nabavna cena) prikazuju se u pregledu uvoza, a primenjuju se samo izabrane, i to samo iz prodavnice u aplikaciju. Unapred su izabrana samo polja koja su u aplikaciji prazna; prazno polje u prodavnici nikad ne briše vrednost, a stanje se nikad ne preuzima
 - Automatsko skidanje sa stanja kad stigne porudžbina i vraćanje kad se otkaže
 - Slanje stanja nazad u shop
 - Ekran „Porudžbine”: porudžbine iz prodavnica (broj, datum, status, proizvodi, koliko je skinuto sa stanja), pretraga, filter po statusu i „nepovezani proizvodi”, sa putem do povezivanja. Bez podataka kupca.
@@ -45,7 +46,9 @@ Zaboravljena lozinka: korisnik upiše email i dobija link za novu lozinku (na sv
 Podešavanja: naziv firme, a za prijavljenog korisnika ime, jezik i promena lozinke. Email je i korisničko ime i u v1 se ne menja. Kad stignu uloge, naziv firme menja samo admin.
 
 ### 2.8 Van obima v1 (ne implementirati)
-Fiskalizacija i ESIR, SEF i e-fakture, porudžbenice dobavljačima, više magacina, lotovi i serijski brojevi, rokovi trajanja, mobilna aplikacija, skeniranje barkoda, Shopify i drugi kanali, knjigovodstvo, uloge i prava, AI predviđanje, naplata pretplate (prvi korisnici besplatno ili ručna faktura).
+Fiskalizacija i ESIR, SEF i e-fakture, porudžbenice dobavljačima, više magacina, lotovi i serijski brojevi, rokovi trajanja, mobilna aplikacija, skeniranje barkoda (osim probe u brzoj pretrazi, ispod), Shopify i drugi kanali, knjigovodstvo, uloge i prava, AI predviđanje, naplata pretplate (prvi korisnici besplatno ili ručna faktura).
+
+**Proba (oktobar 2026):** skeniranje barkoda kamerom u brzoj pretrazi: kamera pročita kod, a artikal sa tim barkodom ili šifrom se otvori. Ako se ne pokaže korisnim, uklanja se i ostaje za mobilnu aplikaciju (11.3), gde je i skeniranje za prijem i popis.
 
 ## 3. Arhitektura
 
@@ -203,5 +206,19 @@ Vlasnik da oseti aplikaciju kao svoju, bez kvarenja čitljivosti i statusa zalih
 - Jedna boja naglaska (dugmad, aktivna stavka menija, linkovi) po izboru iz 5–6 unapred spremljenih boja. Svaka prolazi kontrast iz DESIGN.md u obe teme i jasno se razlikuje od statusnih boja. Statusne boje i ostatak palete se ne menjaju.
 - Boje se ne preuzimaju iz WordPress-a: WooCommerce ključevi ne daju pristup izgledu sajta, teme i graditelji stranica čuvaju boje svako na svoj način, a proizvoljna boja može da ruši kontrast ili da liči na upozorenje.
 
-### 11.5 Ostalo
+### 11.5 Ručne porudžbine
+Za prodaju van prodavnice (Instagram, telefon, radnja), da firma ima pregled svih prodaja na jednom mestu, sa ili bez WooCommerce-a. Počinje tek kad bar 2–3 stvarna korisnika to zatraže; do tada je dovoljan ručni izlaz (`Sale`) sa spoljnom referencom.
+
+- Uloge ostaju podeljene: WooCommerce porudžbine Lagerko samo čita i nikad im ne menja status (status pokreće emailove kupcu, povraćaj novca i dodatke za kurire). Ručne porudžbine postoje samo u Lagerku i ne prave se u WooCommerce-u (to bi poslalo email kupcu, tražilo podatke kupca, a uvezena porudžbina bi skinula robu drugi put). U prodavnicu ide samo stanje.
+- Ručna porudžbina menja stanje kao i svaka druga, pa `StockPushService` (7.5) šalje novo stanje u sve povezane prodavnice, bez nove integracije. Primer: 3 majice, 2 prodate na Instagramu, shop za nekoliko sekundi prikazuje 1.
+- Model: `ExternalOrder` sa novim poljem `Source` (`WooCommerce`, `Manual`) i opcionalnim `ChannelId` (ručni unos nije kanal, vidi 5). Broj se dodeljuje automatski u okviru firme (R-0001…), uz opcionalnu referencu (npr. „IG 154”). Stavke: artikal, količina, opciono prodajna cena.
+- Bez podataka kupca: najviše slobodna napomena, uz upozorenje u formi da se tu ne upisuju adrese i telefoni.
+- Statusi: Nacrt, Potvrđena, Poslata, Otkazana, Vraćena. Obrada je ista kao u 6, samo sa `activeStatuses = { Potvrđena, Poslata }`, pa izmena količine, uklonjena stavka, otkazivanje i ponovno aktiviranje rade bez posebnog koda za prelaze. Isti unit testovi kao u 6, za ručni izvor.
+- Nedovoljno robe: upozorenje, ali potvrda je dozvoljena i stanje može u minus (WooCommerce porudžbina je možda stigla malo ranije, a prodavac zna bolje). Istovremena prodaja poslednjeg komada u shopu i ručno ne može potpuno da se spreči jer slanje stanja kasni nekoliko sekundi; minus stanje i upozorenje to čine vidljivim.
+- Vraćena roba se vraća na stanje; oštećena se zatim otpisuje korekcijom, kao i danas. Izmena posle slanja je dozvoljena, jer je svaka ispravka novo kretanje.
+- Ekran „Porudžbine” prikazuje obe vrste zajedno, sa kolonom i filterom po izvoru.
+- Redosled: (1) ručna porudžbina sa stavkama i statusima Potvrđena/Otkazana; (2) Poslata, Vraćena i filter po izvoru; (3) opciono prodajna cena na stavci i promet u izveštajima.
+- Pre početka proveriti fiskalizaciju (2.8): ako radnja izdaje račune, ručna porudžbina počinje da liči na kasu, a to je posebna odluka.
+
+### 11.6 Ostalo
 Shopify, porudžbenice dobavljačima, više magacina, naplata pretplate, SEF/e-fakture za B2B distributere.

@@ -23,6 +23,11 @@ public static class IdentitySetup
             .AddEntityFrameworkStores<AppDbContext>()
             .AddClaimsPrincipalFactory<AppClaimsPrincipalFactory>();
 
+        // The cookie's claims (company and role) are rebuilt from the user every minute instead of every 30,
+        // so a changed role applies soon without signing in again. A changed security stamp (new password)
+        // signs the user out at the same check.
+        services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.FromMinutes(1));
+
         // Password reset links (the only Identity tokens in use) are valid for two hours.
         services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(2));
 

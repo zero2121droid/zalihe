@@ -67,7 +67,8 @@ describe('HomePage', () => {
     const steps = await screen.findByRole('region', { name: 'Prvi koraci' })
     expect(within(steps).getByText('0 od 2')).toBeInTheDocument()
     expect(within(steps).getByRole('link', { name: 'Novi artikal' })).toHaveAttribute('href', '/items?new=1')
-    expect(within(steps).getByRole('link', { name: 'Uvezi CSV' })).toHaveAttribute('href', '/items/import')
+    // The import is for admins and managers, so it shows once the user is known.
+    expect(await within(steps).findByRole('link', { name: 'Uvezi CSV' })).toHaveAttribute('href', '/items/import')
     expect(within(steps).getByText('nije obavezno')).toBeInTheDocument()
     expect(within(steps).getByRole('link', { name: 'Poveži prodavnicu' })).toHaveAttribute('href', '/channels')
     expect(screen.queryByText('Vrednost zaliha')).not.toBeInTheDocument()

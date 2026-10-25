@@ -335,7 +335,9 @@ Zašto oznake, a ne slanje „onoga što se promenilo” iz samog posla: posao u
 
 **`Tenancy/TenantContext.cs`**: implementacija `ITenantContext`, jedna po zahtevu (scoped). `Set()` odbija da promeni već postavljenu firmu.
 
-**`Identity/AppClaims.cs`**: `AppClaimsPrincipalFactory` dodaje claim `tenant_id` u cookie pri prijavi.
+**`Identity/AppClaims.cs`**: `AppClaimsPrincipalFactory` dodaje claim `tenant_id` i ulogu (standardni `ClaimTypes.Role`, npr. `Manager`) u cookie pri prijavi. Cookie se proverava jednom u minutu (`SecurityStampValidatorOptions.ValidationInterval` u `IdentitySetup`), i tada se claimovi ponovo prave iz korisnika, pa promenjena uloga važi bez ponovne prijave.
+
+**Uloge** (SPEC 11.2): `Users/UserRole.cs` u domenu (`Admin`, `Manager`, `Employee`), `User.Role` i `Invitation.Role` (tekst u bazi). Registracija daje `Admin`, a prihvatanje poziva ulogu iz poziva. `InvitationService.ChangeRoleAsync` menja ulogu korisniku iste firme; poslednji admin ne može da postane nešto drugo (`user.last_admin`), a promene u jednoj firmi idu jedna za drugom (zaključava se red firme, `SELECT … FOR UPDATE`), pa dva admina ne mogu istovremeno da skinu jedan drugog. Migracija `AddUserRoles` postojećim korisnicima i pozivima daje `Admin`.
 
 **Izmene u `AppDbContext.cs`** (artikli i izolacija firmi):
 - `Items` sa dužinama kolona, preciznošću decimala, jedinstvenim indeksom `(TenantId, Sku)` i indeksom `(TenantId, Name)` za sortiranje.
@@ -492,6 +494,8 @@ Primer odgovora sa greškom:
 
 **`Auth/HttpCurrentUser.cs`**: `ICurrentUser` iz claima prijavljenog korisnika.
 
+**`Auth/Policies.cs`**: ko šta sme, kao politike nad claimom uloge: `Policies.Admin` (firma, korisnici, uloge, pozivi, povezivanje prodavnice i ključevi) i `Policies.Manager` (admin i menadžer: uvoz, izveštaji, provera prodavnice, provera stanja). Endpoint bez politike je za svakog korisnika firme. Zabranjen zahtev je 403 `ProblemDetails` sa kodom `auth.forbidden`. `RoleTests` proverava svaki takav endpoint za zaposlenog i menadžera, promenu uloge bez ponovne prijave i poslednjeg admina. `PUT /api/account/users/{id}/role` menja ulogu; poziv (`POST /api/account/invitations`) obavezno nosi ulogu.
+
 **`Controllers/HealthController.cs`**: `GET /api/health`. Brza provera da API radi, a kasnije i za monitoring u produkciji.
 
 **`appsettings.Development.json`**: connection string za lokalni Docker Postgres. Učitava se samo u Development okruženju.
@@ -603,7 +607,9 @@ Početna, prijava i registracija su u glavnom paketu. Sve ostale stranice se uč
 
 **`layout/pageWidth.ts`**: `usePageWidth()` čita širinu iz najdublje rute, a `AppLayout` je primeni kao `data-width` na glavni sadržaj. Raspored je fluidan do te granice, a veličina teksta se ne menja sa širinom ekrana (DESIGN.md).
 
-**`layout/AppLayout.tsx`**: okvir po maketi: bočna navigacija od 232 px, logo, stavke, firma i korisnik dole, dugme za odjavu. Na telefonu se navigacija sklapa iza dugmeta „meni”. U `navItems` su samo ekrani koji postoje.
+**`layout/AppLayout.tsx`**: okvir po maketi: bočna navigacija od 232 px, logo, stavke, firma i korisnik dole, dugme za odjavu. Na telefonu se navigacija sklapa iza dugmeta „meni”. U `navItems` su samo ekrani koji postoje, a `navItemsFor` ostavlja one koje uloga sme da otvori (Izveštaji samo za admina i menadžera).
+
+**`auth/permissions.ts`**: `usePermissions()` iz uloge prijavljenog korisnika: `manageCompany` (admin) i `manage` (admin i menadžer), isto kao politike u API-ju. Ekrani samo izostave ono što bi API odbio: uvoz na Artiklima i Početnoj, „Poveži proizvode” u porudžbini, dugmad na kartici prodavnice, povezivanje prodavnice (ostali vide da to radi administrator) i delove Podešavanja (Firma samo admin, Održavanje admin i menadžer; nedozvoljen deo otvara prvi dozvoljen). `RequirePermission` u `RouteGuards.tsx` čuva rute uvoza i izveštaja, za stari link. U testovima stranica je prijavljen `testUser` (admin) iz `test/render.tsx`, osim kad test kaže drugačije.
 
 **`pages/`**: forme drže stanje u `useState`, šalju ga generisanim hookom (`useLogin`, `useRegister`) i greške prikazuju preko `fieldErrorMessages` i `formErrorMessage`. Validaciju radi API, a frontend je samo prikazuje, kako traži pravilo „sva poslovna logika je u API-ju”. Posle uspešne prijave invalidira se upit `me`: tako se učita korisnik i novi antiforgery token, pa se ide dalje.
 
@@ -637,7 +643,7 @@ Početna, prijava i registracija su u glavnom paketu. Sve ostale stranice se uč
 
 **`pages/settings/SettingsPage.tsx`**: „Podešavanja” (`/settings`, obična širina): tri male forme koje se čuvaju posebno (Firma, Moj nalog, Lozinka), sa `SaveButton` i `useShake`. Email nije polje, jer ne može da se menja. Jezik se primeni kroz `me` (`useCurrentUser`), čim se sačuva.
 
-**`pages/settings/UsersSection.tsx`** i **`pages/AcceptInvitationPage.tsx`**: odeljak „Korisnici” (korisnici, poslati i istekli pozivi sa „Pošalji ponovo” i „Opozovi”, forma za poziv uz napomenu da svi vide i nabavne cene) i stranica linka iz emaila (`/invite/:token`, u `AuthLayout`, radi i kad je neko prijavljen; posle prihvatanja se keš briše i ulazi se kao novi korisnik).
+**`pages/settings/UsersSection.tsx`** i **`pages/AcceptInvitationPage.tsx`**: odeljak „Korisnici” (korisnici sa izborom uloge, poslati i istekli pozivi sa ulogom, „Pošalji ponovo” i „Opozovi”, forma za poziv sa izborom uloge, podrazumevano „Zaposleni”, i kratkim opisom šta uloga sme) i stranica linka iz emaila (`/invite/:token`, u `AuthLayout`, radi i kad je neko prijavljen; posle prihvatanja se keš briše i ulazi se kao novi korisnik).
 
 **`pages/channels/ProductImportPage.tsx`**: „Uvoz proizvoda iz prodavnice” (`/channels/{id}/import`, dugme „Uvezi proizvode” na kartici kanala). Traka sa četiri brojke (novi, postoje u Zalihama, već povezano, preskočeno), tabela novih proizvoda sa izborom (svi su izabrani, korisnik isključuje ono što ne želi; zaglavlje ima „izaberi sve”), tabela povezivanja (link na postojeći artikal) i preskočeni sa prevedenim razlogom. Pregled se ne učitava ponovo pri povratku na prozor (`staleTime: Infinity`, `refetchOnWindowFocus: false`), jer je čitanje prodavnice sporo i opterećuje je. Posle uvoza se osvežavaju artikli, brojke i Početna, a pregled se briše iz keša.
 

@@ -56,6 +56,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         {
             invitation.Property(i => i.Email).HasMaxLength(Invitation.EmailMaxLength);
             invitation.Property(i => i.TokenHash).HasMaxLength(64);
+            invitation.Property(i => i.Role).HasConversion<string>().HasMaxLength(16);
             invitation.HasIndex(i => i.TokenHash).IsUnique();
             // One invitation per address in a company: inviting again renews it.
             invitation.HasIndex(i => new { i.TenantId, i.Email }).IsUnique();
@@ -69,6 +70,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         {
             user.Property(u => u.Name).HasMaxLength(User.NameMaxLength);
             user.Property(u => u.Language).HasMaxLength(Languages.MaxLength);
+            user.Property(u => u.Role).HasConversion<string>().HasMaxLength(16);
             user.HasOne<Tenant>().WithMany().HasForeignKey(u => u.TenantId).OnDelete(DeleteBehavior.Restrict);
             user.HasIndex(u => u.TenantId);
         });

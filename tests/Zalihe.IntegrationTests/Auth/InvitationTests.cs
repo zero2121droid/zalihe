@@ -16,8 +16,8 @@ public partial class InvitationTests(ZaliheApiFactory factory)
     [GeneratedRegex(@"/invite/([A-Za-z0-9_-]+)")]
     private static partial Regex InviteLink();
 
-    private static Task<HttpResponseMessage> InviteAsync(HttpClient client, string email) =>
-        client.PostAsJsonAsync("/api/account/invitations", new { email });
+    private static Task<HttpResponseMessage> InviteAsync(HttpClient client, string email, string role = "employee") =>
+        client.PostAsJsonAsync("/api/account/invitations", new { email, role });
 
     /// <summary>Invites a fresh address and returns it with the token from the emailed link.</summary>
     private async Task<(string Email, string Token)> InvitedAsync(HttpClient inviter)

@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { InvitationState } from './invitationState';
+import type { UserRole } from './userRole';
 
 export interface InvitationDto {
   id: string;
@@ -12,4 +13,5 @@ export interface InvitationDto {
   sentAt: string;
   expiresAt: string;
   state: InvitationState;
+  role: UserRole;
 }

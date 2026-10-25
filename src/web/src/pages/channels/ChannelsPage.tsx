@@ -14,6 +14,7 @@ import {
   useStartWooCommerceAuthorization,
 } from '../../api/generated/channels/channels'
 import type { SalesChannelDto } from '../../api/generated/model'
+import { usePermissions } from '../../auth/permissions'
 import { Eyebrow } from '../../components/Eyebrow'
 import { BoxLoader, PageLoader } from '../../components/loaders'
 import { formatDateTime } from '../../lib/format'
@@ -31,6 +32,7 @@ export function ChannelsPage() {
   const { t } = useTranslation()
   const channels = useListChannels()
   const display = useLoadingDisplay(channels.isPending)
+  const can = usePermissions()
   // The shop sends the user back here after its approval page, adding success=1 or success=0.
   const [params] = useSearchParams()
   const authorizationId = params.get('authorization')
@@ -49,7 +51,15 @@ export function ChannelsPage() {
       ) : channels.isError ? (
         <Text role="alert">{formErrorMessage(t, channels.error)}</Text>
       ) : channels.data.length === 0 ? (
-        authorizationId ? (
+        !can.manageCompany ? (
+          <Box maw={640}>
+            <Section title={t('channels.connect.title')}>
+              <Text fz="sm" c="var(--z-text-2)">
+                {t('channels.connect.adminOnly')}
+              </Text>
+            </Section>
+          </Box>
+        ) : authorizationId ? (
           <AuthorizationReturn id={authorizationId} approved={params.get('success') === '1'} />
         ) : (
           <Connect />
@@ -297,6 +307,7 @@ function KeysHelp() {
 
 function ChannelCard({ channel }: { channel: SalesChannelDto }) {
   const { t, i18n } = useTranslation()
+  const can = usePermissions()
   const queryClient = useQueryClient()
   const [keysOpened, { open: openKeys, close: closeKeys }] = useDisclosure()
   const [checkedAt, setCheckedAt] = useState<Date | null>(null)
@@ -351,17 +362,21 @@ function ChannelCard({ channel }: { channel: SalesChannelDto }) {
 
         <ChannelSummary channelId={channel.id} />
 
-        <Group gap="sm" className="z-phone-stack">
-          <Button component={Link} to={`/channels/${channel.id}/import`}>
-            {t('channels.card.importProducts')}
-          </Button>
-          <Button variant="default" loading={check.isPending} onClick={() => check.mutate({ id: channel.id })}>
-            {t('channels.card.check')}
-          </Button>
-          <Button variant="default" onClick={openKeys}>
-            {t('channels.card.replaceKeys')}
-          </Button>
-        </Group>
+        {can.manage && (
+          <Group gap="sm" className="z-phone-stack">
+            <Button component={Link} to={`/channels/${channel.id}/import`}>
+              {t('channels.card.importProducts')}
+            </Button>
+            <Button variant="default" loading={check.isPending} onClick={() => check.mutate({ id: channel.id })}>
+              {t('channels.card.check')}
+            </Button>
+            {can.manageCompany && (
+              <Button variant="default" onClick={openKeys}>
+                {t('channels.card.replaceKeys')}
+              </Button>
+            )}
+          </Group>
+        )}
 
         <Text fz="xs" c="dimmed">
           {t('channels.privacy')}

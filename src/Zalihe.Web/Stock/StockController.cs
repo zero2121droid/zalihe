@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zalihe.Application.Common;
 using Zalihe.Application.Stock;
+using Zalihe.Web.Auth;
 using Zalihe.Web.Errors;
 
 namespace Zalihe.Web.Stock;
@@ -48,6 +49,8 @@ public class StockController(StockService stockService, StockRecalculationServic
     /// what was fixed. Movements are never changed. Normally nothing differs.
     /// </summary>
     [HttpPost("api/stock/recalculate", Name = "RecalculateStock")]
+    [Authorize(Policy = Policies.Manager)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType<StockRecalculationDto>(StatusCodes.Status200OK)]
     public Task<StockRecalculationDto> Recalculate(CancellationToken ct) => recalculation.RecalculateAsync(ct);
 }

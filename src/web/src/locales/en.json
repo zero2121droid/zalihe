@@ -231,6 +231,9 @@
     },
     "email": {
       "unavailable": "The email can't be sent right now. Try again in a few minutes."
+    },
+    "user": {
+      "last_admin": "The company must have at least one administrator. Make someone else an administrator first."
     }
   },
   "items": {
@@ -544,7 +547,8 @@
       "manualTitle": "Connect a shop with keys",
       "manualSubmit": "Connect with keys",
       "back": "Connect without keys",
-      "manualIntro": "With these keys Lagerko reads products and orders from the shop and sends back stock levels. We check that the keys work before saving them."
+      "manualIntro": "With these keys Lagerko reads products and orders from the shop and sends back stock levels. We check that the keys work before saving them.",
+      "adminOnly": "The company's administrator connects the shop. Once it is connected, its status shows here."
     },
     "help": {
       "title": "Where do I find the keys?",
@@ -739,7 +743,7 @@
     },
     "users": {
       "title": "Users",
-      "description": "Who works in the company. The invited person gets an email with a link that works for 7 days and only once.",
+      "description": "Who works in the company and what they may do. The invited person gets an email with a link that is valid for 7 days and works once.",
       "you": "(you)",
       "pending": "Invited {{date}}",
       "expired": "The invitation expired",
@@ -748,9 +752,20 @@
       "revoke": "Revoke",
       "revokeLabel": "Revoke the invitation for {{email}}",
       "inviteEmail": "Invite a new user",
-      "inviteNote": "Everyone in the company sees everything, purchase prices too. Roles and permissions come later.",
       "invite": "Send invitation",
-      "sent": "The invitation was sent to {{email}}."
+      "sent": "The invitation was sent to {{email}}.",
+      "role": "Role",
+      "roleOf": "Role of {{name}}",
+      "roles": {
+        "admin": "Administrator",
+        "manager": "Manager",
+        "employee": "Employee"
+      },
+      "roleHints": {
+        "admin": "Everything, including users, roles, the company name and connecting the shop.",
+        "manager": "Items, stock, imports, reports and purchase prices. Doesn't manage users or the shop.",
+        "employee": "Items, stock, movements (receipt, sale, return, count) and orders. No imports, reports or company settings."
+      }
     },
     "stockCheck": {
       "title": "Stock check",

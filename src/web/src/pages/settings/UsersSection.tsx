@@ -1,16 +1,19 @@
-import { Anchor, Box, Group, Stack, Text, TextInput, Title } from '@mantine/core'
+import { Anchor, Box, Group, Select, Stack, Text, TextInput, Title } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { type SubmitEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
 import {
+  getListCompanyUsersQueryKey,
   getListInvitationsQueryKey,
+  useChangeUserRole,
   useInvite,
   useListCompanyUsers,
   useListInvitations,
   useRevokeInvitation,
 } from '../../api/generated/account/account'
-import type { CurrentUserResponse, InvitationDto } from '../../api/generated/model'
+import { getGetCurrentUserQueryKey } from '../../api/generated/auth/auth'
+import { type CompanyUserDto, type CurrentUserResponse, type InvitationDto, UserRole } from '../../api/generated/model'
 import { SaveButton } from '../../components/feedback'
 import feedbackClasses from '../../components/feedback.module.css'
 import { formatDateTime } from '../../lib/format'
@@ -27,9 +30,12 @@ const RESENT_MS = 1600
 /** A company has a handful of users; one page of the API's paged lists holds them all. */
 const LIST = { page: 1, pageSize: 100 }
 
+/** Roles from the most to the least allowed. */
+const ROLES = [UserRole.admin, UserRole.manager, UserRole.employee]
+
 /**
- * The company's users, the invitations sent, and a form to invite someone by email. Without roles in
- * v1 everyone invited sees everything, purchase prices too; the note says so.
+ * The company's users with their roles, the invitations sent, and a form to invite someone by email
+ * with a role. Only admins get here (SPEC 11.2).
  */
 export function UsersSection({ user }: { user: CurrentUserResponse }) {
   const { t } = useTranslation()
@@ -50,23 +56,8 @@ export function UsersSection({ user }: { user: CurrentUserResponse }) {
         </Stack>
 
         <Stack gap={0}>
-          {users.data?.items.map((u) => (
-            <Group key={u.id} justify="space-between" py={10} className={classes.row} wrap="nowrap">
-              <Stack gap={0} miw={0}>
-                <Text fw={500} truncate>
-                  {u.name}
-                  {u.id === user.id && (
-                    <Text component="span" c="dimmed" fw={400}>
-                      {' '}
-                      {t('settings.users.you')}
-                    </Text>
-                  )}
-                </Text>
-                <Text fz="xs" c="dimmed" truncate>
-                  {u.email}
-                </Text>
-              </Stack>
-            </Group>
+          {users.data?.items.map((member) => (
+            <UserRow key={member.id} member={member} isYou={member.id === user.id} />
           ))}
           {invitationRows.map(({ item: invitation, leaving }) => (
             <div
@@ -87,6 +78,70 @@ export function UsersSection({ user }: { user: CurrentUserResponse }) {
   )
 }
 
+function UserRow({ member, isYou }: { member: CompanyUserDto; isYou: boolean }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const change = useChangeUserRole({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: getListCompanyUsersQueryKey() })
+        // Giving up one's own admin role changes what this screen may show.
+        if (isYou) await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() })
+      },
+    },
+  })
+  // "user.last_admin" comes for the role field; anything else is about the request.
+  const error = fieldErrorMessages(t, change.error).role ?? formErrorMessage(t, change.error)
+
+  return (
+    <Group justify="space-between" py={10} className={classes.row} wrap="wrap" gap="sm">
+      <Stack gap={0} miw={0} style={{ flex: '1 1 200px' }}>
+        <Text fw={500} truncate>
+          {member.name}
+          {isYou && (
+            <Text component="span" c="dimmed" fw={400}>
+              {' '}
+              {t('settings.users.you')}
+            </Text>
+          )}
+        </Text>
+        <Text fz="xs" c="dimmed" truncate>
+          {member.email}
+        </Text>
+        {error && (
+          <Text role="alert" fz="xs" c="var(--mantine-color-error)">
+            {error}
+          </Text>
+        )}
+      </Stack>
+      <RoleSelect
+        w={180}
+        aria-label={t('settings.users.roleOf', { name: member.name })}
+        value={member.role}
+        disabled={change.isPending}
+        onChange={(role) => role !== member.role && change.mutate({ id: member.id, data: { role } })}
+      />
+    </Group>
+  )
+}
+
+function RoleSelect({
+  value,
+  onChange,
+  ...props
+}: { value: UserRole; onChange: (role: UserRole) => void; w?: number; label?: string; description?: string; 'aria-label'?: string; disabled?: boolean }) {
+  const { t } = useTranslation()
+  return (
+    <Select
+      {...props}
+      data={ROLES.map((role) => ({ value: role, label: t(`settings.users.roles.${role}`) }))}
+      value={value}
+      onChange={(role) => role && onChange(role as UserRole)}
+      allowDeselect={false}
+    />
+  )
+}
+
 function InvitationRow({ invitation }: { invitation: InvitationDto }) {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
@@ -102,6 +157,8 @@ function InvitationRow({ invitation }: { invitation: InvitationDto }) {
       <Stack gap={0} miw={0}>
         <Text truncate>{invitation.email}</Text>
         <Text fz="xs" c={expired ? 'var(--z-status-low)' : 'dimmed'}>
+          {t(`settings.users.roles.${invitation.role}`)}
+          {' · '}
           {expired
             ? t('settings.users.expired')
             : t('settings.users.pending', { date: formatDateTime(invitation.sentAt, i18n.language) })}
@@ -118,7 +175,7 @@ function InvitationRow({ invitation }: { invitation: InvitationDto }) {
           type="button"
           fz="sm"
           disabled={resend.isPending}
-          onClick={() => resend.mutate({ data: { email: invitation.email } })}
+          onClick={() => resend.mutate({ data: { email: invitation.email, role: invitation.role } })}
         >
           {resent ? (
             <span className={classes.sent} role="status">
@@ -164,6 +221,8 @@ function InviteForm() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
+  // The least allowed role by default; the admin chooses more on purpose.
+  const [role, setRole] = useState<UserRole>(UserRole.employee)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const saved = useSaved()
   const shake = useShake()
@@ -188,7 +247,7 @@ function InviteForm() {
       onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault()
         setSentTo(null)
-        invite.mutate({ data: { email } })
+        invite.mutate({ data: { email, role } })
       }}
     >
       <Stack gap="sm" maw={480}>
@@ -199,8 +258,8 @@ function InviteForm() {
           value={email}
           onChange={(e) => setEmail(e.currentTarget.value)}
           error={fieldErrors.email}
-          description={t('settings.users.inviteNote')}
         />
+        <RoleSelect label={t('settings.users.role')} description={t(`settings.users.roleHints.${role}`)} value={role} onChange={setRole} />
         {formError && (
           <Text role="alert" fz="sm" c="var(--mantine-color-error)">
             {formError}

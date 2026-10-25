@@ -110,6 +110,6 @@ public class AuthController(
         var tenant = await accountService.GetTenantAsync(user.TenantId, ct);
         CookieAntiforgeryFilter.IssueToken(antiforgery, HttpContext);
 
-        return new CurrentUserResponse(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name);
+        return new CurrentUserResponse(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name, user.Role);
     }
 }

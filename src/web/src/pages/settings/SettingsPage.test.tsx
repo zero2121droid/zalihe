@@ -2,17 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import i18n from '../../i18n'
-import { mockApi, renderRoutes } from '../../test/render'
+import { mockApi, renderRoutes, testUser } from '../../test/render'
 import { SettingsPage } from './SettingsPage'
 
-const me = {
-  id: 'u1',
-  name: 'Miljan',
-  email: 'miljan@zrno.rs',
-  language: 'sr-Latn',
-  tenantId: 't1',
-  tenantName: 'Zrno',
-}
+const me = testUser
 
 const routes = [{ path: '/settings/:section', element: <SettingsPage /> }]
 const open = (section: string) => renderRoutes(routes, `/settings/${section}`)
@@ -136,4 +129,18 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/settings/company'))
     expect(await screen.findByRole('region', { name: 'Naziv firme' })).toBeInTheDocument()
   })
+
+  it('Render_Employee_ShowsOnlyOwnAccountAndOpensProfile', async () => {
+    // Arrange
+    mockApi({ 'GET /api/auth/me': { status: 200, body: { ...me, role: 'employee' } } })
+
+    // Act
+    const { router } = await open('company')
+
+    // Assert
+    await waitFor(() => expect(router.state.location.pathname).toBe('/settings/profile'))
+    const menu = screen.getByRole('navigation', { name: 'Delovi podešavanja' })
+    expect(within(menu).getAllByRole('link').map((link) => link.textContent)).toEqual(['Ime i jezik', 'Lozinka'])
+  })
 })
+

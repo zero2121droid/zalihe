@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
-import { PublicOnly, RequireAuth } from './auth/RouteGuards'
+import { PublicOnly, RequireAuth, RequirePermission } from './auth/RouteGuards'
 import { AppLayout } from './layout/AppLayout'
 import { AuthLayout } from './layout/AuthLayout'
 import type { RouteHandle } from './layout/pageWidth'
@@ -44,12 +44,18 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/', element: <HomePage />, handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items', lazy: async () => ({ Component: (await import('./pages/items/ItemsPage')).ItemsPage }), handle: { width: 'wide' } satisfies RouteHandle },
-          { path: '/items/import', lazy: async () => ({ Component: (await import('./pages/items/ImportPage')).ImportPage }), handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/:id', lazy: async () => ({ Component: (await import('./pages/items/ItemDetailPage')).ItemDetailPage }), handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/orders', lazy: async () => ({ Component: (await import('./pages/orders/OrdersPage')).OrdersPage }), handle: { width: 'wide' } satisfies RouteHandle },
-          { path: '/reports', lazy: async () => ({ Component: (await import('./pages/reports/ReportsPage')).ReportsPage }), handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/channels', lazy: async () => ({ Component: (await import('./pages/channels/ChannelsPage')).ChannelsPage }), handle: { width: 'wide' } satisfies RouteHandle },
-          { path: '/channels/:id/import', lazy: async () => ({ Component: (await import('./pages/channels/ProductImportPage')).ProductImportPage }), handle: { width: 'wide' } satisfies RouteHandle },
+          {
+            // Admins and managers (SPEC 11.2).
+            element: <RequirePermission permission="manage" />,
+            children: [
+              { path: '/items/import', lazy: async () => ({ Component: (await import('./pages/items/ImportPage')).ImportPage }), handle: { width: 'wide' } satisfies RouteHandle },
+              { path: '/reports', lazy: async () => ({ Component: (await import('./pages/reports/ReportsPage')).ReportsPage }), handle: { width: 'wide' } satisfies RouteHandle },
+              { path: '/channels/:id/import', lazy: async () => ({ Component: (await import('./pages/channels/ProductImportPage')).ProductImportPage }), handle: { width: 'wide' } satisfies RouteHandle },
+            ],
+          },
           { path: '/settings', element: <Navigate to="/settings/company" replace /> },
           { path: '/settings/:section', lazy: async () => ({ Component: (await import('./pages/settings/SettingsPage')).SettingsPage }) },
         ],

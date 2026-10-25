@@ -9,8 +9,8 @@ using Zalihe.Web.Errors;
 namespace Zalihe.Web.Auth;
 
 /// <summary>
-/// Settings of the signed-in user and their company. Without roles in v1 every user of the company
-/// may rename it; once roles exist (SPEC 11.2) that is the admin's.
+/// Settings of the signed-in user and their company. The company, its users, their roles and
+/// invitations are the admin's (SPEC 11.2); everyone changes their own profile and password.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -26,6 +26,8 @@ public class AccountController(
 {
     /// <summary>Renames the company; returns the signed-in user with the new name.</summary>
     [HttpPut("company", Name = "UpdateCompany")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType<CurrentUserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     public async Task<ActionResult<CurrentUserResponse>> UpdateCompany(UpdateCompanyRequest request, CancellationToken ct)
@@ -71,6 +73,8 @@ public class AccountController(
 
     /// <summary>The company's users.</summary>
     [HttpGet("users", Name = "ListCompanyUsers")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType<PagedResult<CompanyUserDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     public Task<PagedResult<CompanyUserDto>> Users(
@@ -81,6 +85,8 @@ public class AccountController(
 
     /// <summary>Invitations sent and not yet accepted or revoked, newest first; expired ones can be sent again.</summary>
     [HttpGet("invitations", Name = "ListInvitations")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType<PagedResult<InvitationDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     public Task<PagedResult<InvitationDto>> Invitations(
@@ -94,6 +100,8 @@ public class AccountController(
     /// stops working). 503 with "email.unavailable" when the email can't be sent: nothing is saved then.
     /// </summary>
     [HttpPost("invitations", Name = "Invite")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType<InvitationDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
@@ -104,7 +112,7 @@ public class AccountController(
         InviteResult result;
         try
         {
-            result = await invitations.InviteAsync(user, request.Email, ct);
+            result = await invitations.InviteAsync(user, request.Email, request.Role!.Value, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
@@ -117,15 +125,34 @@ public class AccountController(
 
     /// <summary>Withdraws an invitation; its link stops working.</summary>
     [HttpDelete("invitations/{id:guid}", Name = "RevokeInvitation")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<IActionResult> RevokeInvitation(Guid id, CancellationToken ct) =>
         await invitations.RevokeAsync(id, ct) ? NoContent() : NotFound();
 
+    /// <summary>
+    /// Gives a user of the company another role; it applies within a minute, without signing in again.
+    /// The company always keeps an admin ("user.last_admin").
+    /// </summary>
+    [HttpPut("users/{id:guid}/role", Name = "ChangeUserRole")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<CompanyUserDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> ChangeRole(Guid id, ChangeRoleRequest request, CancellationToken ct)
+    {
+        var result = await invitations.ChangeRoleAsync(id, request.Role!.Value, ct);
+        if (result.NotFound) return NotFound();
+        return result.User is { } user ? Ok(user) : Failed([result.Error!]);
+    }
+
     private async Task<CurrentUserResponse> CurrentAsync(User user, CancellationToken ct)
     {
         var tenant = await accountService.GetTenantAsync(user.TenantId, ct);
-        return new CurrentUserResponse(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name);
+        return new CurrentUserResponse(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name, user.Role);
     }
 
     private ObjectResult Failed(IReadOnlyList<AppError> errors) =>

@@ -53,6 +53,8 @@ public partial class AccountService(
             Name = command.Name.Trim(),
             TenantId = tenant.Id,
             Language = language,
+            // Whoever registers the company is its admin (SPEC 11.2).
+            Role = UserRole.Admin,
         };
         var result = await userManager.CreateAsync(user, command.Password);
         if (!result.Succeeded)
@@ -96,6 +98,7 @@ public partial class AccountService(
             Name = name.Trim(),
             TenantId = invitation.TenantId,
             Language = language,
+            Role = invitation.Role,
         };
         var result = await userManager.CreateAsync(user, password);
         if (!result.Succeeded)

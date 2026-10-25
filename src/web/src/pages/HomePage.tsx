@@ -6,6 +6,7 @@ import { Link } from 'react-router'
 import { formErrorMessage } from '../api/errors'
 import { useGetDashboard } from '../api/generated/dashboard/dashboard'
 import type { DashboardDto, RecentMovementDto, ReorderItemDto, SetupDto } from '../api/generated/model'
+import { usePermissions } from '../auth/permissions'
 import { Eyebrow } from '../components/Eyebrow'
 import { PageLoader } from '../components/loaders'
 import feedbackClasses from '../components/feedback.module.css'
@@ -247,6 +248,7 @@ function UnlinkedOrders({ count }: { count: number }) {
  */
 function FirstSteps({ setup }: { setup: SetupDto }) {
   const { t } = useTranslation()
+  const can = usePermissions()
   const done = [setup.hasItems, setup.hasMinStock].filter(Boolean).length
   const total = 2
 
@@ -275,9 +277,11 @@ function FirstSteps({ setup }: { setup: SetupDto }) {
           <Button component={Link} to="/items?new=1">
             {t('items.new')}
           </Button>
-          <Button component={Link} to="/items/import" variant="default">
-            {t('items.importCsv')}
-          </Button>
+          {can.manage && (
+            <Button component={Link} to="/items/import" variant="default">
+              {t('items.importCsv')}
+            </Button>
+          )}
         </Group>
       </Step>
       <Step

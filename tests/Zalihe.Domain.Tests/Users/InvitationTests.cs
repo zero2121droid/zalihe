@@ -8,7 +8,8 @@ public class InvitationTests
     private static readonly DateTimeOffset Now = new(2026, 10, 20, 9, 0, 0, TimeSpan.Zero);
     private static readonly Guid Owner = Guid.NewGuid();
 
-    private static Invitation Invite(string token = "tajni-token") => new(Guid.NewGuid(), "  Ana@Zrno.RS ", token, Owner, Now);
+    private static Invitation Invite(string token = "tajni-token") =>
+        new(Guid.NewGuid(), "  Ana@Zrno.RS ", token, UserRole.Employee, Owner, Now);
 
     [Fact]
     public void Constructor_Email_IsNormalizedAndOnlyTheTokensHashIsKept()
@@ -22,6 +23,13 @@ public class InvitationTests
         invitation.TokenHash.ShouldNotContain("tajni-token");
         invitation.ExpiresAt.ShouldBe(Now + Invitation.ValidFor);
         invitation.StateAt(Now).ShouldBe(InvitationState.Pending);
+        invitation.Role.ShouldBe(UserRole.Employee);
+    }
+
+    [Fact]
+    public void Constructor_UnknownRole_Throws()
+    {
+        Should.Throw<ArgumentOutOfRangeException>(() => new Invitation(Guid.NewGuid(), "ana@zrno.rs", "t", (UserRole)42, Owner, Now));
     }
 
     [Fact]
@@ -78,10 +86,11 @@ public class InvitationTests
         var later = Now.AddDays(10);
 
         // Act
-        invitation.Renew("novi-token", Owner, later);
+        invitation.Renew("novi-token", UserRole.Manager, Owner, later);
 
         // Assert
         invitation.TokenHash.ShouldBe(Invitation.HashToken("novi-token"));
+        invitation.Role.ShouldBe(UserRole.Manager);
         invitation.SentAt.ShouldBe(later);
         invitation.ExpiresAt.ShouldBe(later + Invitation.ValidFor);
         invitation.StateAt(later).ShouldBe(InvitationState.Pending);
@@ -93,7 +102,7 @@ public class InvitationTests
         var invitation = Invite();
         invitation.Accept(Now.AddHours(1));
 
-        Should.Throw<InvalidOperationException>(() => invitation.Renew("novi-token", Owner, Now.AddDays(1)));
+        Should.Throw<InvalidOperationException>(() => invitation.Renew("novi-token", UserRole.Employee, Owner, Now.AddDays(1)));
     }
 
     [Fact]

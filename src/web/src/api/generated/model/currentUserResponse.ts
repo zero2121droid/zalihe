@@ -4,6 +4,7 @@
  * Zalihe.Web | v1
  * OpenAPI spec version: 1.0.0
  */
+import type { UserRole } from './userRole';
 
 export interface CurrentUserResponse {
   id: string;
@@ -12,4 +13,5 @@ export interface CurrentUserResponse {
   language: string;
   tenantId: string;
   tenantName: string;
+  role: UserRole;
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,12 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     /// <summary>The fake WooCommerce shop every channel talks to in tests.</summary>
     public FakeShopHandler Shop { get; } = new();
+
+    /// <summary>
+    /// The clock that decides when a sign-in cookie's claims are rebuilt from the user (every minute); moved
+    /// ahead, the next request rebuilds them, e.g. to see a changed role.
+    /// </summary>
+    public ShiftedTimeProvider CookieCheckClock { get; } = new();
 
     /// <summary>Keeps every email the app sends instead of sending it.</summary>
     public FakeEmailSender Emails { get; } = new();
@@ -52,6 +59,7 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             services.AddHttpClient(SalesChannelFactory.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Shop);
             services.AddSingleton<IEmailSender>(Emails);
+            services.Configure<SecurityStampValidatorOptions>(options => options.TimeProvider = CookieCheckClock);
         });
     }
 

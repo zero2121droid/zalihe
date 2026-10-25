@@ -7,6 +7,7 @@ import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
 import { useChangePassword, useUpdateCompany, useUpdateProfile } from '../../api/generated/account/account'
 import { getGetCurrentUserQueryKey } from '../../api/generated/auth/auth'
 import type { CurrentUserResponse } from '../../api/generated/model'
+import { type Permissions, usePermissions } from '../../auth/permissions'
 import { useCurrentUser } from '../../auth/useCurrentUser'
 import { Eyebrow } from '../../components/Eyebrow'
 import { SaveButton } from '../../components/feedback'
@@ -21,14 +22,19 @@ import { UsersSection } from './UsersSection'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
-/** The parts of the settings, by group, each at its own address (/settings/users). */
+/**
+ * The parts of the settings, by group, each at its own address (/settings/users). A group with
+ * `requires` is shown only to users with that permission; everyone has their own account.
+ */
 const groups = [
-  { key: 'company', sections: ['company', 'users'] },
+  { key: 'company', sections: ['company', 'users'], requires: 'manageCompany' },
   { key: 'account', sections: ['profile', 'password'] },
-  { key: 'maintenance', sections: ['stock-check'] },
-] as const
+  { key: 'maintenance', sections: ['stock-check'], requires: 'manage' },
+] as const satisfies readonly { key: string; sections: readonly string[]; requires?: keyof Permissions }[]
 
 type SettingsSection = (typeof groups)[number]['sections'][number]
+
+const groupsFor = (permissions: Permissions) => groups.filter((group) => !('requires' in group) || permissions[group.requires])
 
 const sectionTitleKeys: Record<SettingsSection, string> = {
   company: 'settings.company.title',
@@ -48,8 +54,13 @@ export function SettingsPage() {
   const { t } = useTranslation()
   const { user } = useCurrentUser()
   const { section } = useParams()
+  const visible = groupsFor(usePermissions())
+  const allowed: readonly SettingsSection[] = visible.flatMap((group) => group.sections)
 
-  if (!isSection(section)) return <Navigate to="/settings/company" replace />
+  // The parts depend on the role, so nothing is decided before the user is known.
+  if (!user) return null
+  // An unknown part, or one the user's role doesn't include, opens the first part the user has.
+  if (!isSection(section) || !allowed.includes(section)) return <Navigate to={`/settings/${allowed[0]}`} replace />
 
   return (
     <Stack gap="lg">
@@ -57,10 +68,10 @@ export function SettingsPage() {
         {t('settings.title')}
       </Title>
       <div className={classes.layout}>
-        <SettingsMenu />
+        <SettingsMenu groups={visible} />
         {/* Keyed by the part, so a newly chosen one rises into place (DESIGN.md "Pokret"). */}
         <div key={section} className={`${classes.content} ${feedbackClasses.rise}`}>
-          {user && <SectionContent section={section} user={user} />}
+          <SectionContent section={section} user={user} />
         </div>
       </div>
     </Stack>
@@ -83,7 +94,7 @@ function SectionContent({ section, user }: { section: SettingsSection; user: Cur
 }
 
 /** Links to every part, grouped; the current one's background slides to the chosen link. */
-function SettingsMenu() {
+function SettingsMenu({ groups }: { groups: ReturnType<typeof groupsFor> }) {
   const { t } = useTranslation()
   const menu = useRef<HTMLElement>(null)
   const current = useSlidingBox(menu, '[aria-current="page"]')

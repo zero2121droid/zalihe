@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Shouldly;
 
 namespace Zalihe.IntegrationTests.Infrastructure;
@@ -21,6 +22,24 @@ public static class HttpClientExtensions
     {
         var client = factory.CreateClient();
         await client.RegisterAsync(UniqueEmail());
+        client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await client.GetAntiforgeryTokenAsync());
+        return client;
+    }
+
+    /// <summary>
+    /// A client signed in as a user that <paramref name="owner"/> invited to its company with
+    /// <paramref name="role"/> ("admin", "manager", "employee"), sending the antiforgery header like
+    /// <see cref="CreateSignedInClientAsync"/>.
+    /// </summary>
+    public static async Task<HttpClient> CreateInvitedClientAsync(this ZaliheApiFactory factory, HttpClient owner, string role)
+    {
+        var email = UniqueEmail();
+        (await owner.PostAsJsonAsync("/api/account/invitations", new { email, role })).EnsureSuccessStatusCode();
+        var token = Regex.Match(factory.Emails.SentTo(email)[^1].Text, "/invite/([A-Za-z0-9_-]+)").Groups[1].Value;
+
+        var client = factory.CreateClient();
+        (await client.PostAsJsonAsync($"/api/invitations/{token}/accept", new { name = "Ana", password = "lozinka-pozvanog" }))
+            .EnsureSuccessStatusCode();
         client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await client.GetAntiforgeryTokenAsync());
         return client;
     }

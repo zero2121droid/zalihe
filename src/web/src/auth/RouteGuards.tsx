@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { formErrorMessage } from '../api/errors'
 import { PageLoader } from '../components/loaders'
 import { useLoadingDisplay } from '../lib/useLoadingDisplay'
+import { type Permissions, usePermissions } from './permissions'
 import { useCurrentUser } from './useCurrentUser'
 
 function FullPageLoader({ visible }: { visible: boolean }) {
@@ -36,5 +37,23 @@ export function PublicOnly() {
 
   if (isPending || display !== 'content') return <FullPageLoader visible={display === 'loader'} />
   if (user) return <Navigate to="/" replace />
+  return <Outlet />
+}
+
+/**
+ * Pages only some roles may open (reports, imports). Others, e.g. following an old link, are told so
+ * instead of seeing a page whose every request the API refuses.
+ */
+export function RequirePermission({ permission }: { permission: keyof Permissions }) {
+  const { t } = useTranslation()
+  const permissions = usePermissions()
+
+  if (!permissions[permission]) {
+    return (
+      <Text role="alert" py="xl">
+        {t('errors.auth.forbidden')}
+      </Text>
+    )
+  }
   return <Outlet />
 }

@@ -1,20 +1,22 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zalihe.Application.Imports;
+using Zalihe.Web.Auth;
 using Zalihe.Web.Errors;
 
 namespace Zalihe.Web.Imports;
 
 /// <summary>
 /// Item import from CSV in three calls with the same file: analyze, preview, import.
-/// The file is sent each time, so the server keeps no state between steps.
+/// The file is sent each time, so the server keeps no state between steps. For admins and managers.
 /// </summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = Policies.Manager)]
 [Route("api/imports/items")]
 [RequestSizeLimit(MaxFileBytes + 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = MaxFileBytes + 1024 * 1024)]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+[ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
 public class ImportsController(ItemImportService importService) : ControllerBase
 {
     private const int MaxFileBytes = 5 * 1024 * 1024;

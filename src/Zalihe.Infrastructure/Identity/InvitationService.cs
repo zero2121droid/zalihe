@@ -6,10 +6,11 @@ using Zalihe.Infrastructure.Persistence;
 
 namespace Zalihe.Infrastructure.Identity;
 
-public record CompanyUserDto(Guid Id, string Name, string Email);
+public record CompanyUserDto(Guid Id, string Name, string Email, UserRole Role);
 
 /// <param name="State">Pending or expired; accepted and revoked invitations aren't listed.</param>
-public record InvitationDto(Guid Id, string Email, DateTimeOffset SentAt, DateTimeOffset ExpiresAt, InvitationState State);
+/// <param name="Role">The role the invited person gets on accepting.</param>
+public record InvitationDto(Guid Id, string Email, DateTimeOffset SentAt, DateTimeOffset ExpiresAt, InvitationState State, UserRole Role);
 
 /// <summary>What the invitation page shows before the invited person signs up.</summary>
 public record InvitationInfoDto(string CompanyName, string Email, string InvitedBy);
@@ -19,10 +20,11 @@ public record InviteResult(InvitationDto? Invitation, AppError? Error)
     public bool Succeeded => Invitation is not null;
 }
 
+public record ChangeRoleResult(CompanyUserDto? User, AppError? Error, bool NotFound = false);
+
 /// <summary>
-/// The company's users and the invitations to join it (SPEC 2.7). In v1 every user may invite; with
-/// roles that becomes the admin's (SPEC 11.2). Accepting is in <see cref="AccountService"/>, next to
-/// registration.
+/// The company's users, their roles and the invitations to join it (SPEC 2.7, 11.2); only admins get
+/// here (the controller's policy). Accepting is in <see cref="AccountService"/>, next to registration.
 /// </summary>
 public class InvitationService(AppDbContext db, ITenantContext tenant, AlertEmails emails, TimeProvider timeProvider)
 {
@@ -39,7 +41,7 @@ public class InvitationService(AppDbContext db, ITenantContext tenant, AlertEmai
         var items = await users
             .OrderBy(u => u.Name).ThenBy(u => u.Email)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(u => new CompanyUserDto(u.Id, u.Name, u.Email!))
+            .Select(u => new CompanyUserDto(u.Id, u.Name, u.Email!, u.Role))
             .ToListAsync(ct);
         return new PagedResult<CompanyUserDto>(items, total, page, pageSize);
     }
@@ -58,11 +60,12 @@ public class InvitationService(AppDbContext db, ITenantContext tenant, AlertEmai
     }
 
     /// <summary>
-    /// Invites <paramref name="email"/> to the current company and emails the link. Inviting the same
-    /// address again sends a new link and the old one stops working. The email goes out before anything is
-    /// saved, so a mail server that is down leaves no invitation nobody received.
+    /// Invites <paramref name="email"/> to the current company with <paramref name="role"/> and emails the
+    /// link. Inviting the same address again sends a new link (with the new role) and the old one stops
+    /// working. The email goes out before anything is saved, so a mail server that is down leaves no
+    /// invitation nobody received.
     /// </summary>
-    public async Task<InviteResult> InviteAsync(User inviter, string email, CancellationToken ct)
+    public async Task<InviteResult> InviteAsync(User inviter, string email, UserRole role, CancellationToken ct)
     {
         var address = Invitation.NormalizeEmail(email);
         // Email is the sign-in name, unique across all companies (one company per user in v1).
@@ -76,17 +79,48 @@ public class InvitationService(AppDbContext db, ITenantContext tenant, AlertEmai
         var invitation = await db.Invitations.SingleOrDefaultAsync(i => i.Email == address, ct);
         if (invitation is null)
         {
-            invitation = new Invitation(tenant.TenantId, address, token, inviter.Id, now);
+            invitation = new Invitation(tenant.TenantId, address, token, role, inviter.Id, now);
             db.Invitations.Add(invitation);
         }
         else
         {
-            invitation.Renew(token, inviter.Id, now);
+            invitation.Renew(token, role, inviter.Id, now);
         }
 
         await emails.SendInvitationAsync(address, inviter.Name, inviter.Language, LinkPath(token), invitation.ExpiresAt, ct);
         await db.SaveChangesAsync(ct);
         return new InviteResult(ToDto(invitation, now), null);
+    }
+
+    public const string LastAdmin = "user.last_admin";
+
+    /// <summary>
+    /// Gives a user of the current company another role. The company always keeps an admin, so the last
+    /// one can't become anything else; role changes in one company run one after another, so two admins
+    /// can't take each other's role at the same moment.
+    /// </summary>
+    public async Task<ChangeRoleResult> ChangeRoleAsync(Guid userId, UserRole role, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlAsync($"""SELECT 1 FROM "Tenants" WHERE "Id" = {tenant.TenantId} FOR UPDATE""", ct);
+
+        // Users have no global query filter, so they are limited to the current company here.
+        var user = await db.Users.SingleOrDefaultAsync(u => u.Id == userId && u.TenantId == tenant.TenantId, ct);
+        if (user is null)
+        {
+            return new ChangeRoleResult(null, null, NotFound: true);
+        }
+
+        if (user.Role == UserRole.Admin && role != UserRole.Admin
+            && await db.Users.CountAsync(u => u.TenantId == tenant.TenantId && u.Role == UserRole.Admin, ct) == 1)
+        {
+            return new ChangeRoleResult(null, new AppError(LastAdmin, "role"));
+        }
+
+        user.Role = role;
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return new ChangeRoleResult(new CompanyUserDto(user.Id, user.Name, user.Email!, user.Role), null);
     }
 
     /// <summary>Withdraws an invitation of the current company; false when there is none.</summary>
@@ -122,5 +156,5 @@ public class InvitationService(AppDbContext db, ITenantContext tenant, AlertEmai
     }
 
     private static InvitationDto ToDto(Invitation invitation, DateTimeOffset now) =>
-        new(invitation.Id, invitation.Email, invitation.SentAt, invitation.ExpiresAt, invitation.StateAt(now));
+        new(invitation.Id, invitation.Email, invitation.SentAt, invitation.ExpiresAt, invitation.StateAt(now), invitation.Role);
 }

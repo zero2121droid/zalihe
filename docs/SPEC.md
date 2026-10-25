@@ -37,16 +37,16 @@ Kad stanje padne na minimalnu zalihu ili ispod: oznaka u aplikaciji i email (naj
 Trenutno stanje (pretraga, filter po kategoriji, "ispod minimuma", sortiranje po nazivu, stanju, prodaji za 30 dana i vrednosti), vrednost zaliha po nabavnoj ceni, najprodavaniji artikli u poslednjih 30 dana, artikli bez prometa 60+ dana, istorija kretanja po artiklu.
 
 ### 2.7 Firme i korisnici
-Registracija firme, vlasnik plus pozivanje dodatnih korisnika. Bez uloga i prava pristupa u v1: svaki pozvani korisnik vidi sve, i nabavne cene. Uloge su obavezne pre nego što firma pozove zaposlene (11.2).
+Registracija firme, vlasnik plus pozivanje dodatnih korisnika, svako sa svojom ulogom (11.2). Vlasnik koji registruje firmu je admin.
 
-Pozivanje: korisnik upiše email, a pozvani dobija link koji važi 7 dana i može da se iskoristi jednom; ponovni poziv šalje nov link, a stari prestaje da važi, a poziv može da se opozove. Pozvani upiše ime i lozinku i ulazi u firmu. Adresa koja već ima nalog ne može da se pozove (jedan korisnik pripada jednoj firmi). U v1 poziva svaki korisnik firme, a sa ulogama admin.
+Pozivanje: korisnik upiše email, a pozvani dobija link koji važi 7 dana i može da se iskoristi jednom; ponovni poziv šalje nov link, a stari prestaje da važi, a poziv može da se opozove. Pozvani upiše ime i lozinku i ulazi u firmu. Adresa koja već ima nalog ne može da se pozove (jedan korisnik pripada jednoj firmi). Poziva admin i bira ulogu pozvanog (podrazumevano „Zaposleni”); ponovni poziv može da promeni ulogu.
 
 Zaboravljena lozinka: korisnik upiše email i dobija link za novu lozinku (na svom jeziku), koji važi 2 sata i može da se iskoristi jednom. Odgovor je isti i kad adresa nema nalog, a jedan nalog dobija najviše jedan takav email na 2 minuta. Posle nove lozinke korisnik je prijavljen, nalog se otključava (ako je bio zaključan zbog pogrešnih lozinki), a ostali uređaji se odjavljuju.
 
-Podešavanja: naziv firme, a za prijavljenog korisnika ime, jezik i promena lozinke. Email je i korisničko ime i u v1 se ne menja. Kad stignu uloge, naziv firme menja samo admin.
+Podešavanja: naziv firme, a za prijavljenog korisnika ime, jezik i promena lozinke. Email je i korisničko ime i u v1 se ne menja. Naziv firme menja samo admin.
 
 ### 2.8 Van obima v1 (ne implementirati)
-Fiskalizacija i ESIR, SEF i e-fakture, porudžbenice dobavljačima, više magacina, lotovi i serijski brojevi, rokovi trajanja, mobilna aplikacija, skeniranje barkoda (osim probe u brzoj pretrazi, ispod), Shopify i drugi kanali, knjigovodstvo, uloge i prava, AI predviđanje, naplata pretplate (prvi korisnici besplatno ili ručna faktura).
+Fiskalizacija i ESIR, SEF i e-fakture, porudžbenice dobavljačima, više magacina, lotovi i serijski brojevi, rokovi trajanja, mobilna aplikacija, skeniranje barkoda (osim probe u brzoj pretrazi, ispod), Shopify i drugi kanali, knjigovodstvo, prava po korisniku (osim uloga iz 11.2), AI predviđanje, naplata pretplate (prvi korisnici besplatno ili ručna faktura).
 
 **Proba (oktobar 2026):** skeniranje barkoda kamerom u brzoj pretrazi: kamera pročita kod, a artikal sa tim barkodom ili šifrom se otvori. Ako se ne pokaže korisnim, uklanja se i ostaje za mobilnu aplikaciju (11.3), gde je i skeniranje za prijem i popis.
 
@@ -178,15 +178,19 @@ Promene stanja (npr. porudžbina iz WooCommerce-a) se odmah prikazuju na otvoren
 - U v1 se isti efekat postiže periodičnim osvežavanjem preko TanStack Query-ja
 
 ### 11.2 Uloge korisnika — obavezno pre pozivanja zaposlenih
+
+**Stanje (oktobar 2026):** uloge i ko šta sme u API-ju su napravljeni. Postojeći korisnici i pozivi su pri uvođenju dobili ulogu admin, jer su do tada sve videli i smeli. Sakrivanje nabavnih cena (podešavanje ispod) je sledeći korak; do tada i zaposleni vide nabavne cene.
 Nabavna cena otkriva zaradu na svakom proizvodu, pa je ne sme videti svako ko radi u magacinu.
 
 | Uloga | Šta sme |
 |---|---|
 | Admin | sve: podešavanja firme, korisnici i njihove uloge, povezivanje prodavnice |
 | Menadžer | podešavanja (npr. minimalne zalihe, upozorenja), artikli, kretanja, uvoz, izveštaji, nabavne cene; ne upravlja korisnicima ni ulogama |
-| Zaposleni | artikli, stanje, kretanja (prijem, prodaja, povrat, popis), porudžbine; prodajna cena i vrednost po prodajnoj ceni; nabavna cena samo kad je admin dozvoli (vidi niže) |
+| Zaposleni | artikli (i dodavanje i izmena), stanje, kretanja (prijem, prodaja, povrat, popis), porudžbine; prodajna cena i vrednost po prodajnoj ceni; nabavna cena samo kad je admin dozvoli (vidi niže). Bez uvoza, izveštaja i podešavanja firme |
 
-- Vlasnik koji registruje firmu je admin. Firma uvek ima bar jednog admina.
+- Vlasnik koji registruje firmu je admin. Firma uvek ima bar jednog admina (`user.last_admin`).
+- Ko šta sme u API-ju: samo admin menja naziv firme, vidi korisnike i pozive, poziva, menja uloge, povezuje prodavnicu i menja njene ključeve. Admin i menadžer još uvoze (CSV i iz prodavnice), vide izveštaje, proveravaju vezu sa prodavnicom i pokreću proveru stanja. Svi vide artikle, kretanja, porudžbine, Početnu i listu prodavnica. Zabranjeno je 403 sa kodom `auth.forbidden`.
+- Promena uloge važi u roku od minuta, bez ponovne prijave: claimovi u cookie-ju se jednom u minutu ponovo prave iz korisnika.
 - Da li zaposleni vide nabavne cene bira admin u podešavanjima firme („Zaposleni vide nabavne cene”), za sve zaposlene u firmi odjednom. Podrazumevano je isključeno, pa je oprezan vlasnik zaštićen od početka, a vlasnik sa malim timom kome veruje ne mora svima da daje ulogu menadžera samo zbog cena. Admin i menadžer cene vide uvek. Promena važi od sledećeg zahteva, bez ponovne prijave.
 - Kad je isključeno, zaposleni ne vidi nabavnu cenu ni ništa iz čega se ona izračunava: vrednost zaliha po nabavnoj ceni (stanje × nabavna cena otkriva cenu), ukupnu vrednost na Početnoj i u izveštajima, vrednost po kategoriji ni vezanu robu u izveštaju „Roba koja stoji”, izmene nabavne cene u istoriji artikla, nabavnu cenu u formi artikla, CSV uvozu i uvozu iz prodavnice.
 - Pravo važi u API-ju, ne samo u prikazu: za zaposlenog bez tog prava API vraća ova polja kao `null` (u OpenAPI-ju opisana kao takva), odbija njihov unos i ne dozvoljava filtriranje ni sortiranje po njima. Sakrivanje samo u React-u nije zaštita, jer je API isti za mobilnu aplikaciju.

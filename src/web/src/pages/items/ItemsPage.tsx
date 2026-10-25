@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { formErrorMessage } from '../../api/errors'
 import { useListItems } from '../../api/generated/items/items'
+import { usePermissions } from '../../auth/permissions'
 import { type ItemDto, ItemSort, SortDirection } from '../../api/generated/model'
 import { useGetStockSummary } from '../../api/generated/stock/stock'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
@@ -64,6 +65,7 @@ const firstDirection = (column: ItemSort) => (column === ItemSort.name ? SortDir
 
 export function ItemsPage() {
   const { t, i18n } = useTranslation()
+  const can = usePermissions()
   const compact = useCompactTables('lg')
   const [params, setParams] = useSearchParams()
   // `?new=1` (the home page's "New item") opens the form once; the address drops it, so back doesn't reopen it.
@@ -142,9 +144,11 @@ export function ItemsPage() {
           )}
         </Group>
         <Group gap="sm">
-          <Button variant="default" component={Link} to="/items/import">
-            {t('items.importCsv')}
-          </Button>
+          {can.manage && (
+            <Button variant="default" component={Link} to="/items/import">
+              {t('items.importCsv')}
+            </Button>
+          )}
           <Button onClick={() => setCreating(true)}>{t('items.new')}</Button>
         </Group>
       </Group>

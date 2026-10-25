@@ -4,9 +4,11 @@
  * Zalihe.Web | v1
  * OpenAPI spec version: 1.0.0
  */
+import type { UserRole } from './userRole';
 
 export interface CompanyUserDto {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
 }

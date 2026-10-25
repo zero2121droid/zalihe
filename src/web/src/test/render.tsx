@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router'
 import { vi } from 'vitest'
 import { AppProviders } from '../AppProviders'
+import type { CurrentUserResponse } from '../api/generated/model'
 import i18n from '../i18n'
 
 /** Renders routes with the real providers, starting at `path`, in Serbian unless told otherwise. */
@@ -40,14 +41,27 @@ export function mockFetch(...responses: Array<{ status: number; body?: unknown }
 
 type MockResponse = { status: number; body?: unknown }
 
+/** The signed-in user of page tests: the company's admin, who may do everything (SPEC 11.2). */
+export const testUser = {
+  id: 'u1',
+  name: 'Miljan',
+  email: 'miljan@zrno.rs',
+  language: 'sr-Latn',
+  tenantId: 't1',
+  tenantName: 'Zrno',
+  role: 'admin',
+} satisfies CurrentUserResponse
+
 /**
  * Replaces fetch with a fake API that answers by URL instead of call order: the first entry whose
  * key is a prefix of "METHOD /path?query" wins, e.g. { 'GET /api/items?': ..., 'POST /api/items': ... }.
+ * Unless a test says otherwise, the signed-in user is {@link testUser}.
  */
 export function mockApi(routes: Record<string, MockResponse | ((init?: RequestInit) => MockResponse)>) {
+  const withUser = { ...routes, 'GET /api/auth/me': routes['GET /api/auth/me'] ?? { status: 200, body: testUser } }
   const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
     const request = `${(init?.method ?? 'GET').toUpperCase()} ${String(input)}`
-    const match = Object.entries(routes).find(([key]) => request.startsWith(key))
+    const match = Object.entries(withUser).find(([key]) => request.startsWith(key))
     if (!match) throw new Error(`No mock for ${request}`)
     const { status, body } = typeof match[1] === 'function' ? match[1](init) : match[1]
     return new Response(body === undefined ? null : JSON.stringify(body), {

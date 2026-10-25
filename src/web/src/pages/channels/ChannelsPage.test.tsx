@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { leaveTo } from '../../lib/navigation'
-import { mockApi, renderPage, renderRoutes } from '../../test/render'
+import { mockApi, renderPage, renderRoutes, testUser } from '../../test/render'
 import { ChannelsPage } from './ChannelsPage'
 
 vi.mock('../../lib/navigation', () => ({ leaveTo: vi.fn() }))
@@ -254,4 +254,20 @@ describe('ChannelsPage', () => {
     const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')
     expect(JSON.parse(put?.[1]?.body as string)).toEqual({ consumerKey: 'ck_new123456789', consumerSecret: 'cs_new123456789' })
   })
+
+  it('Render_ManagerWithoutShop_SaysTheAdminConnectsIt', async () => {
+    // Arrange
+    mockApi({
+      'GET /api/auth/me': { status: 200, body: { ...testUser, role: 'manager' } },
+      'GET /api/channels': { status: 200, body: [] },
+    })
+
+    // Act
+    await renderPage(<ChannelsPage />, '/channels')
+
+    // Assert
+    expect(await screen.findByText(/Prodavnicu povezuje administrator firme/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Poveži prodavnicu' })).not.toBeInTheDocument()
+  })
 })
+

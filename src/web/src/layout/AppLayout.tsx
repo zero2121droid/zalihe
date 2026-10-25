@@ -6,6 +6,7 @@ import { type CSSProperties, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink as RouterNavLink, Outlet, ScrollRestoration, useNavigate } from 'react-router'
 import { useLogout } from '../api/generated/auth/auth'
+import { usePermissions } from '../auth/permissions'
 import { useCurrentUser } from '../auth/useCurrentUser'
 import { Logo } from '../components/Logo'
 import { QuickSearch } from '../components/QuickSearch'
@@ -14,7 +15,7 @@ import { quickSearchShortcut } from '../lib/shortcut'
 import { useSlidingBox } from '../lib/useSlidingBox'
 import classes from './AppLayout.module.css'
 import { ChannelAlert } from './ChannelAlert'
-import { navItems, PHONE_TABS } from './navItems'
+import { navItemsFor, PHONE_TABS } from './navItems'
 import { usePageWidth } from './pageWidth'
 import { PhoneTabs } from './PhoneTabs'
 
@@ -24,6 +25,7 @@ export function AppLayout() {
   // Also from inside a field: Ctrl+K never types anything.
   useHotkeys([['mod+K', search.open]], [])
   const { user } = useCurrentUser()
+  const items = navItemsFor(usePermissions())
   const pageWidth = usePageWidth()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -102,7 +104,7 @@ export function AppLayout() {
                 aria-hidden
               />
             )}
-            {navItems.map(({ to, labelKey, icon: Icon }) => (
+            {items.map(({ to, labelKey, icon: Icon }) => (
               <NavLink
                 key={to}
                 component={RouterNavLink}
@@ -121,7 +123,7 @@ export function AppLayout() {
       </AppShell.Navbar>
 
       <AppShell.Footer hiddenFrom="sm" className={classes.footer}>
-        <PhoneTabs tabs={navItems.slice(0, PHONE_TABS)} more={navItems.slice(PHONE_TABS)} account={account} />
+        <PhoneTabs tabs={items.slice(0, PHONE_TABS)} more={items.slice(PHONE_TABS)} account={account} />
       </AppShell.Footer>
 
       {searching && <QuickSearch onClose={search.close} />}

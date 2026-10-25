@@ -231,6 +231,9 @@
     },
     "email": {
       "unavailable": "Email trenutno ne može da se pošalje. Pokušaj ponovo za nekoliko minuta."
+    },
+    "user": {
+      "last_admin": "Firma mora imati bar jednog administratora. Prvo nekom drugom daj ulogu administratora."
     }
   },
   "items": {
@@ -544,7 +547,8 @@
       "manualTitle": "Poveži prodavnicu ključevima",
       "manualSubmit": "Poveži ključevima",
       "back": "Poveži bez ključeva",
-      "manualIntro": "Lagerko preko ključeva čita proizvode i porudžbine iz prodavnice i vraća stanje zaliha. Pre čuvanja proveravamo da li ključevi rade."
+      "manualIntro": "Lagerko preko ključeva čita proizvode i porudžbine iz prodavnice i vraća stanje zaliha. Pre čuvanja proveravamo da li ključevi rade.",
+      "adminOnly": "Prodavnicu povezuje administrator firme. Kad je poveže, ovde se vidi njeno stanje."
     },
     "help": {
       "title": "Gde da nađem ključeve?",
@@ -739,7 +743,7 @@
     },
     "users": {
       "title": "Korisnici",
-      "description": "Ko radi u firmi. Pozvani dobija email sa linkom koji važi 7 dana i može da se iskoristi jednom.",
+      "description": "Ko radi u firmi i šta sme. Pozvani dobija email sa linkom koji važi 7 dana i može da se iskoristi jednom.",
       "you": "(ti)",
       "pending": "Poziv poslat {{date}}",
       "expired": "Poziv je istekao",
@@ -748,9 +752,20 @@
       "revoke": "Opozovi",
       "revokeLabel": "Opozovi poziv za {{email}}",
       "inviteEmail": "Pozovi novog korisnika",
-      "inviteNote": "Svako u firmi vidi sve, i nabavne cene. Uloge i prava pristupa stižu kasnije.",
       "invite": "Pošalji poziv",
-      "sent": "Poziv je poslat na {{email}}."
+      "sent": "Poziv je poslat na {{email}}.",
+      "role": "Uloga",
+      "roleOf": "Uloga za {{name}}",
+      "roles": {
+        "admin": "Administrator",
+        "manager": "Menadžer",
+        "employee": "Zaposleni"
+      },
+      "roleHints": {
+        "admin": "Sve, i korisnike, uloge, naziv firme i povezivanje prodavnice.",
+        "manager": "Artikle, stanje, uvoz, izveštaje i nabavne cene. Ne upravlja korisnicima ni prodavnicom.",
+        "employee": "Artikle, stanje, kretanja (prijem, prodaja, povrat, popis) i porudžbine. Bez uvoza, izveštaja i podešavanja firme."
+      }
     },
     "stockCheck": {
       "title": "Provera stanja",

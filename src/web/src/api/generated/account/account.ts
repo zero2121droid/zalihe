@@ -26,6 +26,8 @@ import type {
 import type {
   ApiProblemDetails,
   ChangePasswordRequest,
+  ChangeRoleRequest,
+  CompanyUserDto,
   CurrentUserResponse,
   InvitationDto,
   InviteRequest,
@@ -653,4 +655,86 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getRevokeInvitationMutationOptions(options), queryClient);
+    }
+    export const getChangeUserRoleUrl = (id: string,) => {
+
+
+
+
+  return `/api/account/users/${id}/role`
+}
+
+export const changeUserRole = async (id: string,
+    changeRoleRequest: ChangeRoleRequest, options?: Parameters<typeof customFetch>[1]): Promise<CompanyUserDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CompanyUserDto>(getChangeUserRoleUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(changeRoleRequest)
+  }
+);}
+
+
+
+
+
+export const getChangeUserRoleMutationKey = () => ['changeUserRole'] as const;
+
+export const getChangeUserRoleMutationOptions = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeUserRole>>, TError,ChangeUserRoleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeUserRole>>, TError,ChangeUserRoleMutationVariables, TContext> => {
+
+const mutationKey = getChangeUserRoleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeUserRole>>, ChangeUserRoleMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  changeUserRole(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeUserRoleMutationResult = NonNullable<Awaited<ReturnType<typeof changeUserRole>>>
+    export type ChangeUserRoleMutationBody = BodyType<ChangeRoleRequest>
+    export type ChangeUserRoleMutationError = ErrorType<ApiProblemDetails | ProblemDetails>
+    export type ChangeUserRoleMutationVariables = {id: string;data: BodyType<ChangeRoleRequest>}
+
+    export const useChangeUserRole = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeUserRole>>, TError,ChangeUserRoleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeUserRole>>,
+        TError,
+        ChangeUserRoleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeUserRoleMutationOptions(options), queryClient);
     }

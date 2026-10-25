@@ -3,15 +3,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zalihe.Application.Common;
 using Zalihe.Application.Reports;
+using Zalihe.Web.Auth;
 using Zalihe.Web.Errors;
 
 namespace Zalihe.Web.Reports;
 
-/// <summary>Reports over the company's active items. Searchable lists match the item's name or SKU.</summary>
+/// <summary>Reports over the company's active items, for admins and managers. Searchable lists match the item's name or SKU.</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = Policies.Manager)]
 [Route("api/reports")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+[ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
 public class ReportsController(ReportService reportService) : ControllerBase
 {
     /// <summary>Stock value, items missing from it for lack of a purchase price, and the stock that doesn't sell.</summary>

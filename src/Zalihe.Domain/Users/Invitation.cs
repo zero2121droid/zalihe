@@ -31,6 +31,9 @@ public class Invitation : ITenantOwned
     /// <summary>SHA-256 of the token, hex.</summary>
     public string TokenHash { get; private set; }
 
+    /// <summary>The role the invited person gets on accepting.</summary>
+    public UserRole Role { get; private set; }
+
     public Guid InvitedByUserId { get; private set; }
 
     /// <summary>When it was (last) sent; a renewed invitation counts from then.</summary>
@@ -41,7 +44,7 @@ public class Invitation : ITenantOwned
     public DateTimeOffset? RevokedAt { get; private set; }
 
     /// <param name="token">The secret from <see cref="NewToken"/>, sent in the link and never stored.</param>
-    public Invitation(Guid tenantId, string email, string token, Guid invitedByUserId, DateTimeOffset sentAt)
+    public Invitation(Guid tenantId, string email, string token, UserRole role, Guid invitedByUserId, DateTimeOffset sentAt)
     {
         if (tenantId == Guid.Empty) throw new ArgumentException("Tenant is required.", nameof(tenantId));
 
@@ -49,7 +52,7 @@ public class Invitation : ITenantOwned
         TenantId = tenantId;
         Email = NormalizeEmail(email);
         TokenHash = null!;
-        Renew(token, invitedByUserId, sentAt);
+        Renew(token, role, invitedByUserId, sentAt);
     }
 
     // For EF Core.
@@ -65,11 +68,16 @@ public class Invitation : ITenantOwned
         : now >= ExpiresAt ? InvitationState.Expired
         : InvitationState.Pending;
 
-    /// <summary>Sends the invitation again with a new token: the old link stops working, and the week starts over.</summary>
-    public void Renew(string token, Guid invitedByUserId, DateTimeOffset sentAt)
+    /// <summary>
+    /// Sends the invitation again with a new token and the given role: the old link stops working, and
+    /// the week starts over.
+    /// </summary>
+    public void Renew(string token, UserRole role, Guid invitedByUserId, DateTimeOffset sentAt)
     {
         if (AcceptedAt is not null) throw new InvalidOperationException("The invitation was already accepted.");
+        if (!Enum.IsDefined(role)) throw new ArgumentOutOfRangeException(nameof(role));
         TokenHash = HashToken(token);
+        Role = role;
         InvitedByUserId = invitedByUserId;
         SentAt = sentAt;
         ExpiresAt = sentAt + ValidFor;

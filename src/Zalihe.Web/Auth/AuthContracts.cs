@@ -39,7 +39,8 @@ public record ResetPasswordRequest(
     [Required(ErrorMessage = "validation.required")]
     string NewPassword);
 
-public record CurrentUserResponse(Guid Id, string Name, string Email, string Language, Guid TenantId, string TenantName);
+/// <param name="Role">What the user may do; the client shows only what the role allows, the API enforces it.</param>
+public record CurrentUserResponse(Guid Id, string Name, string Email, string Language, Guid TenantId, string TenantName, UserRole Role);
 
 public record UpdateCompanyRequest(
     [Required(ErrorMessage = "validation.required")]
@@ -63,7 +64,15 @@ public record InviteRequest(
     [Required(ErrorMessage = "validation.required")]
     [EmailAddress(ErrorMessage = "validation.email")]
     [MaxLength(Invitation.EmailMaxLength, ErrorMessage = "validation.max_length")]
-    string Email);
+    string Email,
+    [Required(ErrorMessage = "validation.required")]
+    [EnumDataType(typeof(UserRole), ErrorMessage = "validation.invalid")]
+    UserRole? Role);
+
+public record ChangeRoleRequest(
+    [Required(ErrorMessage = "validation.required")]
+    [EnumDataType(typeof(UserRole), ErrorMessage = "validation.invalid")]
+    UserRole? Role);
 
 public record AcceptInvitationRequest(
     [Required(ErrorMessage = "validation.required")]

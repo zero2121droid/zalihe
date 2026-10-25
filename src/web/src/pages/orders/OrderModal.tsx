@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import type { OrderDto, OrderLineDto } from '../../api/generated/model'
+import { usePermissions } from '../../auth/permissions'
 import { formatDateTime, formatNumber } from '../../lib/format'
 import { usePhone } from '../../lib/usePhone'
 import { lineName, shopHost, statusLabel } from './orderText'
@@ -12,6 +13,7 @@ const noteStyle = { borderRadius: 'var(--mantine-radius-sm)' }
 /** One order's products, the items they are linked to and what each took from stock. */
 export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () => void }) {
   const { t, i18n } = useTranslation()
+  const can = usePermissions()
   const hasUnlinked = order.lines.some((l) => l.state === 'unlinked')
   const hasLinkedLater = order.lines.some((l) => l.state === 'linkedAfterOrder')
   const phone = usePhone()
@@ -68,9 +70,11 @@ export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () =>
           <Note>
             <Stack gap="sm" align="flex-start">
               <Text fz="sm">{t('orders.detail.unlinked')}</Text>
-              <Button variant="default" component={Link} to={`/channels/${order.channelId}/import`}>
-                {t('orders.detail.linkUnlinked')}
-              </Button>
+              {can.manage && (
+                <Button variant="default" component={Link} to={`/channels/${order.channelId}/import`}>
+                  {t('orders.detail.linkUnlinked')}
+                </Button>
+              )}
             </Stack>
           </Note>
         )}

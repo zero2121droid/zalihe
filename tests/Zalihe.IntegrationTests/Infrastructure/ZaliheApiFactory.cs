@@ -33,6 +33,8 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
         builder.UseSetting("Webhooks:BaseUrl", WebhookBaseUrl);
+        // As in production: shops send the keys of an approved connection to the webhooks' address.
+        builder.UseSetting("Webhooks:AuthCallbackBaseUrl", "");
         // Scheduled jobs would sync every test's shop at random moments; tests run them directly.
         builder.UseSetting("Jobs:OrderSyncCron", "");
         builder.UseSetting("Jobs:WebhookCleanupCron", "");

@@ -125,7 +125,7 @@ Unit testovi moraju pokriti: novu porudžbinu, duplirani događaj, otkazivanje, 
 ## 7. WooCommerce integracija
 
 ### 7.1 Povezivanje
-Preusmeravanje korisnika na `{shop}/wc-auth/v1/authorize` sa `app_name`, `scope=read_write`, `user_id` (ID kanala), `return_url` i `callback_url`. WooCommerce šalje ključeve POST-om na `callback_url` (mora biti HTTPS). U lokalnom razvoju ključevi se unose ručno.
+Preusmeravanje korisnika na `{shop}/wc-auth/v1/authorize` sa `app_name`, `scope=read_write`, `user_id` (ID kanala), `return_url` i `callback_url`. WooCommerce šalje ključeve POST-om na `callback_url` (mora biti HTTPS). `user_id` je jednokratni token (u bazi samo heš), a započeto povezivanje važi sat vremena. Ručni unos ključeva ostaje kao rezerva, za prodavnice u kojima sigurnosni dodatak blokira `wc-auth`. U lokalnom razvoju callback ide na HTTPS port backenda (profil `https`).
 
 ### 7.2 Početni uvoz
 `GET /wp-json/wc/v3/products` (stranično, `per_page=100`) i za varijabilne proizvode `GET /products/{id}/variations`. Povezivanje sa postojećim artiklima po SKU-u, a ostali se nude za kreiranje. Nabavna cena novog artikla se uzima iz WooCommerce polja „Cost of goods sold” (`cost_of_goods_sold.total_value`; varijacija bez svoje cene nasleđuje cenu proizvoda). Ako je funkcija u prodavnici isključena ili je cena 0, nabavne cene nema.

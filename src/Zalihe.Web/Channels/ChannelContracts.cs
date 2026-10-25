@@ -15,6 +15,11 @@ public record ConnectWooCommerceRequest(
     [MaxLength(200, ErrorMessage = "validation.max_length")]
     string ConsumerSecret);
 
+public record StartWooCommerceAuthorizationRequest(
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(SalesChannel.BaseUrlMaxLength, ErrorMessage = "validation.max_length")]
+    string BaseUrl);
+
 public record ReplaceCredentialsRequest(
     [Required(ErrorMessage = "validation.required")]
     [MaxLength(200, ErrorMessage = "validation.max_length")]

@@ -221,7 +221,9 @@
       "product_sku_too_long": "The SKU is longer than {{max}} characters.",
       "product_sku_duplicate": "Several products in the shop have this SKU. The SKU must be unique.",
       "product_item_linked": "The item with this SKU is already linked to another product from the shop.",
-      "too_many_products": "The shop has more than {{max}} products, which the import doesn't support yet."
+      "too_many_products": "The shop has more than {{max}} products, which the import doesn't support yet.",
+      "authorization_pending": "The shop hasn't sent the keys yet. Approve access in the shop, then try again.",
+      "authorization_expired": "Connecting has expired. Start over."
     },
     "invitation": {
       "invalid": "The invitation isn't valid: the link was already used, revoked or has expired.",
@@ -536,8 +538,13 @@
     },
     "connect": {
       "title": "Connect a WooCommerce shop",
-      "intro": "With these keys Lagerko reads products and orders from the shop and sends back stock levels. We check that the keys work before saving them.",
-      "submit": "Connect shop"
+      "intro": "Your shop opens, and you approve access for Lagerko there. No keys to create or copy.",
+      "submit": "Connect shop",
+      "manual": "Enter keys manually",
+      "manualTitle": "Connect a shop with keys",
+      "manualSubmit": "Connect with keys",
+      "back": "Connect without keys",
+      "manualIntro": "With these keys Lagerko reads products and orders from the shop and sends back stock levels. We check that the keys work before saving them."
     },
     "help": {
       "title": "Where do I find the keys?",
@@ -545,6 +552,20 @@
       "step2": "Click “Add key”, enter a description (e.g. Lagerko), choose your user and “Read/Write” permissions.",
       "step3": "Click “Generate API key” and paste the Consumer key and Consumer secret here. WooCommerce shows the secret only once.",
       "safety": "Keys are stored encrypted and are never shown again after connecting. You can revoke them in WooCommerce at any time."
+    },
+    "how": {
+      "title": "How connecting works",
+      "step1": "Enter the shop's address and click “Connect shop”.",
+      "step2": "In the shop, sign in as an administrator and click “Approve”. Lagerko asks for read and write access: it reads products and orders and writes stock levels.",
+      "step3": "The shop sends you back here, and Lagerko checks the connection and sets up orders to arrive on their own.",
+      "blocked": "If a security plugin in the shop blocks connecting, you can create keys in WooCommerce and enter them manually."
+    },
+    "authorization": {
+      "title": "Connecting the shop",
+      "connecting": "Checking the connection and connecting the shop…",
+      "denied": "Access was not approved, so the shop is not connected. You can try again whenever you like.",
+      "retry": "Try again",
+      "restart": "Start over"
     },
     "privacy": "From orders, Lagerko reads only products, quantities and status. Customer data (name, address, phone, email) is never fetched or stored.",
     "card": {

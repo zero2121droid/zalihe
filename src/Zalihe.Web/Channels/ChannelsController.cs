@@ -33,6 +33,34 @@ public class ChannelsController(ChannelService channelService, ProductImportServ
     public async Task<IActionResult> ConnectWooCommerce(ConnectWooCommerceRequest request, CancellationToken ct) =>
         Respond(await channelService.ConnectWooCommerceAsync(request.BaseUrl, request.ConsumerKey, request.ConsumerSecret, ct), created: true);
 
+    /// <summary>
+    /// Starts connecting a WooCommerce shop without copying keys: the client sends the user to
+    /// <c>authorizeUrl</c>, where the shop owner approves access, and the shop sends the user back to
+    /// <c>/channels?authorization={id}</c>.
+    /// </summary>
+    [HttpPost("woocommerce/authorizations", Name = "StartWooCommerceAuthorization")]
+    [ProducesResponseType<ShopAuthorizationDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public async Task<IActionResult> StartWooCommerceAuthorization(StartWooCommerceAuthorizationRequest request, CancellationToken ct)
+    {
+        var result = await channelService.StartWooCommerceAuthorizationAsync(request.BaseUrl, ct);
+        return result.Authorization is { } authorization
+            ? Ok(authorization)
+            : ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed, result.Errors);
+    }
+
+    /// <summary>
+    /// Saves the shop once its owner approved access and the keys it sent work. Fails with
+    /// <c>channel.authorization_pending</c> while the shop hasn't sent keys, and
+    /// <c>channel.authorization_expired</c> when it no longer can.
+    /// </summary>
+    [HttpPost("woocommerce/authorizations/{id:guid}/complete", Name = "CompleteWooCommerceAuthorization")]
+    [ProducesResponseType<SalesChannelDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> CompleteWooCommerceAuthorization(Guid id, CancellationToken ct) =>
+        Respond(await channelService.CompleteWooCommerceAuthorizationAsync(id, ct), created: true);
+
     /// <summary>Contacts the shop again with the stored keys and updates the channel's status.</summary>
     [HttpPost("{id:guid}/check", Name = "CheckChannel")]
     [ProducesResponseType<SalesChannelDto>(StatusCodes.Status200OK)]

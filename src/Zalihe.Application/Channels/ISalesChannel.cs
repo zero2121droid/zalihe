@@ -57,6 +57,20 @@ public record WebhookSettings(string BaseUrl)
     public string WooCommerceDeliveryUrl(Guid channelId) => $"{BaseUrl.TrimEnd('/')}/webhooks/woo/{channelId}";
 }
 
+/// <summary>Addresses for connecting a shop through its approval page (WooCommerce wc-auth, SPEC 7.1).</summary>
+/// <param name="CallbackBaseUrl">Where the shop sends the keys, as shops reach this application; WooCommerce requires https.</param>
+/// <param name="AppUrl">The address users open the application at; the shop sends them back there.</param>
+public record ShopAuthorizationSettings(string CallbackBaseUrl, string AppUrl)
+{
+    /// <summary>Shown to the shop owner on the approval page and in the name of the keys.</summary>
+    public const string AppName = "Lagerko";
+
+    /// <summary>The path is the callback controller's route.</summary>
+    public string WooCommerceCallbackUrl => $"{CallbackBaseUrl.TrimEnd('/')}/webhooks/woo/authorize";
+
+    public string ReturnUrl(Guid authorizationId) => $"{AppUrl.TrimEnd('/')}/channels?authorization={authorizationId}";
+}
+
 /// <summary>
 /// A product (or variation) as read from a shop, in plain values.
 /// </summary>

@@ -32,7 +32,9 @@ import type {
   ProductImportPreviewDto,
   ProductImportResultDto,
   ReplaceCredentialsRequest,
-  SalesChannelDto
+  SalesChannelDto,
+  ShopAuthorizationDto,
+  StartWooCommerceAuthorizationRequest
 } from '../model';
 
 import { customFetch } from '../../http';
@@ -326,6 +328,154 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getConnectWooCommerceMutationOptions(options), queryClient);
+    }
+    export const getStartWooCommerceAuthorizationUrl = () => {
+
+
+
+
+  return `/api/channels/woocommerce/authorizations`
+}
+
+export const startWooCommerceAuthorization = async (startWooCommerceAuthorizationRequest: StartWooCommerceAuthorizationRequest, options?: Parameters<typeof customFetch>[1]): Promise<ShopAuthorizationDto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ShopAuthorizationDto>(getStartWooCommerceAuthorizationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(startWooCommerceAuthorizationRequest)
+  }
+);}
+
+
+
+
+
+export const getStartWooCommerceAuthorizationMutationKey = () => ['startWooCommerceAuthorization'] as const;
+
+export const getStartWooCommerceAuthorizationMutationOptions = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startWooCommerceAuthorization>>, TError,StartWooCommerceAuthorizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startWooCommerceAuthorization>>, TError,StartWooCommerceAuthorizationMutationVariables, TContext> => {
+
+const mutationKey = getStartWooCommerceAuthorizationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startWooCommerceAuthorization>>, StartWooCommerceAuthorizationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  startWooCommerceAuthorization(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartWooCommerceAuthorizationMutationResult = NonNullable<Awaited<ReturnType<typeof startWooCommerceAuthorization>>>
+    export type StartWooCommerceAuthorizationMutationBody = BodyType<StartWooCommerceAuthorizationRequest>
+    export type StartWooCommerceAuthorizationMutationError = ErrorType<ApiProblemDetails | ProblemDetails>
+    export type StartWooCommerceAuthorizationMutationVariables = {data: BodyType<StartWooCommerceAuthorizationRequest>}
+
+    export const useStartWooCommerceAuthorization = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startWooCommerceAuthorization>>, TError,StartWooCommerceAuthorizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startWooCommerceAuthorization>>,
+        TError,
+        StartWooCommerceAuthorizationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartWooCommerceAuthorizationMutationOptions(options), queryClient);
+    }
+    export const getCompleteWooCommerceAuthorizationUrl = (id: string,) => {
+
+
+
+
+  return `/api/channels/woocommerce/authorizations/${id}/complete`
+}
+
+export const completeWooCommerceAuthorization = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<SalesChannelDto> => {
+
+  return customFetch<SalesChannelDto>(getCompleteWooCommerceAuthorizationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteWooCommerceAuthorizationMutationKey = () => ['completeWooCommerceAuthorization'] as const;
+
+export const getCompleteWooCommerceAuthorizationMutationOptions = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeWooCommerceAuthorization>>, TError,CompleteWooCommerceAuthorizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeWooCommerceAuthorization>>, TError,CompleteWooCommerceAuthorizationMutationVariables, TContext> => {
+
+const mutationKey = getCompleteWooCommerceAuthorizationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeWooCommerceAuthorization>>, CompleteWooCommerceAuthorizationMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  completeWooCommerceAuthorization(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteWooCommerceAuthorizationMutationResult = NonNullable<Awaited<ReturnType<typeof completeWooCommerceAuthorization>>>
+
+    export type CompleteWooCommerceAuthorizationMutationError = ErrorType<ApiProblemDetails | ProblemDetails>
+    export type CompleteWooCommerceAuthorizationMutationVariables = {id: string}
+
+    export const useCompleteWooCommerceAuthorization = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeWooCommerceAuthorization>>, TError,CompleteWooCommerceAuthorizationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeWooCommerceAuthorization>>,
+        TError,
+        CompleteWooCommerceAuthorizationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteWooCommerceAuthorizationMutationOptions(options), queryClient);
     }
     export const getCheckChannelUrl = (id: string,) => {
 

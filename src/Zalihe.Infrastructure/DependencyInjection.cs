@@ -78,6 +78,18 @@ public static class DependencyInjection
                 ? new WebhookSettings(baseUrl)
                 : throw new InvalidOperationException("Webhooks:BaseUrl must be set to the application's public address.");
         });
+        services.AddSingleton(sp =>
+        {
+            // WooCommerce sends the keys only to https. Usually the webhooks' address; locally it is set apart
+            // (Webhooks:AuthCallbackBaseUrl), because the test shop reaches the app over https only on another port.
+            var configuration = sp.GetRequiredService<IConfiguration>();
+            var callbackBaseUrl = configuration["Webhooks:AuthCallbackBaseUrl"] is { Length: > 0 } url ? url : configuration["Webhooks:BaseUrl"];
+            var appUrl = configuration["Email:AppUrl"];
+            return Uri.TryCreate(callbackBaseUrl, UriKind.Absolute, out var callback) && callback.Scheme == Uri.UriSchemeHttps
+                && Uri.TryCreate(appUrl, UriKind.Absolute, out _)
+                ? new ShopAuthorizationSettings(callbackBaseUrl!, appUrl!)
+                : throw new InvalidOperationException("Webhooks:BaseUrl (or Webhooks:AuthCallbackBaseUrl) must be an https address and Email:AppUrl the application's address.");
+        });
 
         // Background jobs in the application's own database. Long polling (LISTEN/NOTIFY) starts a new
         // job right away instead of on the next poll. The connection string is read lazily, like the DbContext's.

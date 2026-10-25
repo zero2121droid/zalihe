@@ -100,6 +100,7 @@ Posle v1 planirana je React Native (Expo) aplikacija koja koristi isti API. Zato
 ```bash
 docker compose up -d --wait                                # Postgres (localhost:5433), WordPress (localhost:8080), Mailpit (emailovi: localhost:8025)
 dotnet run --project src/Zalihe.Web --launch-profile http  # API na http://localhost:5131
+dotnet run --project src/Zalihe.Web --launch-profile https # isto, plus https://localhost:7135; potrebno za povezivanje prodavnice bez ključeva (wc-auth)
 cd src/web && npm run dev                                  # React na http://localhost:5173, /api ide na backend
 cd src/web && npm run dev:slow                             # isto, ali svaki API zahtev kasni 1,5 s (da se vide loaderi i animacije)
 cd src/web && npm run dev:https                            # https na https://<IP Mac-a>:5174 za proveru na telefonu (kamera radi samo na https); telefon jednom upozori na sertifikat

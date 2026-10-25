@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<StockLevel> StockLevels => Set<StockLevel>();
     public DbSet<SalesChannel> SalesChannels => Set<SalesChannel>();
+    public DbSet<ShopAuthorization> ShopAuthorizations => Set<ShopAuthorization>();
     public DbSet<ItemChannelMapping> ItemChannelMappings => Set<ItemChannelMapping>();
     public DbSet<ExternalOrder> ExternalOrders => Set<ExternalOrder>();
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
@@ -152,6 +153,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             channel.HasIndex(c => new { c.TenantId, c.Type }).IsUnique();
         });
 
+        builder.Entity<ShopAuthorization>(authorization =>
+        {
+            authorization.Property(a => a.Type).HasConversion<string>().HasMaxLength(32);
+            authorization.Property(a => a.BaseUrl).HasMaxLength(SalesChannel.BaseUrlMaxLength);
+            authorization.Property(a => a.TokenHash).HasMaxLength(64);
+            authorization.HasIndex(a => a.TokenHash).IsUnique();
+            authorization.HasIndex(a => a.TenantId);
+            authorization.HasOne<Tenant>().WithMany().HasForeignKey(a => a.TenantId).OnDelete(DeleteBehavior.Restrict);
+        });
+
         builder.Entity<ItemChannelMapping>(mapping =>
         {
             mapping.Property(m => m.ExternalId).HasMaxLength(ItemChannelMapping.ExternalIdMaxLength);
@@ -264,6 +275,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             .IgnoreQueryFilters()
             .Where(c => c.Id == channelId)
             .Select(c => (Guid?)c.TenantId)
+            .SingleOrDefaultAsync(ct);
+
+    public Task<Guid?> FindShopAuthorizationTenantAsync(string tokenHash, CancellationToken ct) =>
+        ShopAuthorizations
+            .IgnoreQueryFilters()
+            .Where(a => a.TokenHash == tokenHash)
+            .Select(a => (Guid?)a.TenantId)
             .SingleOrDefaultAsync(ct);
 
     public async Task<IReadOnlyList<ChannelOwner>> ListAllChannelsAsync(CancellationToken ct) =>

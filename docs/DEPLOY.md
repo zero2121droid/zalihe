@@ -119,7 +119,7 @@ Ono što lokalno ne može:
 - **Sertifikat:** Caddy dobija pravi Let's Encrypt sertifikat (DNS mora da pokazuje na server, a portovi 80 i 443 moraju biti otvoreni).
 - **Webhookovi:** iz prave WooCommerce prodavnice stižu preko interneta.
 - **Emailovi:** stižu u inbox, ne u spam (SPF, DKIM, DMARC).
-- **Prodavnica:** povezivanje preko wc-auth (posebna funkcija, posle postavljanja).
+- **Prodavnica:** povezivanje preko wc-auth (napravljeno i isprobano lokalno; na serveru proveriti sa pravim domenom i bar jednom prodavnicom sa sigurnosnim dodatkom).
 - **Backup:** noćni backup stvarno ide na drugo mesto, a vraćanje sa tog mesta je isprobano.
 
 ## 9. Postavljanje na server, korak po korak

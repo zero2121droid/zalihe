@@ -221,7 +221,9 @@
       "product_sku_too_long": "Šifra je duža od {{max}} znakova.",
       "product_sku_duplicate": "Više proizvoda u prodavnici ima ovu šifru. Šifra mora biti jedinstvena.",
       "product_item_linked": "Artikal sa ovom šifrom je već povezan sa drugim proizvodom iz prodavnice.",
-      "too_many_products": "Prodavnica ima više od {{max}} proizvoda, što uvoz za sada ne podržava."
+      "too_many_products": "Prodavnica ima više od {{max}} proizvoda, što uvoz za sada ne podržava.",
+      "authorization_pending": "Prodavnica još nije poslala ključeve. Odobri pristup u prodavnici, pa pokušaj ponovo.",
+      "authorization_expired": "Povezivanje je isteklo. Počni ispočetka."
     },
     "invitation": {
       "invalid": "Poziv ne važi: link je već iskorišćen, opozvan ili je istekao.",
@@ -536,8 +538,13 @@
     },
     "connect": {
       "title": "Poveži WooCommerce prodavnicu",
-      "intro": "Lagerko preko ključeva čita proizvode i porudžbine iz prodavnice i vraća stanje zaliha. Pre čuvanja proveravamo da li ključevi rade.",
-      "submit": "Poveži prodavnicu"
+      "intro": "Otvoriće se tvoja prodavnica, gde odobriš pristup Lagerku. Ključeve ne moraš da praviš ni da kopiraš.",
+      "submit": "Poveži prodavnicu",
+      "manual": "Unesi ključeve ručno",
+      "manualTitle": "Poveži prodavnicu ključevima",
+      "manualSubmit": "Poveži ključevima",
+      "back": "Poveži bez ključeva",
+      "manualIntro": "Lagerko preko ključeva čita proizvode i porudžbine iz prodavnice i vraća stanje zaliha. Pre čuvanja proveravamo da li ključevi rade."
     },
     "help": {
       "title": "Gde da nađem ključeve?",
@@ -545,6 +552,20 @@
       "step2": "Klikni „Dodaj ključ”, upiši opis (npr. Lagerko), izaberi svog korisnika i dozvole „Čitanje/Pisanje”.",
       "step3": "Klikni „Generiši API ključ” i ovde nalepi Consumer key i Consumer secret. Secret se u WooCommerce-u prikazuje samo jednom.",
       "safety": "Ključevi se čuvaju šifrovani i posle povezivanja se više nigde ne prikazuju. Možeš ih opozvati u WooCommerce-u u svakom trenutku."
+    },
+    "how": {
+      "title": "Kako povezivanje radi",
+      "step1": "Upiši adresu prodavnice i klikni „Poveži prodavnicu”.",
+      "step2": "U prodavnici se prijavi kao administrator i klikni „Odobri” (Approve). Lagerko traži dozvole za čitanje i pisanje: čita proizvode i porudžbine i upisuje stanje zaliha.",
+      "step3": "Prodavnica te vraća ovde, a Lagerko proveri vezu i podesi da porudžbine stižu same.",
+      "blocked": "Ako sigurnosni dodatak u prodavnici blokira povezivanje, ključeve možeš da napraviš u WooCommerce-u i uneseš ručno."
+    },
+    "authorization": {
+      "title": "Povezivanje prodavnice",
+      "connecting": "Proveravam vezu i povezujem prodavnicu…",
+      "denied": "Pristup nije odobren, pa prodavnica nije povezana. Možeš da pokušaš ponovo kad god hoćeš.",
+      "retry": "Pokušaj ponovo",
+      "restart": "Počni ispočetka"
     },
     "privacy": "Iz porudžbina Lagerko čita samo artikle, količine i status. Podatke kupaca (ime, adresu, telefon, email) ne preuzimamo i ne čuvamo.",
     "card": {

@@ -26,6 +26,11 @@ public record SalesChannelDto(
 /// <param name="PendingStock">Products whose new stock the shop doesn't have yet.</param>
 public record ChannelSummaryDto(int LinkedProducts, int OrdersWithUnlinked, DateTimeOffset? LastOrderAt, string? LastOrderNumber, int PendingStock);
 
+/// <summary>A started shop connection: the user is sent to <paramref name="AuthorizeUrl"/>, the shop's approval page.</summary>
+public record ShopAuthorizationDto(Guid Id, string AuthorizeUrl);
+
+public record ShopAuthorizationResult(ShopAuthorizationDto? Authorization, IReadOnlyList<AppError> Errors);
+
 public record ChannelResult(SalesChannelDto? Channel, IReadOnlyList<AppError> Errors, bool NotFound = false)
 {
     public bool Succeeded => Channel is not null;
@@ -46,6 +51,7 @@ public class ChannelService(
     ICredentialProtector protector,
     ISalesChannelFactory channels,
     WebhookSettings webhooks,
+    ShopAuthorizationSettings authorizationSettings,
     TimeProvider timeProvider)
 {
     public async Task<IReadOnlyList<SalesChannelDto>> ListAsync(CancellationToken ct) =>
@@ -87,6 +93,93 @@ public class ChannelService(
             return ChannelResult.Failed("channel.keys_invalid", "consumerKey");
         }
 
+        return await ConnectAsync(url, credentials, authorization: null, ct);
+    }
+
+    /// <summary>
+    /// Starts connecting a WooCommerce shop without copying keys (wc-auth, SPEC 7.1): the user approves
+    /// access on the shop's page, the shop sends the keys to <see cref="ReceiveWooCommerceKeysAsync"/> and
+    /// the user back to the application, which then calls <see cref="CompleteWooCommerceAuthorizationAsync"/>.
+    /// </summary>
+    public async Task<ShopAuthorizationResult> StartWooCommerceAuthorizationAsync(string baseUrl, CancellationToken ct)
+    {
+        if (SalesChannel.NormalizeBaseUrl(baseUrl) is not { } url)
+        {
+            return new(null, [new AppError("channel.url_invalid", "baseUrl")]);
+        }
+
+        if (await db.SalesChannels.AnyAsync(c => c.Type == SalesChannelType.WooCommerce, ct))
+        {
+            return new(null, [new AppError("channel.already_connected")]);
+        }
+
+        // Only the latest attempt counts; earlier ones, with any keys they received, are dropped.
+        await db.ShopAuthorizations.Where(a => a.Type == SalesChannelType.WooCommerce).ExecuteDeleteAsync(ct);
+
+        var token = ShopAuthorization.NewToken();
+        var authorization = new ShopAuthorization(tenant.TenantId, SalesChannelType.WooCommerce, url, token, timeProvider.GetUtcNow());
+        db.ShopAuthorizations.Add(authorization);
+        await db.SaveChangesAsync(ct);
+
+        // The token goes as WooCommerce's "user_id", which the shop sends back with the keys.
+        var authorizeUrl = $"{url}/wc-auth/v1/authorize"
+            + $"?app_name={Uri.EscapeDataString(ShopAuthorizationSettings.AppName)}"
+            + "&scope=read_write"
+            + $"&user_id={token}"
+            + $"&return_url={Uri.EscapeDataString(authorizationSettings.ReturnUrl(authorization.Id))}"
+            + $"&callback_url={Uri.EscapeDataString(authorizationSettings.WooCommerceCallbackUrl)}";
+        return new(new ShopAuthorizationDto(authorization.Id, authorizeUrl), []);
+    }
+
+    /// <summary>
+    /// Keeps the keys a shop sent after its owner approved access. The current company must be the
+    /// authorization's (see <see cref="IAppDbContext.FindShopAuthorizationTenantAsync"/>).
+    /// </summary>
+    /// <returns>
+    /// False when the token is unknown, the authorization expired or already has keys, or the keys don't
+    /// look like WooCommerce keys. The shop then shows its owner an error and deletes the keys.
+    /// </returns>
+    public async Task<bool> ReceiveWooCommerceKeysAsync(string token, string consumerKey, string consumerSecret, CancellationToken ct)
+    {
+        var hash = ShopAuthorization.HashToken(token);
+        var authorization = await db.ShopAuthorizations.SingleOrDefaultAsync(a => a.TokenHash == hash, ct);
+        var now = timeProvider.GetUtcNow();
+        if (authorization is null || !authorization.CanReceiveKeysAt(now) || ReadCredentials(consumerKey, consumerSecret) is not { } credentials)
+        {
+            return false;
+        }
+
+        authorization.ReceiveKeys(protector.Protect(JsonSerializer.Serialize(credentials)), now);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    /// <summary>
+    /// Saves the shop whose owner approved access, once its keys work, as with keys entered by hand.
+    /// When the shop rejects them the authorization stays, so the user can try again.
+    /// </summary>
+    public async Task<ChannelResult> CompleteWooCommerceAuthorizationAsync(Guid authorizationId, CancellationToken ct)
+    {
+        var authorization = await db.ShopAuthorizations.SingleOrDefaultAsync(a => a.Id == authorizationId, ct);
+        if (authorization is null)
+        {
+            return ChannelResult.Missing;
+        }
+
+        if (authorization.EncryptedCredentials is not { } encrypted)
+        {
+            return ChannelResult.Failed(timeProvider.GetUtcNow() >= authorization.ExpiresAt
+                ? "channel.authorization_expired"
+                : "channel.authorization_pending");
+        }
+
+        var credentials = JsonSerializer.Deserialize<WooCommerceCredentials>(protector.Unprotect(encrypted))!;
+        return await ConnectAsync(authorization.BaseUrl, credentials, authorization, ct);
+    }
+
+    /// <summary>Saves the shop as a channel if the keys work; a used <paramref name="authorization"/> goes in the same save.</summary>
+    private async Task<ChannelResult> ConnectAsync(string url, WooCommerceCredentials credentials, ShopAuthorization? authorization, CancellationToken ct)
+    {
         if (await db.SalesChannels.AnyAsync(c => c.Type == SalesChannelType.WooCommerce, ct))
         {
             return ChannelResult.Failed("channel.already_connected");
@@ -104,6 +197,7 @@ public class ChannelService(
         }
 
         db.SalesChannels.Add(channel);
+        if (authorization is not null) db.ShopAuthorizations.Remove(authorization);
         await db.SaveChangesAsync(ct);
         return new ChannelResult(ToDto(channel), []);
     }

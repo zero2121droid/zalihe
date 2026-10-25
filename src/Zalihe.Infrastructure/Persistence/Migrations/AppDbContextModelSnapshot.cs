@@ -261,6 +261,52 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.ToTable("SalesChannels");
                 });
 
+            modelBuilder.Entity("Zalihe.Domain.Channels.ShopAuthorization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BaseUrl")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedCredentials")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("KeysReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("ShopAuthorizations");
+                });
+
             modelBuilder.Entity("Zalihe.Domain.Channels.WebhookEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -828,6 +874,15 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("Zalihe.Domain.Channels.SalesChannel", b =>
+                {
+                    b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Channels.ShopAuthorization", b =>
                 {
                     b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
                         .WithMany()

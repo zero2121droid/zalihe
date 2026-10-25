@@ -38,6 +38,22 @@ public class AccountController(
         return await CurrentAsync(user, ct);
     }
 
+    /// <summary>
+    /// Whether employees see purchase prices (SPEC 11.2); it applies at their next request. Returns the
+    /// signed-in user with the new setting.
+    /// </summary>
+    [HttpPut("company/purchase-prices", Name = "UpdatePurchasePriceSetting")]
+    [Authorize(Policy = Policies.Admin)]
+    [ProducesResponseType<CurrentUserResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    public async Task<ActionResult<CurrentUserResponse>> UpdatePurchasePriceSetting(PurchasePriceSettingRequest request, CancellationToken ct)
+    {
+        if (await userManager.GetUserAsync(User) is not { } user) return Unauthorized();
+
+        await accountService.SetEmployeesSeePurchasePricesAsync(user, request.EmployeesSeePurchasePrices, ct);
+        return await CurrentAsync(user, ct);
+    }
+
     /// <summary>Changes the user's name and language; returns the updated user.</summary>
     [HttpPut("profile", Name = "UpdateProfile")]
     [ProducesResponseType<CurrentUserResponse>(StatusCodes.Status200OK)]
@@ -151,8 +167,7 @@ public class AccountController(
 
     private async Task<CurrentUserResponse> CurrentAsync(User user, CancellationToken ct)
     {
-        var tenant = await accountService.GetTenantAsync(user.TenantId, ct);
-        return new CurrentUserResponse(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name, user.Role);
+        return CurrentUserResponse.For(user, await accountService.GetTenantAsync(user.TenantId, ct));
     }
 
     private ObjectResult Failed(IReadOnlyList<AppError> errors) =>

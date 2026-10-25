@@ -193,7 +193,9 @@
     "item": {
       "sku_duplicate": "An item with this SKU already exists.",
       "image_too_large": "The picture is larger than {{maxMb}} MB.",
-      "image_unsupported": "The picture must be a JPEG, PNG or WebP."
+      "image_unsupported": "The picture must be a JPEG, PNG or WebP.",
+      "purchase_price_not_allowed": "An administrator or manager changes the purchase price.",
+      "sort_not_allowed": "Sorting by value is only for those who see purchase prices."
     },
     "stock": {
       "no_change": "The counted stock equals the current stock; there is nothing to correct."
@@ -764,7 +766,11 @@
       "roleHints": {
         "admin": "Everything, including users, roles, the company name and connecting the shop.",
         "manager": "Items, stock, imports, reports and purchase prices. Doesn't manage users or the shop.",
-        "employee": "Items, stock, movements (receipt, sale, return, count) and orders. No imports, reports or company settings."
+        "employee": "Items, stock, movements (receipt, sale, return, count) and orders; purchase prices only if you turn that on below. No imports, reports or company settings."
+      },
+      "purchasePrices": {
+        "label": "Employees see purchase prices",
+        "description": "On: employees see items' purchase prices and the stock value. Off: they see them nowhere, not even in an item's history. Administrators and managers always see them, and the change applies at once."
       }
     },
     "stockCheck": {

@@ -23,12 +23,13 @@ public class ItemsController(
     /// <summary>
     /// Items of the current company, paged, searchable by name, SKU or barcode.
     /// Deactivated items are left out unless <paramref name="includeInactive"/> is set;
-    /// <paramref name="status"/> keeps only items in that stock status.
+    /// <paramref name="status"/> keeps only items in that stock status. Sorting by value is refused
+    /// ("item.sort_not_allowed") for a user who may not see purchase prices.
     /// </summary>
     [HttpGet(Name = "ListItems")]
     [ProducesResponseType<PagedResult<ItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
-    public Task<PagedResult<ItemDto>> List(
+    public async Task<ActionResult<PagedResult<ItemDto>>> List(
         [FromQuery] string? search,
         [FromQuery] string? category,
         [FromQuery] bool includeInactive = false,
@@ -38,7 +39,10 @@ public class ItemsController(
         [FromQuery] ItemSort sort = ItemSort.Name,
         [FromQuery] SortDirection direction = SortDirection.Asc,
         CancellationToken ct = default) =>
-        itemService.ListAsync(new ItemListQuery(search, category, includeInactive, status, page, pageSize, sort, direction), ct);
+        await itemService.ListAsync(new ItemListQuery(search, category, includeInactive, status, page, pageSize, sort, direction), ct) is { } items
+            ? items
+            : ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed,
+                [new AppError(ItemService.SortNotAllowed, "sort")]);
 
     [HttpGet("{id:guid}", Name = "GetItem")]
     [ProducesResponseType<ItemDto>(StatusCodes.Status200OK)]

@@ -12,3 +12,13 @@ public enum UserRole
     /// <summary>Items, stock movements and orders.</summary>
     Employee,
 }
+
+public static class UserRoles
+{
+    /// <summary>
+    /// Whether this role sees purchase prices and what is computed from them (SPEC 11.2): admins and managers
+    /// always, employees when the company allows it (<see cref="Tenants.Tenant.EmployeesSeePurchasePrices"/>).
+    /// </summary>
+    public static bool SeesPurchasePrices(this UserRole role, bool employeesSeePurchasePrices) =>
+        role != UserRole.Employee || employeesSeePurchasePrices;
+}

@@ -15,6 +15,7 @@ import {
   useGetItemHistory,
 } from '../../api/generated/items/items'
 import type { ItemDto, ItemHistoryEntryDto, ItemHistoryFilter, ManualMovementKind } from '../../api/generated/model'
+import { usePermissions } from '../../auth/permissions'
 import { CopySku } from '../../components/CopySku'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { BoxLoader, SkeletonRows } from '../../components/loaders'
@@ -76,6 +77,7 @@ function BackLink() {
 
 function ItemDetail({ item }: { item: ItemDto }) {
   const { t, i18n } = useTranslation()
+  const showValue = usePermissions().seePurchasePrices
   const [movementKind, setMovementKind] = useState<ManualMovementKind | null>(null)
   const [editing, setEditing] = useState(false)
   const [undoing, setUndoing] = useState(false)
@@ -131,7 +133,7 @@ function ItemDetail({ item }: { item: ItemDto }) {
       {/* One strip divided by lines, not separate cards (DESIGN.md): the 1 px gaps show the line color. */}
       <SimpleGrid
         className="z-kpi"
-        cols={{ base: 2, md: 4 }}
+        cols={{ base: 2, md: showValue ? 4 : 3 }}
         spacing={1}
         verticalSpacing={1}
         bg="var(--z-line)"
@@ -149,20 +151,22 @@ function ItemDetail({ item }: { item: ItemDto }) {
         <Figure label={t('items.detail.sold30Days')}>
           <StockQuantity quantity={item.sold30Days} unit={item.unit} status="inStock" size={26} />
         </Figure>
-        <Figure label={t('items.detail.value')}>
-          {item.stockValue === null ? (
-            <Text c="dimmed" fz="sm">
-              {t('items.detail.noPrice')}
-            </Text>
-          ) : (
-            <Text ff="monospace" fz={26} fw={500} style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {formatMoney(item.stockValue, i18n.language)}{' '}
-              <Text component="span" fz={13} c="dimmed" fw={400}>
-                {t('common.currency')}
+        {showValue && (
+          <Figure label={t('items.detail.value')}>
+            {item.stockValue === null ? (
+              <Text c="dimmed" fz="sm">
+                {t('items.detail.noPrice')}
               </Text>
-            </Text>
-          )}
-        </Figure>
+            ) : (
+              <Text ff="monospace" fz={26} fw={500} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {formatMoney(item.stockValue, i18n.language)}{' '}
+                <Text component="span" fz={13} c="dimmed" fw={400}>
+                  {t('common.currency')}
+                </Text>
+              </Text>
+            )}
+          </Figure>
+        )}
       </SimpleGrid>
 
       <StockChart item={item} />

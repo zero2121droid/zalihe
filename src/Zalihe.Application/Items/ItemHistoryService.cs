@@ -41,8 +41,11 @@ public record ItemStockHistoryDto(DateTimeOffset From, DateTimeOffset To, decima
 /// Everything that happened to an item, newest first: its stock movements and its own changes,
 /// merged and paged in the database.
 /// </summary>
-public class ItemHistoryService(IAppDbContext db, IUserDirectory users, TimeProvider timeProvider)
+public class ItemHistoryService(IAppDbContext db, IUserDirectory users, PurchasePriceAccess prices, TimeProvider timeProvider)
 {
+    /// <summary>The field name of purchase price changes, as <see cref="Item.Update"/> records it.</summary>
+    private const string PurchasePriceField = "purchasePrice";
+
     /// <summary>
     /// The item's stock over the last <paramref name="days"/> days. Worked back from the current stock,
     /// which always equals the sum of all movements; null when there is no such item.
@@ -69,6 +72,10 @@ public class ItemHistoryService(IAppDbContext db, IUserDirectory users, TimeProv
         return new ItemStockHistoryDto(from, to, start, points);
     }
 
+    /// <summary>
+    /// A page of the item's history. A user who may not see purchase prices gets no purchase price
+    /// changes, and an edit that changed nothing else is left out of the page (the total still counts it).
+    /// </summary>
     public async Task<PagedResult<ItemHistoryEntryDto>?> GetAsync(
         Guid itemId, ItemHistoryFilter filter, int page, int pageSize, CancellationToken ct)
     {
@@ -109,6 +116,7 @@ public class ItemHistoryService(IAppDbContext db, IUserDirectory users, TimeProv
             .ToList();
         var names = userIds.Count == 0 ? new Dictionary<Guid, string>() : await users.GetNamesAsync(userIds, ct);
         string? NameOf(Guid? id) => id is { } value && names.TryGetValue(value, out var name) ? name : null;
+        var canSeePrices = await prices.CanSeeAsync(ct);
 
         var entries = pageKeys.Select(key =>
         {
@@ -120,9 +128,14 @@ public class ItemHistoryService(IAppDbContext db, IUserDirectory users, TimeProv
             }
 
             var c = changeRows[key.Id];
-            var fields = c.Changes.Select(f => new ItemFieldChangeDto(f.Field, f.OldValue, f.NewValue)).ToList();
-            return new ItemHistoryEntryDto(c.Id, c.OccurredAt, NameOf(c.UserId), null, new ItemChangeDto(c.Kind, fields));
-        }).ToList();
+            var fields = c.Changes
+                .Where(f => canSeePrices || f.Field != PurchasePriceField)
+                .Select(f => new ItemFieldChangeDto(f.Field, f.OldValue, f.NewValue))
+                .ToList();
+            return c.Kind == ItemChangeKind.Updated && fields.Count == 0
+                ? null
+                : new ItemHistoryEntryDto(c.Id, c.OccurredAt, NameOf(c.UserId), null, new ItemChangeDto(c.Kind, fields));
+        }).OfType<ItemHistoryEntryDto>().ToList();
 
         return new PagedResult<ItemHistoryEntryDto>(entries, totalCount, page, pageSize);
     }

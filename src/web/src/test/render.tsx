@@ -50,6 +50,8 @@ export const testUser = {
   tenantId: 't1',
   tenantName: 'Zrno',
   role: 'admin',
+  canSeePurchasePrices: true,
+  employeesSeePurchasePrices: false,
 } satisfies CurrentUserResponse
 
 /**

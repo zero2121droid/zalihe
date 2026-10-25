@@ -15,6 +15,7 @@ import {
   useUpdateItem,
 } from '../../api/generated/items/items'
 import { type ItemDto, Unit } from '../../api/generated/model'
+import { usePermissions } from '../../auth/permissions'
 import { DecimalInput } from '../../components/DecimalInput'
 import { SaveButton } from '../../components/feedback'
 import { formatDecimalInput, readDecimal } from '../../lib/format'
@@ -76,6 +77,7 @@ interface ItemModalProps {
  */
 export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalProps) {
   const { t, i18n } = useTranslation()
+  const can = usePermissions()
   const queryClient = useQueryClient()
   const [fields, setFields] = useState<Fields>(() => (item ? fieldsFrom(item, i18n.language) : emptyFields))
   const [localErrors, setLocalErrors] = useState<Partial<Record<keyof Fields, string>>>({})
@@ -248,14 +250,17 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
               error={errorFor('groupName')}
             />
 
-            <DecimalInput
-              label={t('items.form.purchasePrice')}
-              rightSection={currency}
-              rightSectionWidth={48}
-              value={fields.purchasePrice}
-              onChange={(value) => set('purchasePrice', value)}
-              error={errorFor('purchasePrice')}
-            />
+            {/* Left out for those who don't see purchase prices; the API keeps the item's price then. */}
+            {can.seePurchasePrices && (
+              <DecimalInput
+                label={t('items.form.purchasePrice')}
+                rightSection={currency}
+                rightSectionWidth={48}
+                value={fields.purchasePrice}
+                onChange={(value) => set('purchasePrice', value)}
+                error={errorFor('purchasePrice')}
+              />
+            )}
             <DecimalInput
               label={t('items.form.salePrice')}
               rightSection={currency}

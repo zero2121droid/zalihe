@@ -179,7 +179,7 @@ Promene stanja (npr. porudžbina iz WooCommerce-a) se odmah prikazuju na otvoren
 
 ### 11.2 Uloge korisnika — obavezno pre pozivanja zaposlenih
 
-**Stanje (oktobar 2026):** uloge i ko šta sme u API-ju su napravljeni. Postojeći korisnici i pozivi su pri uvođenju dobili ulogu admin, jer su do tada sve videli i smeli. Sakrivanje nabavnih cena (podešavanje ispod) je sledeći korak; do tada i zaposleni vide nabavne cene.
+**Stanje (oktobar 2026):** napravljeno, sa podešavanjem „Zaposleni vide nabavne cene”. Postojeći korisnici i pozivi su pri uvođenju dobili ulogu admin, jer su do tada sve videli i smeli. Izveštaji i uvozi su samo za admina i menadžera, koji cene vide uvek, pa se cene sakrivaju u artiklima (cena, vrednost, sortiranje po vrednosti, forma), istoriji artikla i na Početnoj. Izmena artikla od zaposlenog bez prava zadržava nabavnu cenu koju on ne vidi, a izmena istorije koja je menjala samo nabavnu cenu se izostavlja sa strane.
 Nabavna cena otkriva zaradu na svakom proizvodu, pa je ne sme videti svako ko radi u magacinu.
 
 | Uloga | Šta sme |

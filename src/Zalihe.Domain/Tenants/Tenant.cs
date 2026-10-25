@@ -9,6 +9,12 @@ public class Tenant
     public string Name { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>
+    /// Whether employees see purchase prices and what is computed from them (SPEC 11.2); admins and
+    /// managers always do. Off by default, so a careful owner is protected from the start.
+    /// </summary>
+    public bool EmployeesSeePurchasePrices { get; private set; }
+
     public Tenant(string name, DateTimeOffset createdAt)
     {
         Id = Guid.CreateVersion7();
@@ -18,6 +24,8 @@ public class Tenant
 
     /// <summary>Changes the company's name; the same rules apply as at registration.</summary>
     public void Rename(string name) => Name = ValidName(name);
+
+    public void SetEmployeesSeePurchasePrices(bool value) => EmployeesSeePurchasePrices = value;
 
     private static string ValidName(string name)
     {

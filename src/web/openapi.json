@@ -2701,6 +2701,76 @@
         }
       }
     },
+    "/api/account/company/purchase-prices": {
+      "put": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "UpdatePurchasePriceSetting",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchasePriceSettingRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchasePriceSettingRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchasePriceSettingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/account/profile": {
       "put": {
         "tags": [
@@ -3873,7 +3943,9 @@
           "language",
           "tenantId",
           "tenantName",
-          "role"
+          "role",
+          "canSeePurchasePrices",
+          "employeesSeePurchasePrices"
         ],
         "type": "object",
         "properties": {
@@ -3899,6 +3971,12 @@
           },
           "role": {
             "$ref": "#/components/schemas/UserRole"
+          },
+          "canSeePurchasePrices": {
+            "type": "boolean"
+          },
+          "employeesSeePurchasePrices": {
+            "type": "boolean"
           }
         }
       },
@@ -3916,7 +3994,10 @@
         "type": "object",
         "properties": {
           "stockValue": {
-            "type": "number",
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "activeItems": {
@@ -5210,6 +5291,17 @@
             "items": {
               "$ref": "#/components/schemas/FieldUpdateDto"
             }
+          }
+        }
+      },
+      "PurchasePriceSettingRequest": {
+        "required": [
+          "employeesSeePurchasePrices"
+        ],
+        "type": "object",
+        "properties": {
+          "employeesSeePurchasePrices": {
+            "type": "boolean"
           }
         }
       },

@@ -5,6 +5,8 @@ using Zalihe.Domain.Stock;
 
 namespace Zalihe.Application.Items;
 
+/// <param name="PurchasePrice">Null without one, and for a user who may not see purchase prices (<see cref="PurchasePriceAccess"/>).</param>
+/// <param name="StockValue">Stock (when positive) times purchase price; null without a purchase price, or when the user may not see it.</param>
 public record ItemDto(
     Guid Id,
     string Name,
@@ -19,7 +21,7 @@ public record ItemDto(
     bool IsActive,
     decimal Stock,
     StockStatus Status,
-    decimal? StockValue, // stock (when positive) times purchase price; null without a purchase price
+    decimal? StockValue,
     decimal Sold30Days, // quantity sold in the last 30 days, less returns
     string? ImageUrl, // the item's picture: the one the user added, else the linked shop's product image; null without one
     bool HasOwnImage); // whether ImageUrl is a picture the user added (it can be removed)
@@ -30,7 +32,10 @@ public enum ItemSort
     Name,
     Stock,
     Sold30Days,
-    /// <summary>Stock value at purchase price; items without a purchase price come last either way.</summary>
+    /// <summary>
+    /// Stock value at purchase price; items without a purchase price come last either way. Not for a user
+    /// who may not see purchase prices: the order alone would give them away.
+    /// </summary>
     Value,
 }
 
@@ -50,7 +55,10 @@ public record ItemListQuery(
     ItemSort Sort = ItemSort.Name,
     SortDirection Direction = SortDirection.Asc);
 
-/// <summary>Item data for both creating and updating an item.</summary>
+/// <summary>
+/// Item data for both creating and updating an item. A user who may not see purchase prices sends no
+/// purchase price; the item keeps the one it has.
+/// </summary>
 public record SaveItemCommand(
     string Name,
     string Sku,
@@ -73,10 +81,24 @@ public record SaveItemResult(ItemDto? Item, IReadOnlyList<AppError> Errors, bool
 /// Items of the current company. Tenant filtering is done by the global query filter,
 /// so no query here mentions TenantId.
 /// </summary>
-public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser currentUser, TimeProvider timeProvider)
+public class ItemService(
+    IAppDbContext db,
+    ITenantContext tenant,
+    ICurrentUser currentUser,
+    PurchasePriceAccess prices,
+    TimeProvider timeProvider)
 {
-    public async Task<PagedResult<ItemDto>> ListAsync(ItemListQuery query, CancellationToken ct)
+    public const string SortNotAllowed = "item.sort_not_allowed";
+
+    /// <summary>Null when the user may not sort as asked (by value without seeing purchase prices).</summary>
+    public async Task<PagedResult<ItemDto>?> ListAsync(ItemListQuery query, CancellationToken ct)
     {
+        var canSeePrices = await prices.CanSeeAsync(ct);
+        if (query.Sort == ItemSort.Value && !canSeePrices)
+        {
+            return null;
+        }
+
         var items = db.Items.AsNoTracking();
 
         if (!query.IncludeInactive)
@@ -117,13 +139,13 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
             .Take(query.PageSize)
             .ToListAsync(ct);
 
-        return new PagedResult<ItemDto>(page.Select(ToDto).ToList(), totalCount, query.Page, query.PageSize);
+        return new PagedResult<ItemDto>(page.Select(row => ToDto(row, canSeePrices)).ToList(), totalCount, query.Page, query.PageSize);
     }
 
     public async Task<ItemDto?> GetAsync(Guid id, CancellationToken ct)
     {
         var row = await WithStock(db.Items.AsNoTracking().Where(i => i.Id == id)).SingleOrDefaultAsync(ct);
-        return row is null ? null : ToDto(row);
+        return row is null ? null : ToDto(row, await prices.CanSeeAsync(ct));
     }
 
     /// <summary>Distinct categories in use, for suggestions in the item form.</summary>
@@ -179,6 +201,12 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
             return new SaveItemResult(null, errors);
         }
 
+        // Someone who doesn't see the purchase price can't have meant to remove it.
+        if (!await prices.CanSeeAsync(ct))
+        {
+            command = command with { PurchasePrice = item.PurchasePrice };
+        }
+
         var changes = item.Update(
             command.Name,
             command.Sku,
@@ -228,6 +256,11 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
     private async Task<List<AppError>> ValidateAsync(SaveItemCommand command, Guid? itemId, CancellationToken ct)
     {
         var errors = new List<AppError>();
+        if (command.PurchasePrice is not null && !await prices.CanSeeAsync(ct))
+        {
+            errors.Add(new AppError(PurchasePriceAccess.NotAllowed, "purchasePrice"));
+        }
+
         CheckDecimals(errors, command.MinStock, Item.QuantityDecimals, "minStock");
         CheckDecimals(errors, command.PurchasePrice, Item.MoneyDecimals, "purchasePrice");
         CheckDecimals(errors, command.SalePrice, Item.MoneyDecimals, "salePrice");
@@ -292,8 +325,7 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
 
     /// <summary>
     /// The list in the chosen order, ending in name, SKU and ID, so every page is the same each time
-    /// it's asked for. When roles come (SPEC 11.2), sorting by value is not allowed for an employee who
-    /// can't see purchase prices: the order alone would give the prices away.
+    /// it's asked for.
     /// An item whose whole SKU or barcode is <paramref name="exact"/> comes first in any order: a barcode
     /// scanner types the whole code, and that item must not drop off the page behind partial matches.
     /// </summary>
@@ -314,12 +346,13 @@ public class ItemService(IAppDbContext db, ITenantContext tenant, ICurrentUser c
         return sorted.ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Sku).ThenBy(r => r.Item.Id);
     }
 
-    private static ItemDto ToDto(ItemWithStock row)
+    private static ItemDto ToDto(ItemWithStock row, bool canSeePrices)
     {
         var i = row.Item;
-        var value = i.PurchasePrice is { } price ? decimal.Round(Math.Max(row.Stock, 0) * price, Item.MoneyDecimals) : (decimal?)null;
+        var purchasePrice = canSeePrices ? i.PurchasePrice : null;
+        var value = purchasePrice is { } price ? decimal.Round(Math.Max(row.Stock, 0) * price, Item.MoneyDecimals) : (decimal?)null;
         return new ItemDto(
-            i.Id, i.Name, i.Sku, i.Barcode, i.Unit, i.Category, i.GroupName, i.PurchasePrice, i.SalePrice,
+            i.Id, i.Name, i.Sku, i.Barcode, i.Unit, i.Category, i.GroupName, purchasePrice, i.SalePrice,
             i.MinStock, i.IsActive, row.Stock, StockStatusRules.For(row.Stock, i.MinStock), value,
             Math.Max(row.Sold30Days, 0), // a return of an older sale can outweigh the recent ones
             row.OwnImageAt is { } at ? OwnImageUrl(i.Id, at) : row.ShopImageUrl,

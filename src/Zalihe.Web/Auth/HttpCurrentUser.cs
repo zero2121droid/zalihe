@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Zalihe.Application.Common;
+using Zalihe.Domain.Users;
 
 namespace Zalihe.Web.Auth;
 
@@ -8,4 +9,7 @@ public class HttpCurrentUser(IHttpContextAccessor httpContextAccessor) : ICurren
 {
     public Guid? UserId =>
         Guid.TryParse(httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+
+    public UserRole? Role =>
+        Enum.TryParse<UserRole>(httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Role), out var role) ? role : null;
 }

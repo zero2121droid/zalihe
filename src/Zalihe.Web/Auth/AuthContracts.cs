@@ -40,7 +40,25 @@ public record ResetPasswordRequest(
     string NewPassword);
 
 /// <param name="Role">What the user may do; the client shows only what the role allows, the API enforces it.</param>
-public record CurrentUserResponse(Guid Id, string Name, string Email, string Language, Guid TenantId, string TenantName, UserRole Role);
+/// <param name="CanSeePurchasePrices">Whether the user sees purchase prices and stock value; the API leaves them out otherwise.</param>
+/// <param name="EmployeesSeePurchasePrices">The company's setting, which admins change.</param>
+public record CurrentUserResponse(
+    Guid Id,
+    string Name,
+    string Email,
+    string Language,
+    Guid TenantId,
+    string TenantName,
+    UserRole Role,
+    bool CanSeePurchasePrices,
+    bool EmployeesSeePurchasePrices)
+{
+    public static CurrentUserResponse For(User user, Tenant tenant) =>
+        new(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name, user.Role,
+            user.Role.SeesPurchasePrices(tenant.EmployeesSeePurchasePrices), tenant.EmployeesSeePurchasePrices);
+}
+
+public record PurchasePriceSettingRequest(bool EmployeesSeePurchasePrices);
 
 public record UpdateCompanyRequest(
     [Required(ErrorMessage = "validation.required")]

@@ -14,4 +14,6 @@ export interface CurrentUserResponse {
   tenantId: string;
   tenantName: string;
   role: UserRole;
+  canSeePurchasePrices: boolean;
+  employeesSeePurchasePrices: boolean;
 }

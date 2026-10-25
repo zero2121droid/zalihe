@@ -26,6 +26,9 @@ public interface IAppDbContext
     DbSet<WebhookEvent> WebhookEvents { get; }
     DbSet<LowStockAlert> LowStockAlerts { get; }
 
+    /// <summary>The current company's setting <see cref="Tenant.EmployeesSeePurchasePrices"/>.</summary>
+    Task<bool> EmployeesSeePurchasePricesAsync(CancellationToken ct);
+
     /// <summary>For explicit transactions, e.g. around locking stock.</summary>
     DatabaseFacade Database { get; }
 

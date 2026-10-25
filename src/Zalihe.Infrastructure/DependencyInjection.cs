@@ -41,6 +41,7 @@ public static class DependencyInjection
 
         services.AddScoped<AccountService>();
         services.AddScoped<InvitationService>();
+        services.AddScoped<PurchasePriceAccess>();
         services.AddScoped<ItemService>();
         services.AddScoped<ItemImageService>();
         services.AddScoped<ItemHistoryService>();

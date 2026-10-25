@@ -35,6 +35,7 @@ public class RoleTests(ZaliheApiFactory factory) : IDisposable
         { "POST", "/api/channels/woocommerce" },
         { "POST", "/api/channels/woocommerce/authorizations" },
         { "PUT", $"/api/account/users/{Guid.NewGuid()}/role" },
+        { "PUT", "/api/account/company/purchase-prices" },
     };
 
     /// <summary>Endpoints for admins and managers.</summary>

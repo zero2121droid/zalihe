@@ -205,6 +205,13 @@ public partial class AccountService(
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task SetEmployeesSeePurchasePricesAsync(User user, bool value, CancellationToken ct)
+    {
+        var tenant = await GetTenantAsync(user.TenantId, ct);
+        tenant.SetEmployeesSeePurchasePrices(value);
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>Changes the user's own name and UI language.</summary>
     public async Task<IReadOnlyList<AppError>> UpdateProfileAsync(User user, string name, string language)
     {

@@ -1,4 +1,4 @@
-import { Anchor, Box, Group, Select, Stack, Text, TextInput, Title } from '@mantine/core'
+import { Anchor, Box, Group, Select, Stack, Switch, Text, TextInput, Title } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { type SubmitEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +11,7 @@ import {
   useListCompanyUsers,
   useListInvitations,
   useRevokeInvitation,
+  useUpdatePurchasePriceSetting,
 } from '../../api/generated/account/account'
 import { getGetCurrentUserQueryKey } from '../../api/generated/auth/auth'
 import { type CompanyUserDto, type CurrentUserResponse, type InvitationDto, UserRole } from '../../api/generated/model'
@@ -72,9 +73,40 @@ export function UsersSection({ user }: { user: CurrentUserResponse }) {
           ))}
         </Stack>
 
+        <PurchasePriceSetting user={user} />
+
         <InviteForm />
       </Stack>
     </Box>
+  )
+}
+
+/** Whether employees see purchase prices; admins and managers always do (SPEC 11.2). */
+function PurchasePriceSetting({ user }: { user: CurrentUserResponse }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const update = useUpdatePurchasePriceSetting({
+    mutation: { onSuccess: (me) => queryClient.setQueryData(getGetCurrentUserQueryKey(), me) },
+  })
+  // Shows the new position while it is being saved.
+  const checked = update.isPending ? update.variables.data.employeesSeePurchasePrices : user.employeesSeePurchasePrices
+  const error = formErrorMessage(t, update.error)
+
+  return (
+    <Stack gap={4} py="sm" className={classes.row}>
+      <Switch
+        label={t('settings.users.purchasePrices.label')}
+        description={t('settings.users.purchasePrices.description')}
+        checked={checked}
+        disabled={update.isPending}
+        onChange={(e) => update.mutate({ data: { employeesSeePurchasePrices: e.currentTarget.checked } })}
+      />
+      {error && (
+        <Text role="alert" fz="xs" c="var(--mantine-color-error)">
+          {error}
+        </Text>
+      )}
+    </Stack>
   )
 }
 

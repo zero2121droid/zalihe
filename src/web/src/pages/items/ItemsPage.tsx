@@ -83,7 +83,11 @@ export function ItemsPage() {
     pageSize: parsePageSize(params.get('size')),
     showInactive: params.get('inactive') === '1',
     status: statusParam === 'low' || statusParam === 'outOfStock' ? statusParam : null,
-    sort: sortValues.includes(params.get('sort') ?? '') ? (params.get('sort') as ItemSort) : ItemSort.name,
+    // Sorting by value would give purchase prices away, so it is only for those who see them.
+    sort:
+      sortValues.includes(params.get('sort') ?? '') && (can.seePurchasePrices || params.get('sort') !== ItemSort.value)
+        ? (params.get('sort') as ItemSort)
+        : ItemSort.name,
     direction: params.get('dir') === SortDirection.desc ? SortDirection.desc : SortDirection.asc,
   }
   const update = (changes: Partial<ListState>, replace = false) =>
@@ -251,6 +255,7 @@ function ItemsTable({
 }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const showValue = usePermissions().seePurchasePrices
   const number = { ff: 'monospace', fz: 'sm', style: { fontVariantNumeric: 'tabular-nums' } } as const
   const table = useRef<HTMLTableElement>(null)
   useFlipRows(
@@ -278,9 +283,11 @@ function ItemsTable({
               <SortableTh column={ItemSort.sold30Days} sorting={sorting} right>
                 {t('items.columns.sold30Days')}
               </SortableTh>
-              <SortableTh column={ItemSort.value} sorting={sorting} right>
-                {t('items.columns.value')}
-              </SortableTh>
+              {showValue && (
+                <SortableTh column={ItemSort.value} sorting={sorting} right>
+                  {t('items.columns.value')}
+                </SortableTh>
+              )}
             </>
           )}
         </Table.Tr>
@@ -375,13 +382,15 @@ function ItemsTable({
                       <Text {...number}>{formatNumber(item.sold30Days, i18n.language)}</Text>
                     </SearchCell>
                   </Table.Td>
-                  <Table.Td ta="right">
-                    <SearchCell>
-                      <Text {...number} c="var(--z-text-2)">
-                        {item.stockValue === null ? '' : formatMoney(item.stockValue, i18n.language)}
-                      </Text>
-                    </SearchCell>
-                  </Table.Td>
+                  {showValue && (
+                    <Table.Td ta="right">
+                      <SearchCell>
+                        <Text {...number} c="var(--z-text-2)">
+                          {item.stockValue === null ? '' : formatMoney(item.stockValue, i18n.language)}
+                        </Text>
+                      </SearchCell>
+                    </Table.Td>
+                  )}
                 </>
               )}
             </SearchRow>

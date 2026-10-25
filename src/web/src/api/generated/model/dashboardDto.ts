@@ -9,7 +9,8 @@ import type { ReorderItemDto } from './reorderItemDto';
 import type { SetupDto } from './setupDto';
 
 export interface DashboardDto {
-  stockValue: number;
+  /** @nullable */
+  stockValue: number | null;
   activeItems: number;
   belowMinimum: number;
   outOfStock: number;

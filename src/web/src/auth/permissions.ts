@@ -1,4 +1,4 @@
-import type { UserRole } from '../api/generated/model'
+import type { CurrentUserResponse } from '../api/generated/model'
 import { useCurrentUser } from './useCurrentUser'
 
 export interface Permissions {
@@ -6,19 +6,23 @@ export interface Permissions {
   manageCompany: boolean
   /** Imports, reports, checking the shop and stock maintenance: admins and managers. */
   manage: boolean
+  /** Purchase prices and stock value: admins, managers, and employees when the company allows it. */
+  seePurchasePrices: boolean
 }
 
 /**
  * What a role may do (SPEC 11.2). The API enforces the same rules; the screens only leave out what it
  * would refuse.
  */
-export function permissionsFor(role: UserRole | undefined): Permissions {
+export function permissionsFor(user: Pick<CurrentUserResponse, 'role' | 'canSeePurchasePrices'> | undefined): Permissions {
+  const role = user?.role
   return {
     manageCompany: role === 'admin',
     manage: role === 'admin' || role === 'manager',
+    seePurchasePrices: user?.canSeePurchasePrices ?? false,
   }
 }
 
 export function usePermissions(): Permissions {
-  return permissionsFor(useCurrentUser().user?.role)
+  return permissionsFor(useCurrentUser().user)
 }

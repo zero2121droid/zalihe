@@ -1,9 +1,14 @@
+using Zalihe.Domain.Users;
+
 namespace Zalihe.Application.Common;
 
 /// <summary>The signed-in user of the current request; null for webhooks and background jobs.</summary>
 public interface ICurrentUser
 {
     Guid? UserId { get; }
+
+    /// <summary>From the sign-in cookie (or token); null without a signed-in user.</summary>
+    UserRole? Role { get; }
 }
 
 /// <summary>Display names of users, e.g. "who entered this movement".</summary>

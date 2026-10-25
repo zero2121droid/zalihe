@@ -25,10 +25,13 @@ public record RecentMovementDto(
 /// <param name="HasShop">A shop is connected; optional, a company without a web shop works by hand or CSV.</param>
 public record SetupDto(bool HasItems, bool HasMinStock, bool HasShop);
 
-/// <param name="StockValue">Value of active items at purchase price (only positive stock with a price counts).</param>
+/// <param name="StockValue">
+/// Value of active items at purchase price (only positive stock with a price counts); null for a user who
+/// may not see purchase prices.
+/// </param>
 /// <param name="OrdersWithUnlinked">Orders from shops whose products took no stock because they aren't linked yet.</param>
 public record DashboardDto(
-    decimal StockValue,
+    decimal? StockValue,
     int ActiveItems,
     int BelowMinimum,
     int OutOfStock,
@@ -38,7 +41,7 @@ public record DashboardDto(
     SetupDto Setup);
 
 /// <summary>The home screen overview of the current company, in a handful of queries.</summary>
-public class DashboardService(IAppDbContext db)
+public class DashboardService(IAppDbContext db, PurchasePriceAccess prices)
 {
     public const int ReorderCount = 5;
     public const int RecentMovementCount = 6;
@@ -54,9 +57,11 @@ public class DashboardService(IAppDbContext db)
         var activeItems = await active.CountAsync(ct);
         var outOfStock = await active.CountAsync(a => a.Stock <= 0, ct);
         var belowMinimum = await active.CountAsync(a => a.Stock > 0 && a.Stock <= a.MinStock, ct);
-        var stockValue = await active
-            .Where(a => a.PurchasePrice != null && a.Stock > 0)
-            .SumAsync(a => a.Stock * a.PurchasePrice!.Value, ct);
+        decimal? stockValue = await prices.CanSeeAsync(ct)
+            ? decimal.Round(await active
+                .Where(a => a.PurchasePrice != null && a.Stock > 0)
+                .SumAsync(a => a.Stock * a.PurchasePrice!.Value, ct), Item.MoneyDecimals)
+            : null;
 
         // Most urgent first: out of stock, then the lowest share of the minimum that is left.
         var reorderRows = await active
@@ -87,6 +92,6 @@ public class DashboardService(IAppDbContext db)
         var ordersWithUnlinked = await db.ExternalOrders.WithUnlinkedLines(db).CountAsync(ct);
 
         return new DashboardDto(
-            decimal.Round(stockValue, Item.MoneyDecimals), activeItems, belowMinimum, outOfStock, reorder, recent, ordersWithUnlinked, setup);
+            stockValue, activeItems, belowMinimum, outOfStock, reorder, recent, ordersWithUnlinked, setup);
     }
 }

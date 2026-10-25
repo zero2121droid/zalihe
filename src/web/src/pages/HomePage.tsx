@@ -51,8 +51,10 @@ export function HomePage() {
 function Overview({ data }: { data: DashboardDto }) {
   const { t, i18n } = useTranslation()
   const number = (value: number) => formatNumber(value, i18n.language)
+  // Null for those who may not see purchase prices: the figure is left out.
+  const showValue = data.stockValue !== null
   // The figures count up from 0 when the screen opens.
-  const stockValue = useAnimatedNumber(data.stockValue, 0)
+  const stockValue = useAnimatedNumber(data.stockValue ?? 0, 0)
   const activeItems = useAnimatedNumber(data.activeItems, 0)
   const belowMinimum = useAnimatedNumber(data.belowMinimum, 0)
   const outOfStock = useAnimatedNumber(data.outOfStock, 0)
@@ -64,19 +66,21 @@ function Overview({ data }: { data: DashboardDto }) {
         component="section"
         aria-label={t('home.title')}
         className="z-kpi"
-        cols={{ base: 2, md: 4 }}
+        cols={{ base: 2, md: showValue ? 4 : 3 }}
         spacing={1}
         verticalSpacing={1}
         bg="var(--z-line)"
         bd="1px solid var(--z-line)"
         style={{ ...sectionStyle, overflow: 'hidden' }}
       >
-        <Figure label={t('home.figures.stockValue')} hint={t('home.figures.stockValueHint')}>
-          {formatMoney(stockValue, i18n.language)}{' '}
-          <Text component="span" fz={13} c="dimmed" fw={400}>
-            {t('common.currency')}
-          </Text>
-        </Figure>
+        {showValue && (
+          <Figure label={t('home.figures.stockValue')} hint={t('home.figures.stockValueHint')}>
+            {formatMoney(stockValue, i18n.language)}{' '}
+            <Text component="span" fz={13} c="dimmed" fw={400}>
+              {t('common.currency')}
+            </Text>
+          </Figure>
+        )}
         <Figure label={t('home.figures.activeItems')} hint={t('home.figures.activeItemsHint')}>
           {number(activeItems)}
         </Figure>

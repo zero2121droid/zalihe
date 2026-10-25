@@ -77,6 +77,7 @@ export * from './productToCreateDto';
 export * from './productToLinkDto';
 export * from './productUpdateChoice';
 export * from './productUpdateDto';
+export * from './purchasePriceSettingRequest';
 export * from './recentMovementDto';
 export * from './recordMovementRequest';
 export * from './recordMovementResponse';

@@ -1,7 +1,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { mockFetch, renderPage } from '../../test/render'
+import { mockApi, renderPage, testUser } from '../../test/render'
 import { ItemModal } from './ItemModal'
 
 const createdItem = {
@@ -18,7 +18,9 @@ const createdItem = {
   isActive: true,
 }
 
-function bodyOf(fetchMock: ReturnType<typeof mockFetch>, url: string) {
+const categories = { 'GET /api/items/categories': { status: 200, body: [] } }
+
+function bodyOf(fetchMock: ReturnType<typeof mockApi>, url: string) {
   const call = fetchMock.mock.calls.find(([u, init]) => u === url && init?.method === 'POST')
   return JSON.parse(call?.[1]?.body as string)
 }
@@ -26,7 +28,7 @@ function bodyOf(fetchMock: ReturnType<typeof mockFetch>, url: string) {
 describe('ItemModal', () => {
   it('Submit_DecimalsWithComma_SendsNumbers', async () => {
     // Arrange
-    const fetchMock = mockFetch({ status: 200, body: [] }, { status: 201, body: createdItem })
+    const fetchMock = mockApi({ ...categories, 'POST /api/items': { status: 201, body: createdItem } })
     await renderPage(<ItemModal opened onClose={() => {}} />)
 
     // Act
@@ -36,7 +38,7 @@ describe('ItemModal', () => {
     await userEvent.click(screen.getByLabelText(/^Šifra/))
     await userEvent.paste('KF-ESP-1000')
     await userEvent.type(screen.getByLabelText('Minimalna zaliha'), '12,5')
-    await userEvent.type(screen.getByLabelText('Nabavna cena'), '2.000,00')
+    await userEvent.type(await screen.findByLabelText('Nabavna cena'), '2.000,00')
     await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj artikal' }))
 
     // Assert
@@ -56,7 +58,7 @@ describe('ItemModal', () => {
 
   it('Submit_TextInNumberField_ShowsErrorWithoutCallingApi', async () => {
     // Arrange
-    const fetchMock = mockFetch({ status: 200, body: [] })
+    const fetchMock = mockApi(categories)
     await renderPage(<ItemModal opened onClose={() => {}} />)
 
     // Act
@@ -70,13 +72,13 @@ describe('ItemModal', () => {
 
   it('Submit_DuplicateSku_ShowsErrorUnderSku', async () => {
     // Arrange
-    mockFetch(
-      { status: 200, body: [] },
-      {
+    mockApi({
+      ...categories,
+      'POST /api/items': {
         status: 400,
         body: { status: 400, code: 'validation.failed', errors: [{ code: 'item.sku_duplicate', field: 'sku' }] },
       },
-    )
+    })
     await renderPage(<ItemModal opened onClose={() => {}} />)
 
     // Act
@@ -91,7 +93,7 @@ describe('ItemModal', () => {
 
   it('Open_ExistingItem_ShowsItsDataWithLocalDecimals', async () => {
     // Arrange
-    mockFetch({ status: 200, body: [] })
+    mockApi(categories)
 
     // Act
     await renderPage(<ItemModal opened onClose={() => {}} item={createdItem as never} />)
@@ -100,12 +102,12 @@ describe('ItemModal', () => {
     expect(screen.getByText('Izmena artikla')).toBeInTheDocument()
     expect(screen.getByLabelText(/^Naziv/)).toHaveValue('Espresso mešavina')
     expect(screen.getByLabelText('Minimalna zaliha')).toHaveValue('12,5')
-    expect(screen.getByLabelText('Nabavna cena')).toHaveValue('2000')
+    expect(await screen.findByLabelText('Nabavna cena')).toHaveValue('2000')
   })
 
   it('Submit_ExistingItem_SendsPutForThatItem', async () => {
     // Arrange
-    const fetchMock = mockFetch({ status: 200, body: [] }, { status: 200, body: createdItem })
+    const fetchMock = mockApi({ ...categories, 'PUT /api/items/1': { status: 200, body: createdItem } })
     await renderPage(<ItemModal opened onClose={() => {}} item={createdItem as never} />)
 
     // Act
@@ -122,7 +124,7 @@ describe('ItemModal', () => {
 
   it('Deactivate_ActiveItem_CallsDeactivateAndCloses', async () => {
     // Arrange
-    const fetchMock = mockFetch({ status: 200, body: [] }, { status: 204 })
+    const fetchMock = mockApi({ ...categories, 'POST /api/items/1/deactivate': { status: 204 } })
     let closed = false
     await renderPage(<ItemModal opened onClose={() => (closed = true)} item={createdItem as never} />)
 
@@ -136,7 +138,7 @@ describe('ItemModal', () => {
 
   it('Open_InactiveItem_OffersActivateAndExplains', async () => {
     // Arrange
-    mockFetch({ status: 200, body: [] })
+    mockApi(categories)
 
     // Act
     await renderPage(<ItemModal opened onClose={() => {}} item={{ ...createdItem, isActive: false } as never} />)
@@ -144,5 +146,21 @@ describe('ItemModal', () => {
     // Assert
     expect(screen.getByRole('button', { name: 'Aktiviraj' })).toBeInTheDocument()
     expect(screen.getByText(/Artikal je neaktivan/)).toBeInTheDocument()
+  })
+
+  it('Open_EmployeeWithoutPrices_LeavesOutPurchasePrice', async () => {
+    // Arrange
+    const fetchMock = mockApi({
+      ...categories,
+      'GET /api/auth/me': { status: 200, body: { ...testUser, role: 'employee', canSeePurchasePrices: false } },
+    })
+
+    // Act
+    await renderPage(<ItemModal opened onClose={() => {}} item={{ ...createdItem, purchasePrice: null } as never} />)
+
+    // Assert: once the user is known.
+    await waitFor(() => expect(fetchMock.mock.results.some((r, i) => fetchMock.mock.calls[i][0] === '/api/auth/me' && r.type === 'return')).toBe(true))
+    await screen.findByLabelText('Prodajna cena')
+    expect(screen.queryByLabelText('Nabavna cena')).not.toBeInTheDocument()
   })
 })

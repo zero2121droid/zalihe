@@ -272,6 +272,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         return await ExternalOrders.Include(o => o.Lines).SingleAsync(o => o.Id == id, ct);
     }
 
+    public Task<bool> EmployeesSeePurchasePricesAsync(CancellationToken ct) =>
+        Tenants.Where(t => t.Id == CurrentTenantId).Select(t => t.EmployeesSeePurchasePrices).SingleAsync(ct);
+
     public Task<Guid?> FindChannelTenantAsync(Guid channelId, CancellationToken ct) =>
         SalesChannels
             .IgnoreQueryFilters()

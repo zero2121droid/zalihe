@@ -7,6 +7,9 @@ Beleška za postavljanje Zaliha na pravi server. Cene i dostupnost su provereni 
 Jedan VPS na kome rade aplikacija (ASP.NET Core sa React buildom), PostgreSQL, Hangfire (u istom procesu kao aplikacija) i Caddy (HTTPS).
 
 - **2 vCPU, 4 GB RAM, 40+ GB disk.** 2 GB je tesno za .NET i Postgres zajedno.
+- U radu Lagerko troši oko 1–1,5 GB (sistem i Docker ~0,4, aplikacija ~0,2–0,4, Postgres ~0,3–0,6, Caddy ~0,05). Procena, izmeriti na serveru sa `docker stats`.
+- `deploy.sh` pravi image na samom serveru, dok stara verzija radi. Build (.NET i Vite) traži još 1,5–2 GB dok traje.
+- Broj klijenata nije ograničenje: i nekoliko stotina malih webshopova je malo opterećenje (webhook po porudžbini, povremeno slanje stanja).
 - **Lokacija u EU** (GDPR, blizina Srbije), ne SAD.
 - **Ubuntu 24.04 LTS.**
 - x86 ili ARM, svejedno: .NET i Postgres rade na oba, Docker image se pravi za izabrani.
@@ -15,7 +18,7 @@ Jedan VPS na kome rade aplikacija (ASP.NET Core sa React buildom), PostgreSQL, H
 
 | Provajder | Plan | Okvirna cena | Napomena |
 |---|---|---|---|
-| **netcup** (prvi izbor) | vServer (x86), plan sa 4 GB (npr. „VPS 500”) | ~6 €/mes. | Dobar odnos cene i pouzdanosti. Lokacija Nirnberg ili Beč. Proveriti trajanje ugovora („Vertragslaufzeit”): neki planovi traže 12 meseci ili naplaćuju naknadu za mesečni ugovor. |
+| **netcup** (prvi izbor) | vServer (x86), „VPS 500 G12.5” (2 vCore, 4 GB, 64 GB SSD) | 7,98 €/mes. (31. 10. 2026) | Dobar odnos cene i pouzdanosti. Lokacija Nirnberg ili Beč. Ugovor na mesec dana. |
 | **OVHcloud** | VPS-1 (2 vCore, 4 GB, 40 GB NVMe) | ~4,5–5 $/mes. | Dnevni backup servera uključen. Lokacija u EU. |
 | **Hetzner** | CX23 | ~5,5–6 €/mes. | Najbolji panel, ali 2026. dva puta poskupeo, a najjeftiniji planovi su od oktobra često „not available”. Uzeti samo ako može da se naruči. |
 | Contabo | — | — | Ne za produkciju: deljeni procesor jako varira, spora podrška. |
@@ -25,6 +28,16 @@ Na netcup sajtu:
 - **vServer (x86)** je pravi izbor.
 - **Root-Server** ima procesor samo za tebe, pa je potreban tek kad bude puno korisnika. Na njega se lako pređe kasnije.
 - **Webhosting** je deljeni PHP hosting i na njemu ne rade Docker, .NET ni Postgres.
+
+Koji netcup plan (cene od 31. 10. 2026, ugovor na mesec dana):
+
+| Plan | Cena | Kada |
+|---|---|---|
+| VPS 500 G12.5 (2 vCore, 4 GB, 64 GB) | 7,98 € | samo Lagerko, ili Lagerko i još jedna mala aplikacija |
+| VPS 1000 G12.5 (4 vCore, 8 GB, 128 GB) | 14,01 € | kad druga aplikacija sigurno dolazi; staje 4–6 sličnih aplikacija (tačka 11) |
+| VPS 2000 G12.5 (8 vCore, 16 GB, 256 GB) | 26,01 € | ne treba u prvoj godini |
+
+Krenuti od VPS 500 i preći na veći kad zatreba: ugovor je mesečni.
 
 „0% VAT” je u redu, jer Srbija nije u EU.
 
@@ -148,6 +161,13 @@ sudo usermod -aG docker zalihe
 sudo apt install unattended-upgrades
 ```
 
+Swap od 2 GB, da build pri deployu ne ostane bez memorije (tačka 1):
+
+```bash
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
 **4. Kod.**
 
 1. Na serveru napraviti SSH ključ: `ssh-keygen -t ed25519`.
@@ -199,3 +219,20 @@ Ovo treba uraditi jednom pre prvog pravog korisnika, i ponoviti s vremena na vre
 6. Doterivanje, pa prvi pravi korisnik
 
 Server može prvo da radi kao probna verzija bez pravih korisnika. Postaviti aplikaciju ne znači pustiti je ljudima.
+
+## 11. Više aplikacija na istom serveru (kasnije)
+
+Do druge aplikacije sve ostaje kao u tačkama 1–10. Ovo se radi tek kad druga aplikacija stvarno krene, redom:
+
+1. **Veći server, ako treba.** Pre svake nove aplikacije pogledati `docker stats` i `free -h`: posle deploya mora ostati bar 1 GB slobodno. Ako ne ostaje, preći na VPS 1000 (tačka 2).
+2. **Jedan Caddy za sve.** Caddy se izdvaja iz `deploy/docker-compose.yml` u poseban compose (npr. `~/proxy`), sa zajedničkom Docker mrežom (npr. `web`).
+   - Svaka aplikacija se priključuje toj mreži, pod jedinstvenim imenom (npr. `zalihe-app`).
+   - Caddyfile ima po jedan blok za svaki domen (`app.zalihe.rs { reverse_proxy zalihe-app:8080 }`).
+   - Samo taj Caddy objavljuje portove 80 i 443.
+3. **Jedan Postgres za sve.** Svaka aplikacija dobija svoju bazu i svog korisnika, sa lozinkom samo za tu bazu. Tako se štedi ~0,5 GB po aplikaciji. Nadogradnja Postgresa tada pogađa sve aplikacije odjednom, pa se radi posle backupa.
+4. **Ograničenje memorije po kontejneru.** U compose-u `mem_limit` za svaku aplikaciju (npr. `512m` za Lagerko), da jedna aplikacija ne uzme memoriju drugima. Za .NET aplikacije i `DOTNET_gcServer: "0"`, jer Server GC troši više memorije nego što maloj aplikaciji treba. .NET sam poštuje `mem_limit`.
+5. **Build van servera.** GitHub Actions pravi image i šalje ga na `ghcr.io`, a `deploy.sh` umesto builda radi `docker compose pull`. Tako nestaje skok od 1,5–2 GB pri deployu. Potrebno kad je na serveru više od dve aplikacije, ili ranije ako deploy počne da puca zbog memorije.
+6. **Backup svake baze.** `backup.sh` i `restore.sh` sada znaju samo za bazu `zalihe` i njene ključeve. Proširiti ih na sve baze (i ključeve svake aplikacije koja ih ima), pa isprobati vraćanje za svaku.
+7. **Praćenje svake aplikacije.** Poseban uptime monitor za `/health` svake aplikacije.
+
+Rizik: kad server padne, padaju sve aplikacije zajedno. Zato je backup na drugom mestu (tačka 5) obavezan za svaku.

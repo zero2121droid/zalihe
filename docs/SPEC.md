@@ -6,6 +6,11 @@ Vlasnik malog webshopa ili firme u svakom trenutku zna koliko čega ima, ne prod
 
 **Ciljni korisnici v1:** mali webshopovi na WooCommerce-u sa sopstvenim magacinom (Srbija i region). Jezgro aplikacije je generičko, pa je mogu koristiti i firme bez webshopa, preko ručnog unosa i CSV uvoza, ali marketing u prvoj fazi cilja webshopove.
 
+**Pozicioniranje:** WooCommerce sam vodi jedan broj po proizvodu i smanjuje ga kad stigne porudžbina. Lagerko zna koliko robe firma stvarno ima, gde je otišla i šta treba naručiti, gde god da prodaje (sajt, Instagram, telefon, lokal). WooCommerce dovodi korisnike, a ostalo ih zadržava:
+- **WooCommerce je ulaz.** Takve firme se lako nalaze, a povezivanje i uvoz za par minuta odmah pokazuju vrednost. Bez sinhronizacije aplikacija je samo bolji Excel.
+- **Vrednost je van prodavnice.** Prodaja van sajta, prijem i popis, istorija svake promene, zaposleni bez pristupa wp-adminu i izveštaji za naručivanje. Poruka u marketingu je „znaš koliko robe stvarno imaš”, a ne „sinhronizacija sa WooCommerce-om”.
+- **Ko nije kupac:** mala prodavnica koja prodaje samo preko sajta i gde vlasnik sve radi sam; njoj je WooCommerce dovoljan. Kupac ima stotine artikala (sa varijacijama), prodaje i van sajta, redovno prima robu, ima zaposlene i danas vodi Excel pored WooCommerce-a.
+
 **Rok:** prvi pravi korisnik za oko 10 nedelja (10-20h nedeljno).
 
 ## 2. Obim v1
@@ -169,6 +174,13 @@ Docker Compose sa servisima: PostgreSQL, WordPress + WooCommerce (+ MariaDB). Wo
 
 ## 11. Posle v1 (samo za orijentaciju)
 
+**Redosled.** Prema pozicioniranju (1), posle 11.1 prednost imaju funkcionalnosti van prodavnice, a ne dublja integracija ili novi kanali:
+1. ručne porudžbine (11.5);
+2. brži prijem i popis, zatim prijem sa fakture (11.7);
+3. mobilna aplikacija za magacin, sa skeniranjem barkoda (11.3).
+
+Shopify i drugi kanali (11.6) čekaju. Firme bez webshopa mogu da koriste aplikaciju, ali se marketingom ne ciljaju dok se osnovna grupa ne potvrdi.
+
 ### 11.1 Obaveštenja u realnom vremenu (SignalR) — prva stavka posle v1
 Promene stanja (npr. porudžbina iz WooCommerce-a) se odmah prikazuju na otvorenim ekranima, bez osvežavanja.
 - Hub sa grupama po `TenantId`, uz proveru pripadnosti firmi pri povezivanju
@@ -198,7 +210,7 @@ Nabavna cena otkriva zaradu na svakom proizvodu, pa je ne sme videti svako ko ra
 - Integracioni testovi za svaku ulogu i oba položaja podešavanja: zaposleni bez prava ne dobija nabavnu cenu ni vrednost ni iz jednog endpointa, a posle uključivanja ih dobija bez ponovne prijave.
 
 ### 11.3 Mobilna aplikacija (React Native, Expo)
-Namena: rad u magacinu, odnosno prijem robe, popis i skeniranje barkoda kamerom telefona.
+Namena: rad u magacinu, odnosno prijem robe, popis i skeniranje barkoda kamerom telefona. Prijem sa fakture (11.7) radi preko istog API-ja, pa se faktura može uslikati i telefonom.
 - Koristi isti API i isti generisani TypeScript klijent kao web
 - Autentifikacija preko bearer tokena (ASP.NET Core Identity API endpointi, access + refresh token), paralelno sa cookie-jem za web
 - Tokeni se čuvaju u sigurnom skladištu uređaja (`expo-secure-store`), nikad u `AsyncStorage`-u
@@ -226,3 +238,74 @@ Za prodaju van prodavnice (Instagram, telefon, radnja), da firma ima pregled svi
 
 ### 11.6 Ostalo
 Shopify, porudžbenice dobavljačima, više magacina, naplata pretplate, SEF/e-fakture za B2B distributere.
+
+### 11.7 Prijem robe sa fakture (AI)
+Prijem sa fakture od 30 stavki danas znači 30 puta otvoriti artikal i upisati količinu. Cilj: korisnik slika ili otpremi fakturu, a aplikacija popuni prijem koji on samo proveri i potvrdi. Nije „AI predviđanje” iz 2.8, ali je nov obim, pa ide posle v1 (faza 0 može i ranije, kao posebna odluka).
+
+Osnovno pravilo: AI nikad ne pravi kretanja zaliha. On samo popunjava **nacrt prijema**, a kretanja nastaju tek kad čovek potvrdi.
+
+```
+ ručni unos ────────────►┐
+                         ├─► nacrt prijema ──potvrda──► N × StockMovement(Receipt) u jednoj transakciji
+ slika / PDF ──AI──────►┘    (dobavljač, br. dokumenta,   (čovek)   + StockLevel + slanje stanja u prodavnicu (7.5)
+                              datum, stavke)
+```
+
+#### Faza 0: prijem sa više stavki (bez AI-ja)
+- Ekran „Prijem robe”: dobavljač (slobodan tekst), broj fakture ili otpremnice, datum, stavke (artikal, količina, opciono nabavna cena).
+- Potvrda pravi sva `Receipt` kretanja u jednoj transakciji, sa `ExternalRef` = broj dokumenta. Proknjižen prijem se ne menja; greška se ispravlja korekcijom, kao i svako kretanje.
+- Nabavna cena sa prijema se nudi kao nova cena artikla i primenjuje samo ako je korisnik izabere (isti obrazac kao razlike pri uvozu iz prodavnice, 2.4).
+- Isti dobavljač i isti broj dokumenta drugi put: upozorenje (`receipt.duplicate_document`), uz mogućnost da se ipak nastavi.
+- Uloge (11.2): prijem sme svako ko sme kretanja. Zaposleni bez prava na nabavne cene ne vidi cene ni na prijemu, a API ih ne vraća i ne prima od njega; cene kasnije dopunjuje admin ili menadžer.
+
+#### Faza 1: AI čita fakturu
+```
+ web / telefon        API                       Hangfire posao                 Claude API
+ slika ili PDF ─POST─► nacrt, status Obrada ──► IDocumentExtractor ──────────► strukturisan JSON
+                                                   │                           (stavke: naziv, šifra, barkod,
+ ◄──── polling ─────── nacrt sa stavkama ◄──────────┤                            količina, jedinica, cena,
+       (TanStack Query)                             ▼                            rabat; ukupan iznos)
+                                             uparivanje sa artiklima (bez AI-ja)
+```
+
+- `IDocumentExtractor` je interfejs u Application sloju (kao `ISalesChannel`), a implementacija sa Claude API-jem u Infrastructure. Testovi koriste lažni extractor i nikad ne zovu pravi API.
+- Čitanje traje 10–30 s, pa ide kao Hangfire posao (sa `TenantId` kao parametrom), a ne u samom zahtevu. Frontend prati status nacrta. Isto radi i za mobilnu aplikaciju (11.3).
+- Uparivanje stavki sa artiklima, redom:
+  1. barkod ili SKU sa fakture tačno odgovara artiklu;
+  2. zapamćena šifra dobavljača: kad korisnik jednom poveže stavku dobavljača sa artiklom, veza se pamti po dobavljaču i sledeći put se primenjuje sama;
+  3. predlog po nazivu (nekoliko kandidata), označen „proveri”;
+  4. nepovezano: korisnik bira artikal ili pravi nov.
+- Provera: AI očita i ukupan iznos dokumenta, a aplikacija ga upoređuje sa zbirom stavki. Razlika se prikazuje pre potvrde.
+- Ekran: levo dokument, desno stavke sa oznakom *povezano / predlog / nepovezano*. Potvrda ide kroz isti tok kao faza 0.
+- Pakovanja: na fakturi „2 kutije”, artikal u komadima. Uz šifru dobavljača se pamti i faktor (npr. 1 kutija = 12 kom).
+- Pre ugradnje: prototip na 5–10 pravih faktura dobavljača ciljnih korisnika, da se izmere tačnost i cena po fakturi.
+
+#### Model podataka
+| Entitet | Ključna polja | Napomena |
+|---|---|---|
+| `Receipt` | Id, TenantId, SupplierName, DocumentNumber, DocumentDate, Status (`Processing`, `Draft`, `Posted`, `Failed`), Origin (`Manual`, `Scan`), CreatedBy, PostedAt | Posle `Posted` se ne menja |
+| `ReceiptLine` | Id, ReceiptId, ItemId?, RawName, RawCode, Quantity, Unit, UnitPrice?, MatchKind | Sirovi podaci sa dokumenta ostaju i posle povezivanja |
+| `SupplierItemCode` | Id, TenantId, SupplierKey, Code (ili normalizovan naziv), ItemId, UnitFactor | Naučene veze, unique (TenantId, SupplierKey, Code) |
+| `AiUsage` | Id, TenantId, Feature, Model, InputTokens, OutputTokens, OccurredAt | Potrošnja po firmi |
+
+Sve tabele imaju global query filter po `TenantId`.
+
+#### Dokument i privatnost
+- Na fakturi nema podataka kupaca, ali može biti ime vozača ili osobe koja je primila robu. Dokument se čuva 30 dana radi provere (kao `WebhookEvent`, 8), pa se briše; ostaju samo očitane stavke.
+- Politika privatnosti navodi da se dokument šalje AI servisu (Anthropic) na obradu. API po komercijalnim uslovima podrazumevano ne koristi podatke za treniranje; tačne uslove i DPA proveriti pre puštanja u rad.
+
+#### Nalog, ključ i troškovi
+- Claude pretplata (claude.ai) i API su odvojeni; aplikacija koristi samo API, koji se plaća po potrošnji (unapred kupljeni krediti, kartica za plaćanje u inostranstvu).
+- Posebna organizacija „Lagerko” u Claude Console, na poslovni email kad postoji, sa sopstvenim plaćanjem i fakturama. Ne meša se sa ličnim nalogom i može se predati ako firma promeni vlasnika.
+- Dva workspace-a, `dev` i `prod`, svaki sa svojim API ključem i limitom potrošnje, da greška u razvoju ne potroši produkciju.
+- Jedan ključ, samo na serveru: lokalno `dotnet user-secrets`, u produkciji env varijabla (DEPLOY.md). Nikad u frontendu ni u gitu. Korisnici nemaju svoj nalog kod Anthropic-a ni svoj ključ.
+- Anthropic vidi samo ukupnu potrošnju Lagerka, pa aplikacija sama beleži `usage` iz svakog odgovora u `AiUsage`, uz `TenantId`. Iz toga: mesečni limit skeniranja po firmi, uvid koliko koja firma košta i osnova za cene planova (PRICING.md).
+- Limit skeniranja je **tvrd** (za razliku od limita porudžbina), jer svako skeniranje košta: `receipt.scan_limit_reached` sa `limit` i `current` u `ProblemDetails`. Ručni prijem (faza 0) radi i posle limita.
+- Skeniranje je uračunato u cenu plana („X faktura mesečno”), korisnik ne plaća tokene direktno.
+- Knjigovodstvo: usluga iz inostranstva; pitati knjigovođu za obračun PDV-a kad firma bude u sistemu PDV-a.
+- AWS Bedrock ili Google Vertex su moguća zamena za direktan API ako klijent zahteva obradu u određenom regionu (npr. EU). Na početku nije potrebno.
+
+#### Otvorena pitanja (pre faze 1)
+1. **SEF i e-fakture.** Domaći dobavljači firmama verovatno šalju e-fakture preko SEF-a kao UBL XML (proveriti za ciljne korisnike). Takva faktura se čita tačno i bez AI-ja, pa bi upload XML fajla bio jeftin dodatak, a AI ostaje za uvoznu robu, otpremnice bez cena, papir i PDF. Integracija sa SEF-om ostaje van obima (2.8).
+2. **Koja cena je nabavna.** Bez PDV-a i posle rabata (PDV obveznik može da odbije PDV) ili sa PDV-om (paušalac ne može)? Verovatno podešavanje na firmi.
+3. Da li faza 0 ulazi u v1.

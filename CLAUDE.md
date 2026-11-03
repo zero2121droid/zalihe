@@ -117,6 +117,11 @@ docker compose run --rm wpcli bash /scripts/more-products.sh
 # demo prodavnica odeće "Nit" za pokazivanje klijentima (posle setup.sh; može ponovo): srpski, slike,
 # početna strana, dostava, pouzeće i nabavne cene ("Cost of goods sold"). Test proizvodi ostaju, ali su sakriveni iz prodavnice.
 docker compose run --rm wpcli bash /scripts/demo.sh
+# druga test prodavnica (http://localhost:8081, admin / admin), npr. za povezivanje još jedne prodavnice
+docker compose --profile shop2 up -d --wait
+docker compose --profile shop2 run --rm wpcli2 bash /scripts/setup.sh
+# od druge prodavnice napravi demo pržionicu kafe "Zrno" (posle setup.sh; može ponovo)
+docker compose --profile shop2 run --rm wpcli2 bash /scripts/demo.sh zrno
 
 # cela produkcija lokalno (aplikacija, Postgres, Caddy na https://localhost:8443), pre servera; vidi docs/DEPLOY.md
 docker compose -f deploy/docker-compose.yml up -d --build --wait

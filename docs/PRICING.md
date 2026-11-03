@@ -94,3 +94,23 @@ Ručno označavanje uplata traži operatera koji vidi sve firme. Takva uloga ne 
 - **SEF**: moje fakture se izdaju van aplikacije; SEF kao funkcija za korisnike ostaje van v1 (SPEC 2.8, 11.6).
 - **Više magacina**: kandidat za osobinu višeg plana kad se napravi, ne pre.
 - **Uloge (SPEC 11.2)**: preduslov da broj korisnika bude stvarna razlika među planovima.
+
+## 7. Koliko klijenata je dovoljno (procena, oktobar 2026)
+
+Gruba računica za jednu osobu u Beogradu. Kurs 1 € ≈ 117 RSD. Porez paušalca proveriti sa knjigovođom.
+
+- **Prosečan klijent** donosi ~2.400 RSD ≈ 20 € mesečno. Pretpostavka: 70 % Start, 30 % Rast, polovina plaća godišnje.
+- **Troškovi firme** su ~800 € mesečno: paušalni porez i doprinosi ~450 €, knjigovođa, server, alati, marketing. Uz to ~0,30 € Claude API-ja po klijentu i 10 % rezerve za bolovanje i odmor.
+
+| Cilj | Neto mesečno | Klijenata |
+|---|---|---|
+| Aplikacija pokriva sebe | 0 € | ~40 |
+| Skroman život | 1.300 € | ~110 |
+| Dobro, stan rešen | 1.600 € | ~130 |
+| Dobro | 2.300 € | ~170 |
+| Vrlo dobro | 3.000 € | ~210 |
+
+- **Cena je najveća poluga.** Uz prosečnih 28 € po klijentu (Start 2.490, Rast 4.990) za cilj „dobro” treba ~125 klijenata. Uz 35 € treba ~100.
+- **Odliv** od ~3 % mesečno na 170 klijenata znači ~5 novih mesečno samo da broj ostane isti. Uz 6 novih mesečno cilj stiže za ~5 godina, a uz 10 novih mesečno za ~2 godine.
+- **Limit paušala** (6 miliona RSD godišnje ≈ 4.270 € mesečno) se dostiže tek oko 210 klijenata.
+- **Kalkulator** sa ovim pretpostavkama: https://claude.ai/artifact/65LWW6cB5RtEJwCKEMMZM9

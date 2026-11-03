@@ -5,10 +5,13 @@
 #   docker compose run --rm wpcli bash /scripts/setup.sh
 #
 # Shop: http://localhost:8080 (admin / admin). Local development only.
+# The second shop (localhost:8081) sets SHOP_URL and SHOP_TITLE, see docker-compose.yml.
 set -euo pipefail
 
+SHOP_URL=${SHOP_URL:-http://localhost:8080}
+
 if ! wp core is-installed 2>/dev/null; then
-  wp core install --url=http://localhost:8080 --title="Zalihe test shop" \
+  wp core install --url="$SHOP_URL" --title="${SHOP_TITLE:-Zalihe test shop}" \
     --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
 fi
 
@@ -82,6 +85,6 @@ keys=$(wp eval '
 ')
 
 echo
-echo "Shop:            http://localhost:8080  (admin / admin)"
+echo "Shop:            $SHOP_URL  (admin / admin)"
 echo "Consumer key:    ${keys% *}"
 echo "Consumer secret: ${keys#* }"

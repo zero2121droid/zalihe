@@ -29,7 +29,7 @@ export function AuthLayout() {
           <ScrollRestoration />
         </Box>
         <div className={classes.brand} aria-hidden>
-          <LogoMark size={96} />
+          <LogoMark size={96} motion="stack" />
           <span className={classes.name}>{t('common.appName')}</span>
         </div>
       </div>

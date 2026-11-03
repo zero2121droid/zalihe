@@ -1,21 +1,29 @@
 #!/usr/bin/env bash
-# Turns the local test shop into "Nit", a demo clothing shop for showing Zalihe to clients:
-# Serbian (Latin) texts, own colors and fonts, clothing with photos and sizes, home page, menu,
-# shipping and cash on delivery. Run setup.sh first. Safe to run again.
+# Turns a local test shop into a demo shop for showing Zalihe to clients: Serbian (Latin) texts,
+# own colors and fonts, products with photos, home page, menu, shipping and cash on delivery.
+# Run setup.sh first. Safe to run again.
 #
-#   docker compose run --rm wpcli bash /scripts/demo.sh
+#   docker compose run --rm wpcli bash /scripts/demo.sh                          # "Nit", clothing (localhost:8080)
+#   docker compose --profile shop2 run --rm wpcli2 bash /scripts/demo.sh zrno    # "Zrno", coffee (localhost:8081)
 #
-# The coffee test products stay (Zalihe can still import them) but are hidden from the shop.
-# Local development only.
+# Test products from setup.sh that don't belong to the shop stay (Zalihe can still import them)
+# but are hidden from the shop. Local development only.
 set -euo pipefail
+
+shop="${1:-nit}"
+case "$shop" in
+  nit) name="Nit"; tagline="Odeća koja traje" ;;
+  zrno) name="Zrno"; tagline="Sveže pržena kafa" ;;
+  *) echo "Unknown shop \"$shop\": nit or zrno." >&2; exit 1 ;;
+esac
 
 if ! wp plugin is-active woocommerce 2>/dev/null; then
   echo "Run setup.sh first." >&2
   exit 1
 fi
 
-wp option update blogname "Nit" >/dev/null
-wp option update blogdescription "Odeća koja traje" >/dev/null
+wp option update blogname "$name" >/dev/null
+wp option update blogdescription "$tagline" >/dev/null
 wp option update woocommerce_coming_soon no >/dev/null
 wp option update woocommerce_enable_reviews no >/dev/null
 wp option update timezone_string Europe/Belgrade >/dev/null
@@ -26,9 +34,9 @@ wp option update woocommerce_price_num_decimals 0 >/dev/null
 wp option update woocommerce_feature_cost_of_goods_sold_enabled yes >/dev/null
 
 mkdir -p wp-content/mu-plugins
-cp /scripts/nit-demo.php wp-content/mu-plugins/
+cp /scripts/sr-latin.php "/scripts/$shop-demo.php" wp-content/mu-plugins/
 
-# WordPress has only Cyrillic Serbian; nit-demo.php shows it in Latin.
+# WordPress has only Cyrillic Serbian; sr-latin.php shows it in Latin.
 wp language core is-installed sr_RS || wp language core install sr_RS >/dev/null
 [ "$(wp option get WPLANG)" = sr_RS ] || wp site switch-language sr_RS >/dev/null
 wp language plugin install woocommerce sr_RS >/dev/null
@@ -37,8 +45,8 @@ wp language theme install twentytwentyfive sr_RS >/dev/null
 wp user meta update admin locale en_US >/dev/null
 
 echo "Catalog:"
-wp eval-file /scripts/demo-catalog.php
+wp eval-file "/scripts/$shop-catalog.php"
 wp rewrite flush --hard >/dev/null
 
 echo
-echo "Demo shop: http://localhost:8080  (admin / admin)"
+echo "Demo shop: $(wp option get home)  (admin / admin)"

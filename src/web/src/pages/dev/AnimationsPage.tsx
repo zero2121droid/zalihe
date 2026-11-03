@@ -7,6 +7,7 @@ import { CopySku } from '../../components/CopySku'
 import { Eyebrow } from '../../components/Eyebrow'
 import feedbackClasses from '../../components/feedback.module.css'
 import { FilterPill, FilterPills } from '../../components/FilterPill'
+import { Logo, LogoMark } from '../../components/Logo'
 import { SaveButton } from '../../components/feedback'
 import { SearchBody, SearchCell, SearchMatch, SearchRow } from '../../components/search'
 import { BoxLoader, EmptyBox, PageLoader, ShopImportAnimation, SkeletonRows } from '../../components/loaders'
@@ -261,6 +262,17 @@ function DetailsDemo() {
   )
 }
 
+function LogoDemo() {
+  // A click mounts the logos again, so the motion on mount plays once more.
+  const [round, setRound] = useState(0)
+  return (
+    <Group key={round} justify="center" gap={48} py="md" onClick={() => setRound((r) => r + 1)} style={{ cursor: 'pointer' }}>
+      <Logo />
+      <LogoMark size={96} motion="stack" />
+    </Group>
+  )
+}
+
 export function AnimationsPage() {
   const { t } = useTranslation()
   return (
@@ -268,6 +280,9 @@ export function AnimationsPage() {
       <Stack gap="lg">
         <Title order={1}>/dev/animacije</Title>
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+          <Specimen name="L1–L3 · Logo land, LogoMark stack (click replays)">
+            <LogoDemo />
+          </Specimen>
           <Specimen name="A · PageLoader">
             <PageLoader placement="inline" />
           </Specimen>

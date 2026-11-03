@@ -79,7 +79,64 @@ services:
       - wordpress-data:/var/www/html
       - ./docker/woocommerce:/scripts:ro
 
+  # A second WooCommerce shop on http://localhost:8081, for connecting more than one shop.
+  # Not started by "up"; start and set it up with:
+  #   docker compose --profile shop2 up -d --wait
+  #   docker compose --profile shop2 run --rm wpcli2 bash /scripts/setup.sh
+  mariadb2:
+    image: mariadb:11
+    profiles: ["shop2"]
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: wordpress
+    volumes:
+      - mariadb2-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  wordpress2:
+    image: wordpress:7-php8.3-apache
+    profiles: ["shop2"]
+    depends_on:
+      mariadb2:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: mariadb2
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    ports:
+      - "8081:80"
+    volumes:
+      - wordpress2-data:/var/www/html
+
+  wpcli2:
+    image: wordpress:cli-2-php8.3
+    profiles: ["tools"]
+    user: "33:33"
+    depends_on:
+      mariadb2:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: mariadb2
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+      SHOP_URL: http://localhost:8081
+      SHOP_TITLE: Zalihe test shop 2
+    volumes:
+      - wordpress2-data:/var/www/html
+      - ./docker/woocommerce:/scripts:ro
+
 volumes:
   postgres-data:
   mariadb-data:
   wordpress-data:
+  mariadb2-data:
+  wordpress2-data:

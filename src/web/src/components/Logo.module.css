@@ -1,0 +1,188 @@
+/*
+ * The logo's box in motion (DESIGN.md "Pokret", logo). Each moving part has its own group, so the
+ * animations on mount, the idle ones and the hover ones never replace each other: a hover that
+ * ends doesn't restart the one on mount. Units are the 16-unit grid of logoMark.ts.
+ */
+
+.mark {
+  display: block;
+  flex: none;
+  /* The lid rises above the grid while it moves. */
+  overflow: visible;
+}
+
+.lid,
+.hop,
+.body,
+.eyes,
+.blink,
+.eye {
+  transform-box: fill-box;
+}
+
+.lid,
+.hop {
+  transform-origin: 0% 100%;
+}
+
+.body {
+  transform-origin: 50% 100%;
+}
+
+.blink,
+.eye {
+  transform-origin: 50% 50%;
+}
+
+/* land: the lid drops onto the box, then the eyes open. */
+.land .lid {
+  animation: lidLand 0.7s cubic-bezier(0.3, 0.7, 0.4, 1) 0.15s both;
+}
+
+.land .eye {
+  animation: open 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) 0.8s both;
+}
+
+/* stack: the box drops, then the lid onto it, then the eyes open; later it looks around now and then. */
+.stack .body {
+  animation: boxDrop 0.55s cubic-bezier(0.3, 0.7, 0.4, 1) 0.1s both;
+}
+
+.stack .lid {
+  animation: lidDrop 0.55s cubic-bezier(0.3, 0.7, 0.4, 1) 0.5s both;
+}
+
+.stack .eye {
+  animation: open 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) 1s both;
+}
+
+.stack .eyes {
+  animation: look 8s ease-in-out 3s infinite;
+}
+
+.stack .blink {
+  animation: idleBlink 8s 3s infinite;
+}
+
+/* Hover (the whole logo, or the large mark): the lid hops and the eyes blink once. */
+.logo:hover .land .hop,
+.stack:hover .hop {
+  animation: hop 0.6s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+.logo:hover .land .eyes,
+.stack:hover .eyes {
+  animation: blinkOnce 0.3s 0.1s;
+}
+
+@keyframes lidLand {
+  0% {
+    transform: translateY(-9px) rotate(-24deg);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(0) rotate(4deg);
+    opacity: 1;
+  }
+  75% {
+    transform: rotate(-2deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes boxDrop {
+  0% {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(0) scale(1.04, 0.92);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes lidDrop {
+  0% {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(0) scale(1.03, 0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes open {
+  from {
+    transform: scaleY(0.1);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* Still most of the time: a look left, a look right, back; a blink later on. */
+@keyframes look {
+  0%,
+  6% {
+    transform: none;
+  }
+  10%,
+  20% {
+    transform: translateX(-1.2px);
+  }
+  25%,
+  35% {
+    transform: translateX(1.2px);
+  }
+  40%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes idleBlink {
+  0%,
+  60%,
+  64%,
+  100% {
+    transform: none;
+  }
+  62% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes blinkOnce {
+  50% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes hop {
+  0%,
+  100% {
+    transform: none;
+  }
+  40% {
+    transform: translateY(-1.5px) rotate(-16deg);
+  }
+  70% {
+    transform: rotate(2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark *,
+  .logo:hover .mark * {
+    animation: none !important;
+  }
+}

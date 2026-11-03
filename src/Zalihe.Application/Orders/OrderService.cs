@@ -34,22 +34,8 @@ public class OrderService(IAppDbContext db, StockPushService stockPush, TimeProv
         var ignored = stored.LastModifiedAt > order.ModifiedAt;
         var changes = stored.Apply(order.Status, order.ModifiedAt, await SnapshotAsync(channelId, order, ct));
 
-        var itemIds = changes.Select(c => c.ItemId).Distinct().ToList();
-        var items = await db.Items.Where(i => itemIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, ct);
-
-        // Items are always locked in the same order, so two orders sharing items can't deadlock.
-        foreach (var change in changes.OrderBy(c => c.ItemId))
-        {
-            var level = await db.LockStockLevelAsync(change.ItemId, ct)
-                ?? throw new InvalidOperationException($"Item {change.ItemId} has no stock level.");
-            var item = items[change.ItemId];
-
-            var movement = change.Quantity < 0
-                ? StockMovement.Sale(item, -change.Quantity, order.ModifiedAt, StockMovementSource.WooCommerce, null, externalRef: stored.ExternalId)
-                : StockMovement.Return(item, change.Quantity, order.ModifiedAt, StockMovementSource.WooCommerce, null, externalRef: stored.ExternalId);
-            db.StockMovements.Add(movement);
-            level.Apply(movement);
-        }
+        var itemIds = await OrderMovements.RecordAsync(
+            db, changes, order.ModifiedAt, StockMovementSource.WooCommerce, null, stored.ExternalId, ct);
 
         // The shop changed its own stock for the order already; sending ours keeps the two the same.
         var shops = await stockPush.MarkChangedAsync(itemIds, ct);

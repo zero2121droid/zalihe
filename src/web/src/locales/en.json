@@ -177,7 +177,8 @@
       "too_many_decimals": "At most {{max}} decimal places.",
       "out_of_range": "The value is out of the allowed range.",
       "number": "Enter a number, e.g. 12.5.",
-      "positive": "The quantity must be greater than zero."
+      "positive": "The quantity must be greater than zero.",
+      "max_items": "At most {{max}} lines."
     },
     "auth": {
       "unauthenticated": "Sign in to continue.",
@@ -236,6 +237,10 @@
     },
     "user": {
       "last_admin": "The company must have at least one administrator. Make someone else an administrator first."
+    },
+    "order": {
+      "item_not_found": "The item doesn't exist or was deleted.",
+      "not_manual": "Only the shop changes its own orders."
     }
   },
   "items": {
@@ -381,7 +386,7 @@
     "title": "Orders",
     "privacy": "From orders we keep only the number, date, status and products. Customer data is never taken.",
     "search": "Search orders",
-    "searchPlaceholder": "Order number or product name",
+    "searchPlaceholder": "Number, reference or product name",
     "searching": "Searching…",
     "filters": {
       "label": "Order filters",
@@ -404,7 +409,8 @@
       "cancelled": "Cancelled",
       "refunded": "Refunded",
       "failed": "Failed",
-      "checkout-draft": "Draft"
+      "checkout-draft": "Draft",
+      "confirmed": "Confirmed"
     },
     "takesStock": "Takes stock",
     "doesNotTakeStock": "Takes no stock",
@@ -422,7 +428,7 @@
       "linkedAfterOrder": "Linked after the order"
     },
     "detail": {
-      "title": "Order #{{number}}",
+      "title": "Order {{number}}",
       "placedAt": "Placed {{date}}",
       "shopProduct": "Product in the shop",
       "item": "Item in Lagerko",
@@ -431,14 +437,38 @@
       "inactive": "In this status the order holds no goods, so nothing is taken from stock (or it was returned).",
       "unlinked": "Products not linked to an item don't change stock. Link them in the product import from the shop.",
       "linkUnlinked": "Link products",
-      "linkedAfterOrder": "The order was placed before the product was linked, so it doesn't change stock: the stock at linking already included it."
+      "linkedAfterOrder": "The order was placed before the product was linked, so it doesn't change stock: the stock at linking already included it.",
+      "manual": "Manual order",
+      "reference": "Reference: {{reference}}",
+      "manualInactive": "The order is cancelled, so its goods are back in stock.",
+      "cancel": "Cancel order",
+      "confirm": "Confirm again"
     },
     "noResults": "No orders for “{{search}}”.",
     "noFilterResults": "No orders match the selected filters.",
     "empty": {
       "title": "No orders yet",
-      "description": "Orders arrive on their own from connected shops as soon as a customer orders.",
+      "description": "Orders from connected shops arrive on their own. Record sales outside the shop (Instagram, phone, store) as a new order.",
       "channels": "Sales channels"
+    },
+    "manual": "Manual",
+    "new": "New order",
+    "form": {
+      "title": "New order",
+      "items": "Items",
+      "addItem": "Add item",
+      "addItemPlaceholder": "Name, SKU or barcode",
+      "noItems": "Add at least one item.",
+      "noMatches": "No item for “{{search}}”.",
+      "remove": "Remove {{name}}",
+      "quantity": "Quantity of {{name}}",
+      "inStock": "in stock",
+      "reference": "Reference",
+      "referencePlaceholder": "e.g. IG 154",
+      "note": "Note",
+      "noteHint": "No customer name, address or phone.",
+      "negativeWarning": "Stock of some items will go below zero. That is allowed, but check the quantities.",
+      "submit": "Save order"
     }
   },
   "stock": {
@@ -486,7 +516,8 @@
       "noteRequired": "Reason (count, write-off, damage…)",
       "submit": "Record",
       "decrease": "Decrease by 1",
-      "increase": "Increase by 1"
+      "increase": "Increase by 1",
+      "saleHint": "The sale is recorded as a manual order, so you also see it in Orders."
     },
     "history": {
       "title": "History",

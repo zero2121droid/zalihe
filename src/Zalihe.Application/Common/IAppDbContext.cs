@@ -47,6 +47,19 @@ public interface IAppDbContext
     Task<ExternalOrder> LockOrAddExternalOrderAsync(ExternalOrder candidate, CancellationToken ct);
 
     /// <summary>
+    /// Loads an order with its lines and locks it until the current transaction ends, so two changes of
+    /// the same order run one after another; null when the company has no such order. Must be called
+    /// inside a transaction.
+    /// </summary>
+    Task<ExternalOrder?> LockExternalOrderAsync(Guid orderId, CancellationToken ct);
+
+    /// <summary>
+    /// The current company's next manual order number (1, 2, 3…). Must be called inside the transaction
+    /// that saves the order: concurrent orders wait for it, and a rolled back order frees its number.
+    /// </summary>
+    Task<int> NextManualOrderNumberAsync(CancellationToken ct);
+
+    /// <summary>
     /// The company a shop belongs to, read without a current company: a webhook arrives knowing only
     /// its shop, and the company is set from this. Crosses companies, like the four methods below;
     /// nothing else may.

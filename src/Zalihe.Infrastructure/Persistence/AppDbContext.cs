@@ -183,11 +183,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         {
             order.Property(o => o.ExternalId).HasMaxLength(ExternalOrder.ExternalIdMaxLength);
             order.Property(o => o.Status).HasMaxLength(ExternalOrder.StatusMaxLength);
+            order.Property(o => o.Source).HasConversion<string>().HasMaxLength(16);
+            order.Property(o => o.Reference).HasMaxLength(ExternalOrder.ReferenceMaxLength);
+            order.Property(o => o.Note).HasMaxLength(ExternalOrder.NoteMaxLength);
             order.HasMany(o => o.Lines).WithOne().HasForeignKey(l => l.ExternalOrderId).OnDelete(DeleteBehavior.Cascade);
             order.HasOne<SalesChannel>().WithMany().HasForeignKey(o => o.ChannelId).OnDelete(DeleteBehavior.Restrict);
             order.HasOne<Tenant>().WithMany().HasForeignKey(o => o.TenantId).OnDelete(DeleteBehavior.Restrict);
             // A shop sends many events for one order; they all update the same row.
             order.HasIndex(o => new { o.ChannelId, o.ExternalId }).IsUnique();
+            // Manual orders have no shop, and NULLs never conflict, so their numbers need their own index.
+            order.HasIndex(o => new { o.TenantId, o.ExternalId }).IsUnique().HasFilter("\"ChannelId\" IS NULL");
             order.HasIndex(o => o.TenantId);
             // The orders list shows the newest first.
             order.HasIndex(o => new { o.TenantId, o.PlacedAt });
@@ -255,8 +260,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
         // When two events for a new order arrive together, the second insert waits for the first
         // transaction and then does nothing, instead of failing on the unique index.
         await Database.ExecuteSqlAsync($"""
-            INSERT INTO "ExternalOrders" ("Id", "TenantId", "ChannelId", "ExternalId", "PlacedAt", "CreatedAt")
-            VALUES ({candidate.Id}, {candidate.TenantId}, {candidate.ChannelId}, {candidate.ExternalId}, {candidate.PlacedAt}, {candidate.CreatedAt})
+            INSERT INTO "ExternalOrders" ("Id", "TenantId", "Source", "ChannelId", "ExternalId", "PlacedAt", "CreatedAt")
+            VALUES ({candidate.Id}, {candidate.TenantId}, {candidate.Source.ToString()}, {candidate.ChannelId}, {candidate.ExternalId}, {candidate.PlacedAt}, {candidate.CreatedAt})
             ON CONFLICT ("ChannelId", "ExternalId") DO NOTHING
             """, ct);
 
@@ -270,6 +275,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             .SingleAsync(ct);
 
         return await ExternalOrders.Include(o => o.Lines).SingleAsync(o => o.Id == id, ct);
+    }
+
+    public async Task<ExternalOrder?> LockExternalOrderAsync(Guid orderId, CancellationToken ct)
+    {
+        // The tenant filter applies around this SQL, so another company's order is never locked or found.
+        // The lines are read by a second statement, after the lock (see LockOrAddExternalOrderAsync).
+        var locked = await ExternalOrders
+            .FromSql($"""SELECT * FROM "ExternalOrders" WHERE "Id" = {orderId} FOR UPDATE""")
+            .Select(o => o.Id)
+            .ToListAsync(ct);
+        if (locked.Count == 0) return null;
+
+        return await ExternalOrders.Include(o => o.Lines).SingleAsync(o => o.Id == orderId, ct);
+    }
+
+    public async Task<int> NextManualOrderNumberAsync(CancellationToken ct)
+    {
+        // UPDATE locks the company's row until the transaction ends, so a second order waits and gets
+        // the next number; a rolled back order gives its number back.
+        var numbers = await Database
+            .SqlQuery<int>($"""
+                UPDATE "Tenants" SET "LastManualOrderNumber" = "LastManualOrderNumber" + 1
+                WHERE "Id" = {CurrentTenantId}
+                RETURNING "LastManualOrderNumber" AS "Value"
+                """)
+            .ToListAsync(ct);
+        return numbers.Single();
     }
 
     public Task<bool> EmployeesSeePurchasePricesAsync(CancellationToken ct) =>

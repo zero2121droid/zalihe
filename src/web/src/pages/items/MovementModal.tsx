@@ -11,6 +11,7 @@ import {
   getListItemsQueryKey,
 } from '../../api/generated/items/items'
 import type { ItemDto, ManualMovementKind } from '../../api/generated/model'
+import { getListOrdersQueryKey, useCreateOrder } from '../../api/generated/orders/orders'
 import { getGetStockSummaryQueryKey, useRecordStockMovement } from '../../api/generated/stock/stock'
 import { DecimalInput } from '../../components/DecimalInput'
 import { SaveButton } from '../../components/feedback'
@@ -29,46 +30,53 @@ interface MovementModalProps {
 }
 
 /**
- * Records a receipt, sale, return or correction for one item. The preview below the quantity
- * only helps the user; the API computes the actual change from the stock at that moment.
+ * Records a receipt, sale, return or correction for one item. A sale is saved as a manual order with
+ * this one item (SPEC 11.5), so every sale is also in Porudžbine and is undone by cancelling it. The
+ * preview below the quantity only helps the user; the API computes the actual change from the stock
+ * at that moment.
  */
 export function MovementModal({ item, kind, onClose }: MovementModalProps) {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [quantity, setQuantity] = useState('')
   const [note, setNote] = useState('')
+  const [reference, setReference] = useState('')
   const [quantityError, setQuantityError] = useState<string | null>(null)
   const saved = useSaved()
   const shake = useShake()
 
-  const record = useRecordStockMovement({
-    mutation: {
-      onSuccess: async () => {
-        await Promise.all([
+  async function onSaved() {
+    await Promise.all([
           queryClient.invalidateQueries({ queryKey: getGetItemQueryKey(item.id) }),
           queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }),
           queryClient.invalidateQueries({ queryKey: getGetItemHistoryQueryKey(item.id) }),
           queryClient.invalidateQueries({ queryKey: getGetItemShopStockQueryKey(item.id) }),
           queryClient.invalidateQueries({ queryKey: getGetItemStockHistoryQueryKey(item.id) }),
           queryClient.invalidateQueries({ queryKey: getGetStockSummaryQueryKey() }),
+          queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() }),
         ])
-        await saved.confirm()
-        close()
-      },
-      onError: shake.shake,
-    },
-  })
+    await saved.confirm()
+    close()
+  }
+
+  const record = useRecordStockMovement({ mutation: { onSuccess: onSaved, onError: shake.shake } })
+  const sell = useCreateOrder({ mutation: { onSuccess: onSaved, onError: shake.shake } })
+  const save = kind === 'sale' ? sell : record
 
   function close() {
     setQuantity('')
     setNote('')
+    setReference('')
     setQuantityError(null)
     record.reset()
+    sell.reset()
     onClose()
   }
 
-  const serverErrors = fieldErrorMessages(t, record.error)
-  const formError = formErrorMessage(t, record.error)
+  const errors = fieldErrorMessages(t, save.error)
+  // The order's single line reports its quantity as "lines[0].quantity".
+  const serverErrors: Record<string, string | undefined> = { ...errors, quantity: errors.quantity ?? errors['lines[0].quantity'] }
+  const formError = formErrorMessage(t, save.error)
   const unit = t(`items.units.${item.unit}`)
   const isCount = kind === 'count'
 
@@ -96,7 +104,13 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
       shake.shake()
       return
     }
-    record.mutate({ itemId: item.id, data: { kind, quantity: value, note: note.trim() || null } })
+    if (kind === 'sale') {
+      sell.mutate({
+        data: { lines: [{ itemId: item.id, quantity: value }], reference: reference.trim() || null, note: note.trim() || null },
+      })
+    } else {
+      record.mutate({ itemId: item.id, data: { kind, quantity: value, note: note.trim() || null } })
+    }
   }
 
   return (
@@ -166,13 +180,31 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
             </Stack>
           )}
 
+          {kind === 'sale' && (
+            <TextInput
+              label={t('orders.form.reference')}
+              placeholder={t('orders.form.referencePlaceholder')}
+              value={reference}
+              onChange={(e) => setReference(e.currentTarget.value)}
+              error={serverErrors.reference}
+            />
+          )}
+
           <TextInput
             label={isCount ? t('stock.form.noteRequired') : t('stock.form.note')}
+            description={kind === 'sale' ? t('orders.form.noteHint') : undefined}
+            inputWrapperOrder={['label', 'input', 'description', 'error']}
             withAsterisk={isCount}
             value={note}
             onChange={(e) => setNote(e.currentTarget.value)}
             error={serverErrors.note}
           />
+
+          {kind === 'sale' && (
+            <Text fz="xs" c="dimmed">
+              {t('stock.form.saleHint')}
+            </Text>
+          )}
 
           {formError && (
             <Text role="alert" c="var(--mantine-color-error)" fz="sm">
@@ -184,7 +216,7 @@ export function MovementModal({ item, kind, onClose }: MovementModalProps) {
             <Button variant="default" className="z-modal-cancel" onClick={close}>
               {t('common.cancel')}
             </Button>
-            <SaveButton type="submit" loading={record.isPending} saved={saved.saved}>
+            <SaveButton type="submit" loading={save.isPending} saved={saved.saved}>
               {t('stock.form.submit')}
             </SaveButton>
           </Group>

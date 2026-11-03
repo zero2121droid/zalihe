@@ -24,8 +24,11 @@ const coffee = {
 const order = (overrides: object = {}) => ({
   id: crypto.randomUUID(),
   number: '1041',
+  source: 'wooCommerce',
   channelId,
   shopUrl: 'https://zrno.rs',
+  reference: null,
+  note: null,
   status: 'processing',
   takesStock: true,
   placedAt: '2026-10-16T09:00:00+00:00',
@@ -140,5 +143,68 @@ describe('OrdersPage', () => {
     expect(within(dialog).getByText('Povezan posle porudžbine')).toBeInTheDocument()
     expect(within(dialog).getByText(/stanje pri povezivanju ju je već uračunalo/)).toBeInTheDocument()
     expect(within(dialog).queryByRole('link', { name: 'Poveži proizvode' })).not.toBeInTheDocument()
+  })
+
+  it('Render_ManualAndShopOrders_ShowsManualNumberOriginAndReference', async () => {
+    // Arrange
+    const manual = order({
+      number: 'R-0001', source: 'manual', channelId: null, shopUrl: null, reference: 'IG 154', status: 'confirmed',
+      lines: [{ ...coffee, externalProductId: coffee.item.id, name: null }],
+    })
+    mockApi({ 'GET /api/orders?': page([manual, order()]) })
+
+    // Act
+    await renderRoutes(routes, '/orders')
+
+    // Assert
+    const button = await screen.findByRole('button', { name: 'Otvori porudžbinu R-0001' })
+    expect(button).toHaveTextContent(/^R-0001$/)
+    const row = within(button.closest('tr')!)
+    expect(row.getByText('Ručno · IG 154')).toBeInTheDocument()
+    expect(row.getByText('Potvrđena')).toBeInTheDocument()
+    expect(row.getByText(/Kafa Etiopija 250 g/)).toHaveTextContent('Kafa Etiopija 250 g ×2')
+    expect(screen.getByText('zrno.rs')).toBeInTheDocument()
+  })
+
+  it('Click_CancelManualOrder_SendsCancelledStatus', async () => {
+    // Arrange
+    const manual = order({
+      number: 'R-0001', source: 'manual', channelId: null, shopUrl: null, status: 'confirmed', note: 'Lično preuzimanje',
+      lines: [{ ...coffee, externalProductId: coffee.item.id, name: null }],
+    })
+    const fetchMock = mockApi({
+      'GET /api/orders?': page([manual]),
+      [`PUT /api/orders/${manual.id}/status`]: { status: 200, body: { ...manual, status: 'cancelled', takesStock: false } },
+    })
+    await renderRoutes(routes, '/orders')
+    await userEvent.click(await screen.findByRole('button', { name: 'Otvori porudžbinu R-0001' }))
+    const dialog = within(await screen.findByRole('dialog'))
+
+    // Act
+    await userEvent.click(dialog.getByRole('button', { name: 'Otkaži porudžbinu' }))
+
+    // Assert
+    expect(dialog.getByText('Porudžbina R-0001')).toBeInTheDocument()
+    expect(dialog.getByText('Ručna porudžbina')).toBeInTheDocument()
+    expect(dialog.getByText('Lično preuzimanje')).toBeInTheDocument()
+    expect(dialog.queryByText('Proizvod u prodavnici')).not.toBeInTheDocument()
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')
+      expect(JSON.parse(call?.[1]?.body as string)).toEqual({ status: 'cancelled' })
+    })
+  })
+
+  it('Click_ShopOrder_HasNoStatusButton', async () => {
+    // Arrange
+    mockApi({ 'GET /api/orders?': page([order()]) })
+    await renderRoutes(routes, '/orders')
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Otvori porudžbinu 1041' }))
+
+    // Assert
+    const dialog = within(await screen.findByRole('dialog'))
+    expect(dialog.getByText('Porudžbina #1041')).toBeInTheDocument()
+    expect(dialog.queryByRole('button', { name: 'Otkaži porudžbinu' })).not.toBeInTheDocument()
   })
 })

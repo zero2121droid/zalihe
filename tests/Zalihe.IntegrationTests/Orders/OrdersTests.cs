@@ -85,7 +85,8 @@ public class OrdersTests(ZaliheApiFactory factory)
 
         // Nothing about the customer is part of an order.
         order.EnumerateObject().Select(p => p.Name).ShouldBe(
-            ["id", "number", "channelId", "shopUrl", "status", "takesStock", "placedAt", "unlinkedLineCount", "lines"]);
+            ["id", "number", "source", "channelId", "shopUrl", "reference", "note", "status", "takesStock", "placedAt", "unlinkedLineCount", "lines"]);
+        order.GetProperty("source").GetString().ShouldBe("wooCommerce");
     }
 
     [Fact]

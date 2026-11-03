@@ -480,7 +480,7 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ChannelId")
+                    b.Property<Guid?>("ChannelId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -494,8 +494,21 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("LastModifiedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTimeOffset>("PlacedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<string>("Status")
                         .HasMaxLength(32)
@@ -510,6 +523,10 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ChannelId", "ExternalId")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "ExternalId")
+                        .IsUnique()
+                        .HasFilter("\"ChannelId\" IS NULL");
 
                     b.HasIndex("TenantId", "PlacedAt");
 
@@ -666,6 +683,9 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("EmployeesSeePurchasePrices")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("LastManualOrderNumber")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -997,8 +1017,7 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.HasOne("Zalihe.Domain.Channels.SalesChannel", null)
                         .WithMany()
                         .HasForeignKey("ChannelId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
                         .WithMany()

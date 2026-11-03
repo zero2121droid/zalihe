@@ -1,25 +1,34 @@
 import { Anchor, Button, Group, Modal, Stack, Table, Text } from '@mantine/core'
+import { useQueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { formErrorMessage } from '../../api/errors'
+import { getListItemsQueryKey } from '../../api/generated/items/items'
 import type { OrderDto, OrderLineDto } from '../../api/generated/model'
+import { getListOrdersQueryKey, useSetOrderStatus } from '../../api/generated/orders/orders'
+import { getGetStockSummaryQueryKey } from '../../api/generated/stock/stock'
 import { usePermissions } from '../../auth/permissions'
 import { formatDateTime, formatNumber } from '../../lib/format'
 import { usePhone } from '../../lib/usePhone'
-import { lineName, shopHost, statusLabel } from './orderText'
+import { lineName, orderNumber, shopHost, statusLabel } from './orderText'
 
 const noteStyle = { borderRadius: 'var(--mantine-radius-sm)' }
 
-/** One order's products, the items they are linked to and what each took from stock. */
+/**
+ * One order's products, the items they are linked to and what each took from stock. A manual order
+ * has no shop products, only items, and can be cancelled (its goods go back to stock) or confirmed again.
+ */
 export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () => void }) {
   const { t, i18n } = useTranslation()
   const can = usePermissions()
+  const manual = order.source === 'manual'
   const hasUnlinked = order.lines.some((l) => l.state === 'unlinked')
   const hasLinkedLater = order.lines.some((l) => l.state === 'linkedAfterOrder')
   const phone = usePhone()
 
   return (
-    <Modal opened onClose={onClose} title={t('orders.detail.title', { number: order.number })}>
+    <Modal opened onClose={onClose} title={t('orders.detail.title', { number: orderNumber(t, order) })}>
       <Stack gap="md">
         <Group gap="lg">
           <Text fz="sm">
@@ -33,15 +42,26 @@ export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () =>
             {t('orders.detail.placedAt', { date: formatDateTime(order.placedAt, i18n.language) })}
           </Text>
           <Text fz="sm" c="dimmed">
-            {shopHost(order.shopUrl)}
+            {order.shopUrl === null ? t('orders.detail.manual') : shopHost(order.shopUrl)}
           </Text>
+          {order.reference && (
+            <Text fz="sm" c="dimmed">
+              {t('orders.detail.reference', { reference: order.reference })}
+            </Text>
+          )}
         </Group>
+
+        {order.note && (
+          <Text fz="sm" c="var(--z-text-2)" style={{ whiteSpace: 'pre-wrap' }}>
+            {order.note}
+          </Text>
+        )}
 
         {phone ? (
           // On a phone each product is a block (shop product, item, both quantities), not a wide table row.
           <Stack gap={0}>
             {order.lines.map((line) => (
-              <PhoneLine key={line.externalProductId} line={line} />
+              <PhoneLine key={line.externalProductId} line={line} manual={manual} />
             ))}
           </Stack>
         ) : (
@@ -49,7 +69,7 @@ export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () =>
             <Table>
               <Table.Thead>
                 <Table.Tr>
-                  <Table.Th>{t('orders.detail.shopProduct')}</Table.Th>
+                  {!manual && <Table.Th>{t('orders.detail.shopProduct')}</Table.Th>}
                   <Table.Th>{t('orders.detail.item')}</Table.Th>
                   <Table.Th ta="right">{t('orders.detail.ordered')}</Table.Th>
                   <Table.Th ta="right">{t('orders.detail.applied')}</Table.Th>
@@ -57,14 +77,14 @@ export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () =>
               </Table.Thead>
               <Table.Tbody>
                 {order.lines.map((line) => (
-                  <LineRow key={line.externalProductId} line={line} />
+                  <LineRow key={line.externalProductId} line={line} manual={manual} />
                 ))}
               </Table.Tbody>
             </Table>
           </Table.ScrollContainer>
         )}
 
-        {!order.takesStock && <Note>{t('orders.detail.inactive')}</Note>}
+        {!order.takesStock && <Note>{manual ? t('orders.detail.manualInactive') : t('orders.detail.inactive')}</Note>}
         {hasLinkedLater && <Note>{t('orders.detail.linkedAfterOrder')}</Note>}
         {hasUnlinked && (
           <Note>
@@ -78,20 +98,59 @@ export function OrderModal({ order, onClose }: { order: OrderDto; onClose: () =>
             </Stack>
           </Note>
         )}
+
+        {manual && <StatusAction order={order} />}
       </Stack>
     </Modal>
   )
 }
 
-function LineRow({ line }: { line: OrderLineDto }) {
+/** Cancels a confirmed manual order, or confirms a cancelled one again; the list refreshes the window. */
+function StatusAction({ order }: { order: OrderDto }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const cancelled = order.status === 'cancelled'
+  const setStatus = useSetOrderStatus({
+    mutation: {
+      onSuccess: () =>
+        Promise.all([
+          queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() }),
+          queryClient.invalidateQueries({ queryKey: getListItemsQueryKey() }),
+          queryClient.invalidateQueries({ queryKey: getGetStockSummaryQueryKey() }),
+        ]),
+    },
+  })
+  const error = formErrorMessage(t, setStatus.error)
+
+  return (
+    <Stack gap="xs" align="flex-end">
+      {error && (
+        <Text role="alert" c="var(--mantine-color-error)" fz="sm">
+          {error}
+        </Text>
+      )}
+      <Button
+        variant="default"
+        loading={setStatus.isPending}
+        onClick={() => setStatus.mutate({ id: order.id, data: { status: cancelled ? 'confirmed' : 'cancelled' } })}
+      >
+        {cancelled ? t('orders.detail.confirm') : t('orders.detail.cancel')}
+      </Button>
+    </Stack>
+  )
+}
+
+function LineRow({ line, manual }: { line: OrderLineDto; manual: boolean }) {
   const { t, i18n } = useTranslation()
   const unit = line.item ? t(`items.units.${line.item.unit}`) : null
 
   return (
     <Table.Tr>
-      <Table.Td>
-        <Text fz="sm">{lineName(t, line)}</Text>
-      </Table.Td>
+      {!manual && (
+        <Table.Td>
+          <Text fz="sm">{lineName(t, line)}</Text>
+        </Table.Td>
+      )}
       <Table.Td>
         <LinkedItem line={line} />
       </Table.Td>
@@ -105,15 +164,17 @@ function LineRow({ line }: { line: OrderLineDto }) {
   )
 }
 
-function PhoneLine({ line }: { line: OrderLineDto }) {
+function PhoneLine({ line, manual }: { line: OrderLineDto; manual: boolean }) {
   const { t, i18n } = useTranslation()
   const unit = line.item ? t(`items.units.${line.item.unit}`) : null
 
   return (
     <Stack gap={6} py="sm" style={{ borderBottom: '1px solid var(--z-line-soft)' }}>
-      <Text fz="xs" c="dimmed">
-        {lineName(t, line)}
-      </Text>
+      {!manual && (
+        <Text fz="xs" c="dimmed">
+          {lineName(t, line)}
+        </Text>
+      )}
       <div>
         <LinkedItem line={line} />
       </div>

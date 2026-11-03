@@ -15,6 +15,12 @@ public class Tenant
     /// </summary>
     public bool EmployeesSeePurchasePrices { get; private set; }
 
+    /// <summary>
+    /// The number of the company's last manual order (R-0001…, SPEC 11.5); 0 before the first.
+    /// Raised only by the database, in the transaction that saves the order, so two orders never share a number.
+    /// </summary>
+    public int LastManualOrderNumber { get; private set; }
+
     public Tenant(string name, DateTimeOffset createdAt)
     {
         Id = Guid.CreateVersion7();

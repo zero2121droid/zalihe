@@ -177,7 +177,8 @@
       "too_many_decimals": "Najviše {{max}} decimale.",
       "out_of_range": "Vrednost je van dozvoljenog opsega.",
       "number": "Unesi broj, npr. 12,5.",
-      "positive": "Količina mora biti veća od nule."
+      "positive": "Količina mora biti veća od nule.",
+      "max_items": "Najviše {{max}} stavki."
     },
     "auth": {
       "unauthenticated": "Prijavi se da bi nastavio.",
@@ -236,6 +237,10 @@
     },
     "user": {
       "last_admin": "Firma mora imati bar jednog administratora. Prvo nekom drugom daj ulogu administratora."
+    },
+    "order": {
+      "item_not_found": "Artikal ne postoji ili je obrisan.",
+      "not_manual": "Porudžbinu iz prodavnice menja samo prodavnica."
     }
   },
   "items": {
@@ -381,7 +386,7 @@
     "title": "Porudžbine",
     "privacy": "Iz porudžbina čuvamo samo broj, datum, status i proizvode. Podatke kupaca ne preuzimamo.",
     "search": "Pretraga porudžbina",
-    "searchPlaceholder": "Broj porudžbine ili naziv proizvoda",
+    "searchPlaceholder": "Broj, referenca ili naziv proizvoda",
     "searching": "Pretraga…",
     "filters": {
       "label": "Filteri porudžbina",
@@ -404,7 +409,8 @@
       "cancelled": "Otkazana",
       "refunded": "Refundirana",
       "failed": "Neuspela",
-      "checkout-draft": "Nacrt"
+      "checkout-draft": "Nacrt",
+      "confirmed": "Potvrđena"
     },
     "takesStock": "Skida sa stanja",
     "doesNotTakeStock": "Ne skida sa stanja",
@@ -422,7 +428,7 @@
       "linkedAfterOrder": "Povezan posle porudžbine"
     },
     "detail": {
-      "title": "Porudžbina #{{number}}",
+      "title": "Porudžbina {{number}}",
       "placedAt": "Naručeno {{date}}",
       "shopProduct": "Proizvod u prodavnici",
       "item": "Artikal u Lagerku",
@@ -431,14 +437,38 @@
       "inactive": "U ovom statusu porudžbina ne drži robu, pa ništa nije skinuto sa stanja (ili je vraćeno).",
       "unlinked": "Proizvodi koji nisu povezani sa artiklom ne menjaju stanje. Poveži ih u uvozu proizvoda iz prodavnice.",
       "linkUnlinked": "Poveži proizvode",
-      "linkedAfterOrder": "Porudžbina je naručena pre nego što je proizvod povezan, pa ne menja stanje: stanje pri povezivanju ju je već uračunalo."
+      "linkedAfterOrder": "Porudžbina je naručena pre nego što je proizvod povezan, pa ne menja stanje: stanje pri povezivanju ju je već uračunalo.",
+      "manual": "Ručna porudžbina",
+      "reference": "Referenca: {{reference}}",
+      "manualInactive": "Porudžbina je otkazana, pa je roba vraćena na stanje.",
+      "cancel": "Otkaži porudžbinu",
+      "confirm": "Ponovo potvrdi"
     },
     "noResults": "Nema porudžbina za „{{search}}”.",
     "noFilterResults": "Nema porudžbina za izabrane filtere.",
     "empty": {
       "title": "Još nema porudžbina",
-      "description": "Porudžbine stižu same iz povezanih prodavnica, čim kupac naruči.",
+      "description": "Porudžbine iz povezanih prodavnica stižu same. Prodaju van prodavnice (Instagram, telefon, radnja) upiši kao novu porudžbinu.",
       "channels": "Kanali prodaje"
+    },
+    "manual": "Ručno",
+    "new": "Nova porudžbina",
+    "form": {
+      "title": "Nova porudžbina",
+      "items": "Artikli",
+      "addItem": "Dodaj artikal",
+      "addItemPlaceholder": "Naziv, šifra ili barkod",
+      "noItems": "Dodaj bar jedan artikal.",
+      "noMatches": "Nema artikla za „{{search}}”.",
+      "remove": "Ukloni {{name}}",
+      "quantity": "Količina za {{name}}",
+      "inStock": "na stanju",
+      "reference": "Referenca",
+      "referencePlaceholder": "npr. IG 154",
+      "note": "Napomena",
+      "noteHint": "Bez imena, adrese i telefona kupca.",
+      "negativeWarning": "Stanje nekih artikala će otići u minus. Dozvoljeno je, ali proveri količine.",
+      "submit": "Sačuvaj porudžbinu"
     }
   },
   "stock": {
@@ -486,7 +516,8 @@
       "noteRequired": "Razlog (popis, otpis, oštećenje…)",
       "submit": "Zabeleži",
       "decrease": "Smanji za 1",
-      "increase": "Povećaj za 1"
+      "increase": "Povećaj za 1",
+      "saleHint": "Prodaja se upisuje kao ručna porudžbina, pa je vidiš i u Porudžbinama."
     },
     "history": {
       "title": "Istorija",

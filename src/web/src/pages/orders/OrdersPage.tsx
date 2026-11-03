@@ -19,8 +19,9 @@ import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { type Shown, useLeaving } from '../../lib/useLeaving'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { useCompactTables } from '../../lib/usePhone'
+import { NewOrderModal } from './NewOrderModal'
 import { OrderModal } from './OrderModal'
-import { lineName, shopHost, statusLabel, WOO_STATUSES } from './orderText'
+import { FILTER_STATUSES, lineName, orderNumber, orderOrigin, statusLabel } from './orderText'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
@@ -51,6 +52,7 @@ export function OrdersPage() {
   const compact = useCompactTables()
   const [params, setParams] = useSearchParams()
   const [openedId, setOpenedId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
   const state: ListState = {
     search: params.get('q') ?? '',
     page: Math.max(1, Number(params.get('page')) || 1),
@@ -95,21 +97,24 @@ export function OrdersPage() {
 
   return (
     <Stack gap="lg">
-      <Stack gap={4}>
-        <Group gap="sm" align="baseline">
-          <Title order={1} lts="-0.01em">
-            {t('orders.title')}
-          </Title>
-          {data && !state.search && !filtered && (
-            <Text ff="monospace" c="dimmed">
-              {formatNumber(data.totalCount, i18n.language)}
-            </Text>
-          )}
-        </Group>
-        <Text fz="sm" c="dimmed">
-          {t('orders.privacy')}
-        </Text>
-      </Stack>
+      <Group justify="space-between" align="flex-start" gap="md">
+        <Stack gap={4}>
+          <Group gap="sm" align="baseline">
+            <Title order={1} lts="-0.01em">
+              {t('orders.title')}
+            </Title>
+            {data && !state.search && !filtered && (
+              <Text ff="monospace" c="dimmed">
+                {formatNumber(data.totalCount, i18n.language)}
+              </Text>
+            )}
+          </Group>
+          <Text fz="sm" c="dimmed">
+            {t('orders.privacy')}
+          </Text>
+        </Stack>
+        <Button onClick={() => setCreating(true)}>{t('orders.new')}</Button>
+      </Group>
 
       <Group gap="md" wrap="wrap">
         <TextInput
@@ -139,7 +144,7 @@ export function OrdersPage() {
           w={200}
           aria-label={t('orders.filters.status')}
           placeholder={t('orders.filters.anyStatus')}
-          data={WOO_STATUSES.map((status) => ({ value: status, label: statusLabel(t, status) }))}
+          data={FILTER_STATUSES.map((status) => ({ value: status, label: statusLabel(t, status) }))}
           value={state.status}
           onChange={(status) => update({ status })}
           clearable
@@ -155,7 +160,7 @@ export function OrdersPage() {
             {formErrorMessage(t, orders.error)}
           </Text>
         ) : data!.totalCount === 0 ? (
-          <EmptyState search={state.search} filtered={filtered} />
+          <EmptyState search={state.search} filtered={filtered} onCreate={() => setCreating(true)} />
         ) : (
           <>
             <PageTurn page={data!.page}>
@@ -179,6 +184,7 @@ export function OrdersPage() {
       </Box>
 
       {opened && <OrderModal order={opened} onClose={() => setOpenedId(null)} />}
+      <NewOrderModal opened={creating} onClose={() => setCreating(false)} />
     </Stack>
   )
 }
@@ -190,7 +196,7 @@ interface RowsProps {
 
 function OrdersTable({ rows, onOpen }: RowsProps) {
   const { t, i18n } = useTranslation()
-  const severalShops = new Set(rows.map((r) => r.item.channelId)).size > 1
+  const showOrigin = severalOrigins(rows)
   const folding = rows.some((r) => r.leaving)
 
   return (
@@ -210,9 +216,9 @@ function OrdersTable({ rows, onOpen }: RowsProps) {
             <Table.Td>
               <SearchCell>
                 <OrderNumber order={order} onOpen={onOpen} leaving={leaving} />
-                {severalShops && (
+                {(showOrigin || order.reference) && (
                   <Text fz="xs" c="dimmed">
-                    {shopHost(order.shopUrl)}
+                    {[...(showOrigin ? [orderOrigin(t, order)] : []), ...(order.reference ? [order.reference] : [])].join(' · ')}
                   </Text>
                 )}
               </SearchCell>
@@ -250,7 +256,7 @@ function OrdersTable({ rows, onOpen }: RowsProps) {
  */
 function OrdersList({ rows, onOpen }: RowsProps) {
   const { t, i18n } = useTranslation()
-  const severalShops = new Set(rows.map((r) => r.item.channelId)).size > 1
+  const showOrigin = severalOrigins(rows)
 
   return (
     <Table>
@@ -269,7 +275,8 @@ function OrdersList({ rows, onOpen }: RowsProps) {
                   {[
                     statusLabel(t, order.status),
                     order.takesStock ? t('orders.takesStock') : t('orders.doesNotTakeStock'),
-                    ...(severalShops ? [shopHost(order.shopUrl)] : []),
+                    ...(showOrigin ? [orderOrigin(t, order)] : []),
+                    ...(order.reference ? [order.reference] : []),
                   ].join(' · ')}
                 </Text>
                 <ProductsSummary order={order} />
@@ -280,6 +287,11 @@ function OrdersList({ rows, onOpen }: RowsProps) {
       </SearchBody>
     </Table>
   )
+}
+
+/** Whether the page holds orders of more than one shop, or shop and manual orders together. */
+function severalOrigins(rows: Shown<OrderDto>[]): boolean {
+  return new Set(rows.map((r) => r.item.channelId ?? 'manual')).size > 1
 }
 
 /** The whole row opens the order for mouse and touch users; the number is the real button for keyboards. */
@@ -299,7 +311,7 @@ function OrderNumber({ order, onOpen, leaving }: { order: OrderDto; onOpen: (id:
       fw={500}
       c="var(--z-text)"
     >
-      {t('orders.number', { number: order.number })}
+      {orderNumber(t, order)}
     </Anchor>
   )
 }
@@ -337,7 +349,7 @@ function ProductsSummary({ order }: { order: OrderDto }) {
   )
 }
 
-function EmptyState({ search, filtered }: { search: string; filtered: boolean }) {
+function EmptyState({ search, filtered, onCreate }: { search: string; filtered: boolean; onCreate: () => void }) {
   const { t } = useTranslation()
   if (search || filtered) {
     return (
@@ -353,9 +365,12 @@ function EmptyState({ search, filtered }: { search: string; filtered: boolean })
         <Title order={2}>{t('orders.empty.title')}</Title>
         <Text c="dimmed">{t('orders.empty.description')}</Text>
       </Stack>
-      <Button variant="default" component={Link} to="/channels">
-        {t('orders.empty.channels')}
-      </Button>
+      <Group gap="sm" className="z-phone-stack">
+        <Button onClick={onCreate}>{t('orders.new')}</Button>
+        <Button variant="default" component={Link} to="/channels">
+          {t('orders.empty.channels')}
+        </Button>
+      </Group>
     </Stack>
   )
 }

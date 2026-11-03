@@ -5,17 +5,23 @@ using Zalihe.Domain.Orders;
 
 namespace Zalihe.Application.Orders;
 
-/// <param name="Number">The order's number in the shop, e.g. "1041".</param>
-/// <param name="ShopUrl">The shop's address, to tell orders of several shops apart.</param>
-/// <param name="Status">The shop's status code, e.g. "processing"; the frontend translates the known ones.</param>
+/// <param name="Number">The order's number in the shop, e.g. "1041", or a manual order's, e.g. "R-0001".</param>
+/// <param name="ChannelId">The shop the order came from; null for a manual order.</param>
+/// <param name="ShopUrl">The shop's address, to tell orders of several shops apart; null for a manual order.</param>
+/// <param name="Status">The shop's status code, e.g. "processing", or a manual order's ("confirmed", "cancelled"); the frontend translates the known ones.</param>
+/// <param name="Reference">A manual order's own reference, e.g. "IG 154".</param>
+/// <param name="Note">A manual order's note.</param>
 /// <param name="TakesStock">Whether the order holds its goods from stock in this status (SPEC 6).</param>
 /// <param name="UnlinkedLineCount">Lines whose product isn't linked to any item; see <see cref="OrderLineState.Unlinked"/>.</param>
 /// <param name="Lines">The products the order holds now; lines removed from it are left out.</param>
 public record OrderDto(
     Guid Id,
     string Number,
-    Guid ChannelId,
-    string ShopUrl,
+    OrderSource Source,
+    Guid? ChannelId,
+    string? ShopUrl,
+    string? Reference,
+    string? Note,
     string? Status,
     bool TakesStock,
     DateTimeOffset PlacedAt,
@@ -50,8 +56,8 @@ public enum OrderLineState
     LinkedAfterOrder,
 }
 
-/// <param name="Search">Order number, or part of a product's name.</param>
-/// <param name="Status">Only orders in this shop status, e.g. "processing".</param>
+/// <param name="Search">Order number or reference, or part of a product's name.</param>
+/// <param name="Status">Only orders in this status, e.g. "processing".</param>
 /// <param name="UnlinkedOnly">Only orders with at least one <see cref="OrderLineState.Unlinked"/> line.</param>
 public record OrderListQuery(
     string? Search = null,
@@ -61,8 +67,8 @@ public record OrderListQuery(
     int PageSize = Paging.DefaultPageSize);
 
 /// <summary>
-/// Orders that came from the company's shops, newest first, so the user can see what took stock.
-/// Only what is stored is shown: there is no customer data (SPEC 8).
+/// The company's orders, from its shops and manual ones together (SPEC 11.5), newest first, so the user
+/// can see what took stock. Only what is stored is shown: there is no customer data (SPEC 8).
 /// </summary>
 public class OrderListService(IAppDbContext db)
 {
@@ -75,6 +81,7 @@ public class OrderListService(IAppDbContext db)
             var term = query.Search.Trim().TrimStart('#').ToLower();
             orders = orders.Where(o =>
                 o.ExternalId.ToLower().Contains(term)
+                || (o.Reference != null && o.Reference.ToLower().Contains(term))
                 || o.Lines.Any(l => l.OrderedQuantity > 0 && l.Name != null && l.Name.ToLower().Contains(term)));
         }
 
@@ -101,9 +108,16 @@ public class OrderListService(IAppDbContext db)
         return new PagedResult<OrderDto>(await ToDtosAsync(page, ct), totalCount, query.Page, query.PageSize);
     }
 
+    /// <summary>One order, as the list shows it; null when the company has no such order.</summary>
+    public async Task<OrderDto?> GetAsync(Guid id, CancellationToken ct)
+    {
+        var order = await db.ExternalOrders.AsNoTracking().Include(o => o.Lines).SingleOrDefaultAsync(o => o.Id == id, ct);
+        return order is null ? null : (await ToDtosAsync([order], ct))[0];
+    }
+
     private async Task<IReadOnlyList<OrderDto>> ToDtosAsync(IReadOnlyList<ExternalOrder> orders, CancellationToken ct)
     {
-        var channelIds = orders.Select(o => o.ChannelId).Distinct().ToList();
+        var channelIds = orders.Select(o => o.ChannelId).OfType<Guid>().Distinct().ToList();
         var shops = await db.SalesChannels.AsNoTracking()
             .Where(c => channelIds.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id, c => c.BaseUrl, ct);
@@ -126,7 +140,9 @@ public class OrderListService(IAppDbContext db)
                 .OrderBy(l => l.Id)
                 .Select(line =>
                 {
-                    Guid? itemId = line.ItemId ?? (mappings.TryGetValue((order.ChannelId, line.ExternalProductId), out var linkedNow) ? linkedNow : null);
+                    // A manual line always has its item; only a shop line can be unlinked.
+                    Guid? itemId = line.ItemId
+                        ?? (order.ChannelId is { } channelId && mappings.TryGetValue((channelId, line.ExternalProductId), out var linkedNow) ? linkedNow : null);
                     var state = line.ItemId is not null ? OrderLineState.Linked
                         : itemId is not null ? OrderLineState.LinkedAfterOrder
                         : OrderLineState.Unlinked;
@@ -138,10 +154,13 @@ public class OrderListService(IAppDbContext db)
             return new OrderDto(
                 order.Id,
                 order.ExternalId,
+                order.Source,
                 order.ChannelId,
-                shops.GetValueOrDefault(order.ChannelId, ""),
+                order.ChannelId is { } shopId ? shops.GetValueOrDefault(shopId, "") : null,
+                order.Reference,
+                order.Note,
                 order.Status,
-                order.Status is { } status && ExternalOrder.ActiveStatuses.Contains(status),
+                order.TakesStock,
                 order.PlacedAt,
                 lines.Count(l => l.State == OrderLineState.Unlinked),
                 lines);

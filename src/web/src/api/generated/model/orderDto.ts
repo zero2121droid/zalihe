@@ -5,12 +5,20 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { OrderLineDto } from './orderLineDto';
+import type { OrderSource } from './orderSource';
 
 export interface OrderDto {
   id: string;
   number: string;
-  channelId: string;
-  shopUrl: string;
+  source: OrderSource;
+  /** @nullable */
+  channelId: string | null;
+  /** @nullable */
+  shopUrl: string | null;
+  /** @nullable */
+  reference: string | null;
+  /** @nullable */
+  note: string | null;
   /** @nullable */
   status: string | null;
   takesStock: boolean;

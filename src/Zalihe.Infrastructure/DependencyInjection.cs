@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<WebhookService>();
         services.AddScoped<OrderSyncService>();
         services.AddScoped<OrderListService>();
+        services.AddScoped<ManualOrderService>();
         services.AddScoped<StockPushService>();
         services.AddScoped<LowStockAlertService>();
         services.AddScoped<ChannelFailureAlertService>();

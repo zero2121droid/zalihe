@@ -223,11 +223,16 @@ Vlasnik da oseti aplikaciju kao svoju, bez kvarenja čitljivosti i statusa zalih
 - Boje se ne preuzimaju iz WordPress-a: WooCommerce ključevi ne daju pristup izgledu sajta, teme i graditelji stranica čuvaju boje svako na svoj način, a proizvoljna boja može da ruši kontrast ili da liči na upozorenje.
 
 ### 11.5 Ručne porudžbine
-Za prodaju van prodavnice (Instagram, telefon, radnja), da firma ima pregled svih prodaja na jednom mestu, sa ili bez WooCommerce-a. Počinje tek kad bar 2–3 stvarna korisnika to zatraže; do tada je dovoljan ručni izlaz (`Sale`) sa spoljnom referencom.
+Za prodaju van prodavnice (Instagram, telefon, radnja), da firma ima pregled svih prodaja na jednom mestu, sa ili bez WooCommerce-a.
+
+**Stanje (novembar 2026):** napravljen korak (1). Ručna porudžbina ima stavke, opcionu referencu i napomenu i statuse Potvrđena i Otkazana (kodovi `confirmed` i `cancelled`; `cancelled` je isti kod kao u WooCommerce-u, pa deli prevod). Pravi se odmah kao potvrđena, bez nacrta. Otkazivanje vraća robu, a ponovna potvrda je opet skida. Na ekranu „Porudžbine” je dugme „Nova porudžbina”, a ručne porudžbine su u istoj listi, sa brojem bez `#` (R-0001) i oznakom „Ručno”. Izmena stavki posle čuvanja još ne postoji: greška se ispravlja otkazivanjem i novom porudžbinom.
+
+- **Prodaja na artiklu je ručna porudžbina sa jednom stavkom.** Dugme „Prodaja” na detalju artikla ne pravi samo kretanje, nego porudžbinu, pa je svaka prodaja i u „Porudžbinama”, a greška se ispravlja otkazivanjem porudžbine umesto korekcijom. Prijem, povrat i korekcija ostaju obična kretanja. API za ručni izlaz (`Sale` kretanje) ostaje, ali ga ekran više ne koristi.
+- **Ručna porudžbina nije fiskalni račun.** Lagerko ne izdaje račune (fiskalizacija je van obima, 2.8); radnja račun izdaje svojom kasom (ESIR), a u Lagerku beleži samo robu.
 
 - Uloge ostaju podeljene: WooCommerce porudžbine Lagerko samo čita i nikad im ne menja status (status pokreće emailove kupcu, povraćaj novca i dodatke za kurire). Ručne porudžbine postoje samo u Lagerku i ne prave se u WooCommerce-u (to bi poslalo email kupcu, tražilo podatke kupca, a uvezena porudžbina bi skinula robu drugi put). U prodavnicu ide samo stanje.
 - Ručna porudžbina menja stanje kao i svaka druga, pa `StockPushService` (7.5) šalje novo stanje u sve povezane prodavnice, bez nove integracije. Primer: 3 majice, 2 prodate na Instagramu, shop za nekoliko sekundi prikazuje 1.
-- Model: `ExternalOrder` sa novim poljem `Source` (`WooCommerce`, `Manual`) i opcionalnim `ChannelId` (ručni unos nije kanal, vidi 5). Broj se dodeljuje automatski u okviru firme (R-0001…), uz opcionalnu referencu (npr. „IG 154”). Stavke: artikal, količina, opciono prodajna cena.
+- Model: `ExternalOrder` sa novim poljem `Source` (`WooCommerce`, `Manual`) i opcionalnim `ChannelId` (ručni unos nije kanal, vidi 5). Broj se dodeljuje automatski u okviru firme (R-0001…), uz opcionalnu referencu (npr. „IG 154”). Stavke: artikal, količina, opciono prodajna cena (cena dolazi u koraku 3).
 - Bez podataka kupca: najviše slobodna napomena, uz upozorenje u formi da se tu ne upisuju adrese i telefoni.
 - Statusi: Nacrt, Potvrđena, Poslata, Otkazana, Vraćena. Obrada je ista kao u 6, samo sa `activeStatuses = { Potvrđena, Poslata }`, pa izmena količine, uklonjena stavka, otkazivanje i ponovno aktiviranje rade bez posebnog koda za prelaze. Isti unit testovi kao u 6, za ručni izvor.
 - Nedovoljno robe: upozorenje, ali potvrda je dozvoljena i stanje može u minus (WooCommerce porudžbina je možda stigla malo ranije, a prodavac zna bolje). Istovremena prodaja poslednjeg komada u shopu i ručno ne može potpuno da se spreči jer slanje stanja kasni nekoliko sekundi; minus stanje i upozorenje to čine vidljivim.

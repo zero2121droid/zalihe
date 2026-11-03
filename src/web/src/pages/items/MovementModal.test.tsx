@@ -31,6 +31,14 @@ const recorded = {
   },
 }
 
+const order = {
+  status: 201,
+  body: {
+    id: 'o1', number: 'R-0001', source: 'manual', channelId: null, shopUrl: null, reference: null, note: null,
+    status: 'confirmed', takesStock: true, placedAt: '2026-11-03T12:00:00Z', unlinkedLineCount: 0, lines: [],
+  },
+}
+
 function render(kind: ManualMovementKind, onClose = () => {}) {
   return renderPage(<MovementModal item={item} kind={kind} onClose={onClose} />)
 }
@@ -41,24 +49,59 @@ function postedBody(fetchMock: ReturnType<typeof mockApi>) {
 }
 
 describe('MovementModal', () => {
-  it('Submit_SaleWithDecimalComma_SendsKindAndQuantity', async () => {
+  it('Submit_SaleWithDecimalComma_CreatesOrderWithOneLine', async () => {
     // Arrange
-    const fetchMock = mockApi({ 'POST /api/items/item-1/movements': recorded })
+    const fetchMock = mockApi({ 'POST /api/orders': order })
     let closed = false
     await render('sale', () => (closed = true))
 
     // Act
     await userEvent.type(screen.getByLabelText(/^Prodata količina/), '1,5')
+    await userEvent.type(screen.getByLabelText('Referenca'), ' IG 154 ')
     await userEvent.click(screen.getByRole('button', { name: 'Zabeleži' }))
 
     // Assert
     await waitFor(() => expect(closed).toBe(true))
-    expect(postedBody(fetchMock)).toEqual({ kind: 'sale', quantity: 1.5, note: null })
+    expect(postedBody(fetchMock)).toEqual({ lines: [{ itemId: 'item-1', quantity: 1.5 }], reference: 'IG 154', note: null })
+  })
+
+  it('Submit_Receipt_RecordsMovementWithoutReference', async () => {
+    // Arrange
+    const fetchMock = mockApi({ 'POST /api/items/item-1/movements': recorded })
+    let closed = false
+    await render('receipt', () => (closed = true))
+
+    // Act
+    await userEvent.type(screen.getByLabelText(/^Primljena količina/), '24')
+    await userEvent.click(screen.getByRole('button', { name: 'Zabeleži' }))
+
+    // Assert
+    await waitFor(() => expect(closed).toBe(true))
+    expect(screen.queryByLabelText('Referenca')).toBeNull()
+    expect(postedBody(fetchMock)).toEqual({ kind: 'receipt', quantity: 24, note: null })
+  })
+
+  it('Submit_SaleQuantityRejected_ShowsErrorAtQuantity', async () => {
+    // Arrange
+    mockApi({
+      'POST /api/orders': {
+        status: 400,
+        body: { code: 'validation.failed', errors: [{ code: 'validation.too_many_decimals', field: 'lines[0].quantity', params: { max: 3 } }] },
+      },
+    })
+    await render('sale')
+
+    // Act
+    await userEvent.type(screen.getByLabelText(/^Prodata količina/), '1,2345')
+    await userEvent.click(screen.getByRole('button', { name: 'Zabeleži' }))
+
+    // Assert
+    expect(await screen.findByText('Najviše 3 decimale.')).toBeInTheDocument()
   })
 
   it('Submit_Saved_ShowsSavedOnButtonBeforeClosing', async () => {
     // Arrange
-    mockApi({ 'POST /api/items/item-1/movements': recorded })
+    mockApi({ 'POST /api/orders': order })
     // Noted when the modal closes, so a busy machine can't make the test look too late.
     let savedShownOnClose: boolean | null = null
     await render('sale', () => (savedShownOnClose = screen.queryByRole('button', { name: 'Sačuvano' }) !== null))

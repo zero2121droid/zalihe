@@ -42,4 +42,9 @@
   <data name="PasswordReset_Intro" xml:space="preserve"><value>Someone asked for a new password for the account {0}. If it was you, open the link and enter a new password.</value></data>
   <data name="PasswordReset_Open" xml:space="preserve"><value>Set a new password</value></data>
   <data name="PasswordReset_Footer" xml:space="preserve"><value>The link is valid until {0} and works once. If you didn't ask for a new password, ignore this email: your old password still works.</value></data>
+  <data name="NewRegistration_Subject" xml:space="preserve"><value>New company on Lagerko: {0}</value></data>
+  <data name="NewRegistration_Heading" xml:space="preserve"><value>New registration</value></data>
+  <data name="NewRegistration_Intro" xml:space="preserve"><value>{0} has just registered. Owner: {1}, {2}.</value></data>
+  <data name="NewRegistration_Open" xml:space="preserve"><value>Open Lagerko</value></data>
+  <data name="NewRegistration_Footer" xml:space="preserve"><value>Only the platform's owner gets this email, when a new company registers.</value></data>
 </root>

@@ -317,3 +317,9 @@ Sve tabele imaju global query filter po `TenantId`.
 1. **SEF i e-fakture.** Domaći dobavljači firmama verovatno šalju e-fakture preko SEF-a kao UBL XML (proveriti za ciljne korisnike). Takva faktura se čita tačno i bez AI-ja, pa bi upload XML fajla bio jeftin dodatak, a AI ostaje za uvoznu robu, otpremnice bez cena, papir i PDF. Integracija sa SEF-om ostaje van obima (2.8).
 2. **Koja cena je nabavna.** Bez PDV-a i posle rabata (PDV obveznik može da odbije PDV) ili sa PDV-om (paušalac ne može)? Verovatno podešavanje na firmi.
 3. ~~Da li faza 0 ulazi u v1.~~ Napravljena je u novembru 2026.
+
+### 11.8 Vlasnik platforme
+Vlasnik platforme je osoba koja vodi Lagerko, ne uloga u firmi: admin je svako ko registruje firmu, pa ovo pravo ne sme da zavisi od te uloge. Određuje ga konfiguracija (`Platform:OwnerEmails`), bez nove uloge i migracije.
+
+- Za svaku novu firmu vlasnik dobija email (naziv firme, ime i email osobe koja ju je registrovala), kao posao u pozadini, pa greška u slanju ne obara registraciju. Prihvaćen poziv u postojeću firmu nije nova firma i ne šalje email.
+- Sledeće: stranica samo za vlasnika, sa brojevima i tabelom firmi (artikli, povezana prodavnica, poslednje kretanje). Prikazuje samo to, ne sadržaj podataka firme.

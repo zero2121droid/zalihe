@@ -19,6 +19,9 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     /// <summary>The public address shops are told to send webhooks to.</summary>
     public const string WebhookBaseUrl = "https://app.zalihe.test";
 
+    /// <summary>Gets an email for every company that registers in any test.</summary>
+    public const string PlatformOwnerEmail = "vlasnik@zalihe.test";
+
     /// <summary>The fake WooCommerce shop every channel talks to in tests.</summary>
     public FakeShopHandler Shop { get; } = new();
 
@@ -47,6 +50,7 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Jobs:WebhookCleanupCron", "");
         builder.UseSetting("Jobs:LowStockAlertCron", "");
         builder.UseSetting("Email:AppUrl", "https://app.zalihe.test");
+        builder.UseSetting("Platform:OwnerEmails:0", PlatformOwnerEmail);
         // As in production, behind Caddy.
         builder.UseSetting("ForwardedHeaders:Enabled", "true");
         File.WriteAllText(Path.Combine(_webRoot.FullName, "index.html"), IndexHtml);

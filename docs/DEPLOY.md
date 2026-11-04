@@ -63,6 +63,7 @@ Aplikacija šalje preko SMTP-a (MailKit), pa je provajder samo podešavanje u `E
 - **Brevo** ili **Resend**: besplatan nivo je dovoljan za početak.
 - Pošiljalac na sopstvenom domenu (npr. `upozorenja@domen.rs`), uz SPF/DKIM zapise koje provajder da.
 - `Email:AppUrl` mora biti javna adresa aplikacije, jer se od nje prave linkovi u emailovima (pozivi).
+- `PLATFORM_OWNER_EMAIL` (`Platform:OwnerEmails`) je adresa vlasnika platforme, na koju stiže email za svaku novu firmu. Dovoljno je prosleđivanje (npr. Cloudflare Email Routing), jer ta adresa samo prima poštu.
 
 ## 5. Backup baze
 
@@ -177,7 +178,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 **5. Podešavanja.**
 
 1. `cp deploy/.env.example deploy/.env`
-2. Popuniti domen, `APP_URL`, `POSTGRES_PASSWORD` (`openssl rand -hex 32`) i SMTP.
+2. Popuniti domen, `APP_URL`, `POSTGRES_PASSWORD` (`openssl rand -hex 32`), SMTP i `PLATFORM_OWNER_EMAIL`.
 3. `chmod 600 deploy/.env`
 
 **6. DNS.** A zapis za domen (npr. `app.zalihe.rs`) na IP adresu servera, i AAAA ako server ima IPv6. Sačekati da `dig +short app.zalihe.rs` vrati tu adresu.

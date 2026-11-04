@@ -23,6 +23,7 @@ using Zalihe.Infrastructure.Channels.WooCommerce;
 using Zalihe.Infrastructure.Email;
 using Zalihe.Infrastructure.Identity;
 using Zalihe.Infrastructure.Persistence;
+using Zalihe.Infrastructure.Platform;
 using Zalihe.Infrastructure.Security;
 using Zalihe.Infrastructure.Tenancy;
 
@@ -66,6 +67,7 @@ public static class DependencyInjection
 
         // Emails: SMTP settings from "Email" (Mailpit locally), texts from resx in the user's language.
         services.AddOptions<EmailOptions>().BindConfiguration(EmailOptions.Section);
+        services.AddOptions<PlatformOptions>().BindConfiguration(PlatformOptions.Section);
         services.AddLocalization();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<AlertEmails>();

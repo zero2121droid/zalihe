@@ -42,4 +42,9 @@
   <data name="PasswordReset_Intro" xml:space="preserve"><value>Neko je zatražio novu lozinku za nalog {0}. Ako si to ti, otvori link i upiši novu lozinku.</value></data>
   <data name="PasswordReset_Open" xml:space="preserve"><value>Postavi novu lozinku</value></data>
   <data name="PasswordReset_Footer" xml:space="preserve"><value>Link važi do {0} i može da se iskoristi jednom. Ako zahtev nije od tebe, zanemari ovaj email: stara lozinka i dalje važi.</value></data>
+  <data name="NewRegistration_Subject" xml:space="preserve"><value>Nova firma u Lagerku: {0}</value></data>
+  <data name="NewRegistration_Heading" xml:space="preserve"><value>Nova registracija</value></data>
+  <data name="NewRegistration_Intro" xml:space="preserve"><value>Firma {0} je upravo registrovana. Vlasnik: {1}, {2}.</value></data>
+  <data name="NewRegistration_Open" xml:space="preserve"><value>Otvori Lagerko</value></data>
+  <data name="NewRegistration_Footer" xml:space="preserve"><value>Ovaj email dobija samo vlasnik platforme, kad se registruje nova firma.</value></data>
 </root>

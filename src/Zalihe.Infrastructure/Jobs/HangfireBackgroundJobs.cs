@@ -2,10 +2,13 @@ using Hangfire;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Zalihe.Application.Alerts;
 using Zalihe.Application.Channels;
 using Zalihe.Application.Common;
 using Zalihe.Application.Webhooks;
+using Zalihe.Infrastructure.Email;
+using Zalihe.Infrastructure.Platform;
 using Zalihe.Infrastructure.Tenancy;
 
 namespace Zalihe.Infrastructure.Jobs;
@@ -29,6 +32,9 @@ public class HangfireBackgroundJobs(IBackgroundJobClient client, IConfiguration 
 
     public void EmailChannelFailure(Guid tenantId, Guid channelId) =>
         client.Enqueue<ChannelFailureEmailJob>(job => job.RunAsync(tenantId, channelId, CancellationToken.None));
+
+    public void EmailNewRegistration(Guid tenantId, Guid userId) =>
+        client.Enqueue<NewRegistrationEmailJob>(job => job.RunAsync(tenantId, userId, CancellationToken.None));
 }
 
 /// <summary>
@@ -41,6 +47,19 @@ public class ChannelFailureEmailJob(TenantContext tenant, ChannelFailureAlertSer
     {
         tenant.Set(tenantId);
         await alerts.SendAsync(channelId, ct);
+    }
+}
+
+/// <summary>
+/// Emails the platform's owners about a new company. It gets IDs, not the name or the email, so those
+/// aren't kept in Hangfire's tables. A mail server that is down fails the job and Hangfire tries again.
+/// </summary>
+public class NewRegistrationEmailJob(TenantContext tenant, AlertEmails emails, IOptions<PlatformOptions> platform)
+{
+    public async Task RunAsync(Guid tenantId, Guid userId, CancellationToken ct)
+    {
+        tenant.Set(tenantId);
+        await emails.SendNewRegistrationAsync(platform.Value.OwnerEmails, userId, ct);
     }
 }
 

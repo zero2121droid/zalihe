@@ -16,4 +16,7 @@ public interface IBackgroundJobs
 
     /// <summary>Emails the company's users that the shop stopped working (SPEC 7.6); retried until it goes out.</summary>
     void EmailChannelFailure(Guid tenantId, Guid channelId);
+
+    /// <summary>Tells the platform's owners that a new company registered; a failure never touches the registration.</summary>
+    void EmailNewRegistration(Guid tenantId, Guid userId);
 }

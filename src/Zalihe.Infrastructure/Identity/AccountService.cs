@@ -26,6 +26,7 @@ public partial class AccountService(
     IOptions<IdentityOptions> identityOptions,
     IOptions<DataProtectionTokenProviderOptions> tokenOptions,
     AlertEmails emails,
+    IBackgroundJobs jobs,
     IMemoryCache cache,
     TimeProvider timeProvider)
 {
@@ -63,6 +64,7 @@ public partial class AccountService(
         }
 
         await transaction.CommitAsync(ct);
+        jobs.EmailNewRegistration(tenant.Id, user.Id);
         return new RegistrationResult(user, []);
     }
 

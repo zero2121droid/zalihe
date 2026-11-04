@@ -68,6 +68,31 @@ public class AlertEmails(
         await sender.SendAsync(message with { To = to, ToName = "" }, ct);
     }
 
+    /// <summary>
+    /// Tells the platform's owners that the current company registered, in the default language: the
+    /// owners are not users of this company, so there is no language to take from them.
+    /// </summary>
+    public async Task SendNewRegistrationAsync(IReadOnlyList<string> owners, Guid userId, CancellationToken ct)
+    {
+        var company = await db.Tenants.Where(t => t.Id == tenant.TenantId).Select(t => t.Name).SingleAsync(ct);
+        var user = await db.Users
+            .Where(u => u.Id == userId && u.TenantId == tenant.TenantId)
+            .Select(u => new { u.Name, Email = u.Email! })
+            .SingleAsync(ct);
+
+        var message = InLanguage(Languages.Default, _ =>
+        {
+            string intro = texts["NewRegistration_Intro", company, user.Name, user.Email];
+            return Frame(company, texts["NewRegistration_Subject", company], texts["NewRegistration_Heading"],
+                $"<p style=\"margin:0;font-size:14px;color:#3B4033\">{E(intro)}</p>", intro,
+                texts["NewRegistration_Open"], "/", texts["NewRegistration_Footer"]);
+        });
+        foreach (var owner in owners)
+        {
+            await sender.SendAsync(message with { To = owner, ToName = "" }, ct);
+        }
+    }
+
     /// <summary>Writes the email for each user of the current company in the user's language and sends it.</summary>
     private async Task SendToCompanyAsync(Func<string, CultureInfo, EmailMessage> write, CancellationToken ct)
     {

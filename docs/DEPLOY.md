@@ -63,6 +63,7 @@ Aplikacija šalje preko SMTP-a (MailKit), pa je provajder samo podešavanje u `E
 - **Brevo** ili **Resend**: besplatan nivo je dovoljan za početak.
 - Pošiljalac na sopstvenom domenu (npr. `upozorenja@domen.rs`), uz SPF/DKIM zapise koje provajder da.
 - `Email:AppUrl` mora biti javna adresa aplikacije, jer se od nje prave linkovi u emailovima (pozivi).
+- Ako provajder servera blokira izlazne portove 587 i 465 (tako je na trenutnom netcup serveru), koristiti Brevo port 2525 sa `SMTP_SECURITY=StartTls`.
 - `PLATFORM_OWNER_EMAIL` (`Platform:OwnerEmails`) je adresa vlasnika platforme, na koju stiže email za svaku novu firmu. Dovoljno je prosleđivanje (npr. Cloudflare Email Routing), jer ta adresa samo prima poštu.
 
 ## 5. Backup baze
@@ -208,7 +209,7 @@ Ovo treba uraditi jednom pre prvog pravog korisnika, i ponoviti s vremena na vre
 
 **10. Praćenje.** Besplatan uptime monitor (npr. UptimeRobot ili Better Stack) na `https://<domen>/health`, sa emailom kad prestane da odgovara.
 
-**Nova verzija**, posle pusha na `main`: na serveru pokrenuti `deploy/deploy.sh`.
+**Nova verzija**, posle pusha na `main`: na serveru pokrenuti `deploy/deploy.sh`. Na trenutnom serveru se umesto toga koristi `app deploy lagerko` (tačka 12).
 
 ## 10. Redosled
 
@@ -237,3 +238,20 @@ Do druge aplikacije sve ostaje kao u tačkama 1–10. Ovo se radi tek kad druga 
 7. **Praćenje svake aplikacije.** Poseban uptime monitor za `/health` svake aplikacije.
 
 Rizik: kad server padne, padaju sve aplikacije zajedno. Zato je backup na drugom mestu (tačka 5) obavezan za svaku.
+
+## 12. Trenutni server
+
+Lagerko sada radi drugačije od postavke opisane u tačkama 6 i 9, jer deli server sa drugom aplikacijom:
+
+- Adresa je `https://lagerko.miljanmilojkovic.com`, a kod je u `/srv/lagerko` (netcup, Debian 13, ARM64).
+- HTTPS i domen radi **Nginx** na serveru (Let's Encrypt preko certbota), a ne Caddy. Aplikacija je objavljena samo na `127.0.0.1:3001`.
+- `deploy/docker-compose.override.yml` postoji samo na serveru: isključuje Caddy i određuje port. Pravi ga skripta `app` (`/usr/local/bin/app`).
+- Zbog toga se **`deploy/deploy.sh` ovde ne pokreće**: sa `-f docker-compose.yml` zanemaruje override, pa bi aplikacija ostala bez porta, a Caddy bi tražio portove 80 i 443 koje drži Nginx.
+
+| Šta | Komanda |
+|---|---|
+| Nova verzija | `app deploy lagerko` |
+| Izmena podešavanja | `app env lagerko` (otvori `.env`, a posle izlaza primeni izmene) |
+| Logovi | `app logovi lagerko app` |
+
+Izmena `.env` običnim `nano` ne važi dok se ne pokrene `app env lagerko` ili `app deploy lagerko`. Email ide preko Breva na portu 2525, sa domena `lagerko.miljanmilojkovic.com`.

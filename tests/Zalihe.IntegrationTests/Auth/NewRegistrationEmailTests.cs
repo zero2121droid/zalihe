@@ -31,15 +31,26 @@ public class NewRegistrationEmailTests(ZaliheApiFactory factory)
         var email = UniqueEmail();
 
         // Act
-        var response = await factory.CreateClient().PostAsJsonAsync("/api/auth/register",
-            new { companyName = "Pržionica Sever", name = "Ana", email, password = "sigurna-lozinka", language = "en" });
+        await factory.CreateClient().RegisterAsync(factory, email, companyName: "Pržionica Sever", name: "Ana", language: "en");
 
         // Assert
-        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         var sent = (await OwnerEmailAboutAsync(email)).ShouldNotBeNull();
         sent.Subject.ShouldBe("Nova firma u Lagerku: Pržionica Sever");
         sent.Text.ShouldContain($"Firma Pržionica Sever je upravo registrovana. Vlasnik: Ana, {email}.");
-        factory.Emails.SentTo(email).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Register_CodeNotConfirmed_DoesNotEmailThePlatformOwner()
+    {
+        // Arrange
+        var email = UniqueEmail();
+
+        // Act
+        (await factory.CreateClient().StartRegistrationAsync(email)).EnsureSuccessStatusCode();
+        await Task.Delay(500);
+
+        // Assert
+        factory.Emails.SentTo(Owner).ShouldNotContain(m => m.Text.Contains(email));
     }
 
     [Fact]
@@ -52,7 +63,7 @@ public class NewRegistrationEmailTests(ZaliheApiFactory factory)
         try
         {
             // Act
-            await factory.CreateClient().RegisterAsync(email);
+            await factory.CreateClient().RegisterAsync(factory, email);
 
             // Assert: signing in works, so the company was saved although no email went out
             var login = await factory.CreateClient().PostAsJsonAsync("/api/auth/login", new { email, password = "sigurna-lozinka" });
@@ -71,8 +82,7 @@ public class NewRegistrationEmailTests(ZaliheApiFactory factory)
         var email = UniqueEmail();
         var company = $"Firma {Guid.NewGuid():N}";
         var owner = factory.CreateClient();
-        (await owner.PostAsJsonAsync("/api/auth/register",
-            new { companyName = company, name = "Ana", email, password = "sigurna-lozinka" })).EnsureSuccessStatusCode();
+        await owner.RegisterAsync(factory, email, companyName: company, name: "Ana");
         owner.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await owner.GetAntiforgeryTokenAsync());
         (await OwnerEmailAboutAsync(email)).ShouldNotBeNull();
 

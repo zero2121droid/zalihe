@@ -145,6 +145,7 @@ Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CS
 ## Prijava i registracija
 
 - Prijava, registracija, zaboravljena i nova lozinka i prihvatanje poziva imaju isti raspored (`AuthLayout`): sadržaj najviše 1180 px, centriran na ekranu; forma levo (najviše 420 px), a desno znak i naziv **lagerko** u jednom redu, krupno (znak 96 px, naziv 80 px mono), na pozadini `bg`, bez kartice i bez teksta ispod naziva. Jezik i tema su gore desno.
+- Potvrda emaila (`/verify-email`) ima šest polja za cifre u mono fontu, preko cele širine forme. Šesta cifra sama šalje kod; pogrešan kod protrese formu i isprazni polja. „Pošalji ponovo” odbrojava sekunde do sledećeg koda, a posle slanja kratko pokaže kvačicu i „Poslato”.
 - Naslov strane je 44 px (na telefonu 30 px), klasa `z-auth-title`. Bez muškog ili ženskog roda u tekstu („Prijava“, ne „Dobro došao“).
 - Na prijavi su „Zapamti me na ovom uređaju“ (levo) i „Zaboravljena lozinka?“ (desno) u jednom redu ispod lozinke, tim redom i za Tab.
 - Ispod `md` veliki znak se sklanja, a običan logo ide gore levo, iznad forme.

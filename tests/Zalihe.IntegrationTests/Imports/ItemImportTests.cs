@@ -195,7 +195,7 @@ public class ItemImportTests(ZaliheApiFactory factory)
     {
         // Arrange
         var client = factory.CreateClient();
-        await client.RegisterAsync(HttpClientExtensions.UniqueEmail());
+        await client.RegisterAsync(factory, HttpClientExtensions.UniqueEmail());
 
         // Act
         var response = await client.PostAsync("/api/imports/items", Form(Utf8(Csv), Mapping));

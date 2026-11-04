@@ -21,13 +21,7 @@ public class PlatformTests(ZaliheApiFactory factory)
         var login = await client.PostAsJsonAsync("/api/auth/login", new { email = ZaliheApiFactory.PlatformOwnerEmail, password = Password });
         if (login.StatusCode != HttpStatusCode.NoContent)
         {
-            (await client.PostAsJsonAsync("/api/auth/register", new
-            {
-                companyName = OwnerCompany,
-                name = "Vlasnik",
-                email = ZaliheApiFactory.PlatformOwnerEmail,
-                password = Password,
-            })).EnsureSuccessStatusCode();
+            await client.RegisterAsync(factory, ZaliheApiFactory.PlatformOwnerEmail, Password, OwnerCompany, "Vlasnik");
         }
 
         return client;
@@ -38,8 +32,7 @@ public class PlatformTests(ZaliheApiFactory factory)
     {
         var name = $"Firma {Guid.NewGuid():N}";
         var client = factory.CreateClient();
-        (await client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = name, name = "Ana", email = UniqueEmail(), password = Password })).EnsureSuccessStatusCode();
+        await client.RegisterAsync(factory, UniqueEmail(), Password, name, "Ana");
         client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await client.GetAntiforgeryTokenAsync());
         return (name, client);
     }

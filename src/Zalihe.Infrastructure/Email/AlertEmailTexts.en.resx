@@ -42,6 +42,10 @@
   <data name="PasswordReset_Intro" xml:space="preserve"><value>Someone asked for a new password for the account {0}. If it was you, open the link and enter a new password.</value></data>
   <data name="PasswordReset_Open" xml:space="preserve"><value>Set a new password</value></data>
   <data name="PasswordReset_Footer" xml:space="preserve"><value>The link is valid until {0} and works once. If you didn't ask for a new password, ignore this email: your old password still works.</value></data>
+  <data name="RegistrationCode_Subject" xml:space="preserve"><value>{0} is your Lagerko code</value></data>
+  <data name="RegistrationCode_Heading" xml:space="preserve"><value>Confirm your email address</value></data>
+  <data name="RegistrationCode_Intro" xml:space="preserve"><value>Enter this code on the registration screen:</value></data>
+  <data name="RegistrationCode_Footer" xml:space="preserve"><value>The code is valid for {0} minutes. If you didn't register a company on Lagerko, ignore this email: no account will be created.</value></data>
   <data name="NewRegistration_Subject" xml:space="preserve"><value>New company on Lagerko: {0}</value></data>
   <data name="NewRegistration_Heading" xml:space="preserve"><value>New registration</value></data>
   <data name="NewRegistration_Intro" xml:space="preserve"><value>{0} has just registered. Owner: {1}, {2}.</value></data>

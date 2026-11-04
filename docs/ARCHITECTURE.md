@@ -376,19 +376,15 @@ dotnet ef database update -p src/Zalihe.Infrastructure -s src/Zalihe.Web
 
 **`Identity/AccountService.cs`**: registracija.
 - `RegisterCommand` i `RegistrationResult`: ulaz i izlaz. Rezultat nosi ili korisnika ili listu grešaka. Greške pri unosu su očekivane, pa se vraćaju kao rezultat, a ne bacaju kao izuzeci. Izuzetak je za ono što ne bi smelo da se desi.
-- `RegisterAsync()`:
-  1. proverava jezik;
-  2. otvara **transakciju**;
-  3. pravi i čuva `Tenant`;
-  4. pravi korisnika preko `userManager.CreateAsync` (hešira lozinku i proverava pravila i jedinstvenost emaila);
-  5. ako to ne uspe, vraća greške, a `await using` zatvara transakciju bez commita, pa se firma **poništava**;
-  6. ako uspe, radi `CommitAsync`.
+- `StartRegistrationAsync()`: proverava jezik, adresu i lozinku (validatori `UserManager`-a), pa u transakciji čuva `PendingRegistration` i šalje kod. Ako slanje ne uspe, transakcija se poništava. Firma i korisnik još ne postoje.
+- `ConfirmRegistrationAsync()`: nađe registraciju po tokenu i zaključa red (`FOR UPDATE`), pa istovremena pogađanja ne mogu da pređu limit pokušaja. Tačan kod u istoj **transakciji** pravi `Tenant` i korisnika, sa već heširanom lozinkom iz registracije, i briše `PendingRegistration`. Ako `userManager.CreateAsync` ne uspe, `await using` zatvara transakciju bez commita, pa se firma **poništava**.
+- `ResendRegistrationCodeAsync()`: nov kod za isti token. Pravila (rokovi, pokušaji, limit kodova) su u domenu, u `Users/PendingRegistration.cs`. Posao `RegistrationCleanupJob` briše nedovršene registracije posle 24 sata. Migracija `AddPendingRegistrations`.
 
 **Podešavanja u `AccountService.cs`**: `RenameCompanyAsync` (`Tenant.Rename`, ista pravila kao pri registraciji), `UpdateProfileAsync` (ime i jezik) i `ChangePasswordAsync`. Pogrešna trenutna lozinka je `auth.wrong_password` na polju `currentPassword`, a pravila za novu (npr. dužina) idu na `newPassword`.
 
 **Pozivi** (`Users/Invitation.cs` u domenu, `Identity/InvitationService.cs`): link nosi slučajan token od 256 bita, a u bazi je samo njegov SHA-256, pa curenje baze ne daje linkove koji rade. Poziv važi 7 dana i koristi se jednom; ponovni poziv na istu adresu (jedan po adresi u firmi) daje nov token i novu nedelju (`Renew`). Email ide pre čuvanja, pa server za poštu koji ne radi (503, `email.unavailable`) ne ostavlja poziv koji niko nije dobio. Email je na jeziku onog ko poziva. `GetByTokenAsync` i `AccountService.AcceptInvitationAsync` traže poziv po tokenu kroz sve firme (pozvani još nema firmu), kao `FindChannelTenantAsync` za webhookove; ništa drugo ne sme. Prihvatanje u jednoj transakciji pravi korisnika u firmi poziva i iskoristi poziv. Migracija `AddInvitations`.
 
-  Bez transakcije bi posle neuspele registracije ostajale firme bez korisnika. Ovo radi zato što `UserManager` koristi isti `DbContext` (isti scope), pa je u istoj transakciji.
+  Bez transakcije bi posle neuspele potvrde ostajale firme bez korisnika. Ovo radi zato što `UserManager` koristi isti `DbContext` (isti scope), pa je u istoj transakciji.
 - `GetTenantAsync()`: učitava firmu, koristi je `me` endpoint.
 - `MapIdentityError()`: prevodi Identity kodove (`DuplicateEmail`, `PasswordTooShort`) u kodove aplikacije (`auth.email_taken`, `auth.password_too_short` sa `min`). `switch` izraz sa šablonima: poznati slučajevi eksplicitno, sve ostale greške lozinke kao `auth.password_*`, sve ostalo kao `auth.*`.
 - `ToSnakeCase()` i `[GeneratedRegex]`: pretvara `PasswordRequiresDigit` u `password_requires_digit`. `GeneratedRegex` pravi regex pri kompajliranju, što je brže, i zato je klasa `partial`.
@@ -455,7 +451,7 @@ Slike: proizvod šalje `images` (uzima se prva), a varijacija `image`; varijacij
 **`Auth/AuthContracts.cs`**: oblici zahteva i odgovora (DTO). Oni su **odvojeni od entiteta**: klijent nikad ne dobija `User` direktno, jer bi tako procurio hash lozinke. Atributi `[Required(ErrorMessage = "validation.required")]` imaju **kod umesto poruke**, i taj trik omogućava da ugrađena validacija daje kodove aplikacije.
 
 **`Auth/AuthController.cs`**: četiri endpointa. Svaka metoda samo pozove servis ili Identity i pretvori rezultat u HTTP odgovor:
-- `Register`: poziva `AccountService`, pa `SignInAsync` (postavlja cookie). Vraća `204 No Content`, jer frontend posle toga ionako zove `me`.
+- `Register`: poziva `AccountService` i vraća token za ekran sa kodom; korisnik još nije prijavljen. `ConfirmRegistration` proverava kod, pa `SignInAsync` (postavlja cookie) i vraća `204 No Content`, jer frontend posle toga ionako zove `me`. `ResendRegistrationCode` šalje nov kod. Sva tri dele ograničenje po IP adresi (`RegistrationRateLimit`).
 - `Login`: `PasswordSignInAsync` proverava lozinku, postavlja cookie i broji neuspešne pokušaje (`lockoutOnFailure: true`, zaključavanje posle 5 pokušaja). Greška za pogrešan email i pogrešnu lozinku je ista (`auth.invalid_credentials`), da napadač ne može da otkrije koji emailovi postoje.
 - `Logout`: briše cookie. Ima `[Authorize]` i traži antiforgery token.
 - `Me`: vraća ko je prijavljen i izdaje antiforgery token.
@@ -685,7 +681,7 @@ Kad je sve već povezano, umesto teksta „sve je povezano” stoji i dugme „O
 - `locales.test.ts`: oba jezika imaju isti skup ključeva i nijedan prevod nije prazan;
 - `format.test.ts`: formatiranje i unos brojeva;
 - `errors.test.ts`: prevođenje kodova i parametara;
-- `LoginPage.test.tsx`, `RegisterPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
+- `LoginPage.test.tsx`, `RegisterPage.test.tsx`, `VerifyEmailPage.test.tsx`: forma pošalje prave podatke i prikaže greške API-ja;
 - `RouteGuards.test.tsx`: neprijavljeni idu na prijavu, prijavljeni vide aplikaciju;
 - `NewReceiptPage.test.tsx`, `ReceiptsPage.test.tsx`: dve stavke sa cenama i izborom nove nabavne cene, prazna forma bez poziva API-ja, isti dokument i „Ipak proknjiži”, zaposleni bez cena; lista, prozor sa stavkama i ukupnim, otvoren prijem posle knjiženja, prazno stanje;
 - `NewOrderModal.test.tsx`: dve stavke sa referencom i napomenom, isti artikal dvaput, upozorenje za minus, prazna porudžbina i količina 0 bez poziva API-ja;
@@ -712,7 +708,7 @@ Testovi lažiraju `fetch` (`mockFetch` odgovara redom poziva, a `mockApi` prema 
 - `ApiCollection` (`ICollectionFixture`): **svi testovi dele jedan kontejner**, pa se ne podiže baza za svaki test. Svaki test koristi jedinstven email (`UniqueEmail()`), pa se međusobno ne ometaju.
 
 **`Infrastructure/HttpClientExtensions.cs`**: pomoćne metode da testovi budu kratki i čitljivi:
-- `RegisterAsync()`: registruje i prijavi korisnika.
+- `RegisterAsync()`: registruje korisnika kodom iz lažnog emaila i prijavi ga.
 - `GetAntiforgeryTokenAsync()`: pozove `me` i izvuče token iz cookie-ja, kao što radi frontend.
 - `ReadProblemAsync()`: proveri da je odgovor `problem+json` i pročita ga.
 

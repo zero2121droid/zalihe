@@ -32,7 +32,8 @@ public class SmtpEmailSender(IOptions<EmailOptions> options) : IEmailSender
         mime.Subject = message.Subject;
         mime.Body = new BodyBuilder { HtmlBody = message.Html, TextBody = message.Text }.ToMessageBody();
 
-        using var client = new SmtpClient();
+        // Registration waits for this email, so an unreachable server has to fail soon.
+        using var client = new SmtpClient { Timeout = 20_000 };
         var security = settings.Security switch
         {
             SmtpSecurity.None => SecureSocketOptions.None,

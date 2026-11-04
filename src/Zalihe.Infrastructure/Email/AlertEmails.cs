@@ -69,6 +69,23 @@ public class AlertEmails(
     }
 
     /// <summary>
+    /// The code that confirms a registration. Only our own text and the code: whatever the form was filled
+    /// in with stays out, or the form could send anyone an email with the words of a stranger's choosing.
+    /// </summary>
+    public async Task SendRegistrationCodeAsync(string to, string language, string code, TimeSpan validFor, CancellationToken ct)
+    {
+        var message = InLanguage(language, _ =>
+        {
+            string intro = texts["RegistrationCode_Intro"];
+            var body = $"<p style=\"margin:0;font-size:14px;color:#3B4033\">{E(intro)}</p>"
+                       + $"<p style=\"margin:20px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:32px;font-weight:500;letter-spacing:0.12em\">{E(code)}</p>";
+            return Frame("Lagerko", texts["RegistrationCode_Subject", code], texts["RegistrationCode_Heading"], body,
+                $"{intro}\n\n{code}", button: null, path: "/", texts["RegistrationCode_Footer", validFor.TotalMinutes]);
+        });
+        await sender.SendAsync(message with { To = to, ToName = "" }, ct);
+    }
+
+    /// <summary>
     /// Tells the platform's owners that the current company registered, in the default language: the
     /// owners are not users of this company, so there is no language to take from them.
     /// </summary>
@@ -174,8 +191,9 @@ public class AlertEmails(
     /// The frame every alert shares: company, heading, the body, a button into the app and a note on why
     /// the email came. Colors are written out: emails know no CSS variables (light theme of DESIGN.md).
     /// </summary>
+    /// <param name="button">The button's text; null when the email has nothing to open.</param>
     private EmailMessage Frame(string company, string subject, string heading, string bodyHtml, string bodyText,
-        string button, string path, string footer)
+        string? button, string path, string footer)
     {
         var appUrl = options.Value.AppUrl?.TrimEnd('/');
         var link = $"{appUrl}{path}";
@@ -189,10 +207,11 @@ public class AlertEmails(
                    + $"<p style=\"margin:0 0 4px;font-size:12px;color:#5C6250\">{E(company)}</p>"
                    + $"<h1 style=\"margin:0 0 8px;font-size:20px;font-weight:600\">{E(heading)}</h1>"
                    + bodyHtml
-                   + $"<p style=\"margin:20px 0 0\"><a href=\"{E(link)}\" style=\"display:inline-block;background:#B4C17E;color:#11130E;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:4px\">{E(button)}</a></p>"
+                   + (button is null ? "" : $"<p style=\"margin:20px 0 0\"><a href=\"{E(link)}\" style=\"display:inline-block;background:#B4C17E;color:#11130E;text-decoration:none;font-weight:600;padding:10px 16px;border-radius:4px\">{E(button)}</a></p>")
                    + $"<p style=\"margin:20px 0 0;font-size:12px;color:#5C6250\">{E(footer)}</p>"
                    + "</div></body></html>";
-        var text = $"{company}\n{heading}\n\n{bodyText}\n\n{button}: {link}\n\n{footer}\n";
+        var open = button is null ? "" : $"{button}: {link}\n\n";
+        var text = $"{company}\n{heading}\n\n{bodyText}\n\n{open}{footer}\n";
         return new EmailMessage("", "", subject, html, text);
     }
 

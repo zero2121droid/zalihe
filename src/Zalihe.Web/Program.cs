@@ -17,6 +17,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddInfrastructure();
 builder.Services.AddAppIdentity();
 builder.Services.AddAppPolicies();
+builder.Services.AddRegistrationRateLimit(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 
@@ -68,6 +69,7 @@ app.UseStaticFiles(SpaFiles.Assets);
 app.UseAuthentication();
 app.UseMiddleware<TenantMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

@@ -20,7 +20,7 @@ public partial class PasswordResetTests(ZaliheApiFactory factory)
     private async Task<string> AccountAsync()
     {
         var email = UniqueEmail();
-        await factory.CreateClient().RegisterAsync(email);
+        await factory.CreateClient().RegisterAsync(factory, email);
         return email;
     }
 

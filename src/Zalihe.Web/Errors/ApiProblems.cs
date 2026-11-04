@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Zalihe.Application.Common;
@@ -10,7 +11,15 @@ public static class ApiProblems
     public const string ValidationFailed = "validation.failed";
     private const string InvalidValue = "validation.invalid";
 
-    public static ObjectResult Result(HttpContext httpContext, int status, string code, IReadOnlyList<AppError>? errors = null)
+    public static ObjectResult Result(HttpContext httpContext, int status, string code, IReadOnlyList<AppError>? errors = null) =>
+        new(Problem(httpContext, status, code, errors)) { StatusCode = status, ContentTypes = { "application/problem+json" } };
+
+    /// <summary>For code outside controllers, such as middleware, which answers without an action result.</summary>
+    public static Task WriteAsync(HttpContext httpContext, int status, string code, CancellationToken ct) =>
+        httpContext.Response.WriteAsJsonAsync(Problem(httpContext, status, code, null), (JsonSerializerOptions?)null,
+            "application/problem+json", ct);
+
+    private static ApiProblemDetails Problem(HttpContext httpContext, int status, string code, IReadOnlyList<AppError>? errors)
     {
         var problem = new ApiProblemDetails
         {
@@ -20,8 +29,7 @@ public static class ApiProblems
             Errors = errors ?? [],
         };
         problem.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
-
-        return new ObjectResult(problem) { StatusCode = status, ContentTypes = { "application/problem+json" } };
+        return problem;
     }
 
     /// <summary>

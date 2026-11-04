@@ -10,10 +10,6 @@ namespace Zalihe.IntegrationTests.Hosting;
 [Collection(ApiCollection.Name)]
 public class HostingTests(ZaliheApiFactory factory)
 {
-    private static Task<HttpResponseMessage> RegisterAsync(HttpClient client) =>
-        client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = "Test Firma", name = "Miljan", email = HttpClientExtensions.UniqueEmail(), password = "sigurna-lozinka" });
-
     private static string Cookie(HttpResponseMessage response, string name) =>
         response.Headers.GetValues("Set-Cookie").Single(c => c.StartsWith(name.EndsWith('.') ? name : name + "="));
 
@@ -69,7 +65,7 @@ public class HostingTests(ZaliheApiFactory factory)
         client.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
 
         // Act
-        var register = await RegisterAsync(client);
+        var register = await client.RegisterAsync(factory, HttpClientExtensions.UniqueEmail());
         var auth = Cookie(register, "zalihe.auth");
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
         request.Headers.Add("Cookie", auth[..auth.IndexOf(';')]);
@@ -90,7 +86,7 @@ public class HostingTests(ZaliheApiFactory factory)
         var client = factory.CreateClient();
 
         // Act
-        var response = await RegisterAsync(client);
+        var response = await client.RegisterAsync(factory, HttpClientExtensions.UniqueEmail());
 
         // Assert
         response.EnsureSuccessStatusCode();

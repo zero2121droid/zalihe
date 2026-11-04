@@ -44,6 +44,15 @@ Trenutno stanje (pretraga, filter po kategoriji, "ispod minimuma", sortiranje po
 ### 2.7 Firme i korisnici
 Registracija firme, vlasnik plus pozivanje dodatnih korisnika, svako sa svojom ulogom (11.2). Vlasnik koji registruje firmu je admin.
 
+Potvrda adrese: posle forme korisnik dobija šestocifreni kod emailom, na izabranom jeziku, i upisuje ga na ekranu `/verify-email`. Firma i nalog nastaju tek posle tačnog koda, a do tada podaci čekaju u `PendingRegistration`, pa nepotvrđena adresa ne zauzima nalog, ne može da se prijavi, ne ulazi na stranicu „Platforma” i vlasnik platforme ne dobija email o njoj. Nedovršena registracija se briše posle 24 sata; ko se u međuvremenu vrati, registruje se ponovo.
+
+- Kod važi 15 minuta i dozvoljava 5 pokušaja. U bazi je samo heš. Nov kod može da se zatraži posle 60 sekundi, a stari tada prestaje da važi.
+- Jedna adresa dobija najviše 5 kodova u 24 sata, bez obzira na to da li ih traži ponovnim slanjem ili novom registracijom.
+- Kod važi samo uz token ekrana koji je započeo registraciju. Nova registracija iste adrese menja token, pa stranac koji istovremeno registruje tuđu adresu ne može da natera vlasnika da potvrdi lozinku stranca.
+- U emailu su samo naš tekst i kod, bez podataka iz forme, da forma ne bi mogla da šalje tuđe poruke na proizvoljne adrese.
+- Registracija, potvrda i ponovno slanje dele ograničenje od 30 zahteva na sat po IP adresi (`RateLimiting:RegistrationPerHour`, odgovor 429).
+- Ako email ne može da se pošalje, odgovor je 503 (`email.unavailable`), ništa se ne čuva i greška ide u log. Pozvani korisnici ne dobijaju kod, jer je poziv već stigao na tu adresu.
+
 Pozivanje: korisnik upiše email, a pozvani dobija link koji važi 7 dana i može da se iskoristi jednom; ponovni poziv šalje nov link, a stari prestaje da važi, a poziv može da se opozove. Pozvani upiše ime i lozinku i ulazi u firmu. Adresa koja već ima nalog ne može da se pozove (jedan korisnik pripada jednoj firmi). Poziva admin i bira ulogu pozvanog (podrazumevano „Zaposleni”); ponovni poziv može da promeni ulogu.
 
 Zaboravljena lozinka: korisnik upiše email i dobija link za novu lozinku (na svom jeziku), koji važi 2 sata i može da se iskoristi jednom. Odgovor je isti i kad adresa nema nalog, a jedan nalog dobija najviše jedan takav email na 2 minuta. Posle nove lozinke korisnik je prijavljen, nalog se otključava (ako je bio zaključan zbog pogrešnih lozinki), a ostali uređaji se odjavljuju.
@@ -325,7 +334,7 @@ Vlasnik platforme je osoba koja vodi Lagerko, ne uloga u firmi: admin je svako k
 - Stranica „Platforma” (`/platform`) je vidljiva samo vlasniku; API drugima vraća 403, i adminima firmi. Prikazuje zbirne brojeve (firme, nove i aktivne u 7 dana, sa prodavnicom) i tabelu firmi (registracija, aktivni artikli, povezana prodavnica, poslednje kretanje), a nikad sadržaj podataka firme.
 - Aktivna firma ima bar jedno kretanje u poslednjih 7 dana, ručno ili iz prodavnice.
 - Firma vlasnika je u tabeli, označena kao „tvoja”, ali ne ulazi u zbirne brojeve. Probne firme se ne isključuju podešavanjem, nego se brišu.
-- Registracija ne proverava email, pa se adresa dodaje u `Platform:OwnerEmails` tek kad njen nalog postoji. Inače bi je neko drugi mogao registrovati i dobiti pristup.
+- Pristup zavisi od adrese u `Platform:OwnerEmails`, a registracija je potvrđuje kodom iz emaila (2.7), pa adresu može da zauzme samo onaj ko čita njenu poštu.
 
 ### 11.9 Politika privatnosti
 Javna stranica `/privacy` (srpski i engleski), dostupna bez prijave, sa linkom na registraciji i u podešavanjima. Opisuje ono što aplikacija stvarno radi, pa se menja kad se promene obrađivači, kolačići ili podaci koji se čuvaju, npr. kad se doda Cloudflare Web Analytics ili backup van servera. Rukovalac, kontakt i datum izmene su u `web/src/pages/legal.ts`. Tekst treba da pregleda pravnik pre prvih pravih korisnika.

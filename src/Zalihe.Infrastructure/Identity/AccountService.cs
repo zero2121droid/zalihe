@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Tenants;
@@ -20,6 +21,9 @@ public record RegistrationResult(User? User, IReadOnlyList<AppError> Errors)
     public bool Succeeded => User is not null;
 }
 
+/// <param name="Token">What the screen sends with the code; null when the registration wasn't started.</param>
+public record RegistrationStart(string? Token, IReadOnlyList<AppError> Errors);
+
 public partial class AccountService(
     AppDbContext db,
     UserManager<User> userManager,
@@ -28,45 +32,211 @@ public partial class AccountService(
     AlertEmails emails,
     IBackgroundJobs jobs,
     IMemoryCache cache,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<AccountService> logger)
 {
-    /// <summary>Creates a company together with its owner account.</summary>
-    public async Task<RegistrationResult> RegisterAsync(RegisterCommand command, CancellationToken ct)
+    public const string RegistrationExpired = "auth.registration_expired";
+    public const string CodeInvalid = "auth.code_invalid";
+    public const string CodeExpired = "auth.code_expired";
+    public const string CodeAttemptsExceeded = "auth.code_attempts_exceeded";
+    public const string CodeLimitReached = "auth.code_limit_reached";
+    public const string CodeResendTooSoon = "auth.code_resend_too_soon";
+    public const string EmailUnavailable = "email.unavailable";
+
+    /// <summary>
+    /// Checks the registration and emails a code. Nothing but the waiting registration is saved until
+    /// <see cref="ConfirmRegistrationAsync"/>: an address that isn't confirmed can't take up an account.
+    /// </summary>
+    public async Task<RegistrationStart> StartRegistrationAsync(RegisterCommand command, CancellationToken ct)
     {
         var language = command.Language ?? Languages.Default;
         if (!Languages.IsSupported(language))
         {
-            return Failed(new AppError("validation.unsupported_language", "language"));
+            return NotStarted(new AppError("validation.unsupported_language", "language"));
+        }
+
+        var email = Invitation.NormalizeEmail(command.Email);
+        var owner = new User { UserName = email, Email = email, Name = command.Name.Trim(), Language = language };
+        var errors = await ValidateNewUserAsync(owner, command.Password);
+        if (errors.Count > 0)
+        {
+            return NotStarted([.. errors]);
+        }
+
+        // Saved only once the email is on its way, so a mail server that is down doesn't use up a code.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var now = timeProvider.GetUtcNow();
+        var pending = await db.PendingRegistrations
+            .FromSql($"""SELECT * FROM "PendingRegistrations" WHERE "Email" = {email} FOR UPDATE""")
+            .SingleOrDefaultAsync(ct);
+        if (pending?.CodeLimitReachedAt(now) == true)
+        {
+            return NotStarted(new AppError(CodeLimitReached));
+        }
+
+        var token = Invitation.NewToken();
+        var code = PendingRegistration.NewCode();
+        var passwordHash = userManager.PasswordHasher.HashPassword(owner, command.Password);
+        if (pending is null)
+        {
+            db.PendingRegistrations.Add(
+                new PendingRegistration(email, command.CompanyName, command.Name, language, passwordHash, token, code, now));
+        }
+        else
+        {
+            pending.Replace(command.CompanyName, command.Name, language, passwordHash, token, code, now);
+        }
+
+        await db.SaveChangesAsync(ct);
+        if (!await TrySendCodeAsync(email, language, code, ct))
+        {
+            return NotStarted(new AppError(EmailUnavailable));
+        }
+
+        await transaction.CommitAsync(ct);
+        return new RegistrationStart(token, []);
+    }
+
+    /// <summary>Sends a new code for the registration, to the same address.</summary>
+    public async Task<IReadOnlyList<AppError>> ResendRegistrationCodeAsync(string token, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var now = timeProvider.GetUtcNow();
+        var pending = await LockPendingRegistrationAsync(token, ct);
+        if (pending is null || pending.IsAbandonedAt(now))
+        {
+            return [new AppError(RegistrationExpired)];
+        }
+
+        if (pending.CodeLimitReachedAt(now))
+        {
+            return [new AppError(CodeLimitReached)];
+        }
+
+        if (!pending.CanResendAt(now))
+        {
+            return [new AppError(CodeResendTooSoon)];
+        }
+
+        var code = PendingRegistration.NewCode();
+        pending.Resend(code, now);
+        await db.SaveChangesAsync(ct);
+        if (!await TrySendCodeAsync(pending.Email, pending.Language, code, ct))
+        {
+            return [new AppError(EmailUnavailable)];
+        }
+
+        await transaction.CommitAsync(ct);
+        return [];
+    }
+
+    /// <summary>
+    /// Creates the company and its owner when the code is right. The row stays locked while a code is
+    /// checked, so guesses sent at the same time can't get past the limit of attempts.
+    /// </summary>
+    public async Task<RegistrationResult> ConfirmRegistrationAsync(string token, string code, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var now = timeProvider.GetUtcNow();
+        var pending = await LockPendingRegistrationAsync(token, ct);
+        if (pending is null || pending.IsAbandonedAt(now))
+        {
+            return Failed(new AppError(RegistrationExpired));
+        }
+
+        var check = pending.CheckCode(code, now);
+        if (check != CodeCheck.Correct)
+        {
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return Failed(check switch
+            {
+                CodeCheck.Expired => new AppError(CodeExpired),
+                CodeCheck.NoAttemptsLeft => new AppError(CodeAttemptsExceeded),
+                _ => new AppError(CodeInvalid, "code"),
+            });
         }
 
         // UserManager uses the same DbContext, so the tenant and the user are saved atomically.
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-
-        var tenant = new Tenant(command.CompanyName, timeProvider.GetUtcNow());
+        var tenant = new Tenant(pending.CompanyName, now);
         db.Tenants.Add(tenant);
         await db.SaveChangesAsync(ct);
 
-        var email = command.Email.Trim();
         var user = new User
         {
-            UserName = email,
-            Email = email,
-            Name = command.Name.Trim(),
+            UserName = pending.Email,
+            Email = pending.Email,
+            EmailConfirmed = true,
+            PasswordHash = pending.PasswordHash,
+            Name = pending.Name,
             TenantId = tenant.Id,
-            Language = language,
+            Language = pending.Language,
             // Whoever registers the company is its admin (SPEC 11.2).
             Role = UserRole.Admin,
         };
-        var result = await userManager.CreateAsync(user, command.Password);
+        var result = await userManager.CreateAsync(user);
         if (!result.Succeeded)
         {
             return Failed([.. result.Errors.Select(MapIdentityError).Distinct()]);
         }
 
+        db.PendingRegistrations.Remove(pending);
+        await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         jobs.EmailNewRegistration(tenant.Id, user.Id);
         return new RegistrationResult(user, []);
     }
+
+    /// <summary>Deletes registrations nobody finished: they hold a name and an address that never became an account.</summary>
+    public Task DeleteAbandonedRegistrationsAsync(CancellationToken ct)
+    {
+        var cutoff = timeProvider.GetUtcNow() - PendingRegistration.KeptFor;
+        return db.PendingRegistrations.Where(p => p.StartedAt <= cutoff).ExecuteDeleteAsync(ct);
+    }
+
+    private Task<PendingRegistration?> LockPendingRegistrationAsync(string token, CancellationToken ct)
+    {
+        var hash = PendingRegistration.HashToken(token);
+        return db.PendingRegistrations
+            .FromSql($"""SELECT * FROM "PendingRegistrations" WHERE "TokenHash" = {hash} FOR UPDATE""")
+            .SingleOrDefaultAsync(ct);
+    }
+
+    /// <summary>Whatever went wrong on the way to the mail server, the person gets a clear answer and the log the reason.</summary>
+    private async Task<bool> TrySendCodeAsync(string email, string language, string code, CancellationToken ct)
+    {
+        try
+        {
+            await emails.SendRegistrationCodeAsync(email, language, code, PendingRegistration.CodeValidFor, ct);
+            return true;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "The registration code could not be emailed; nobody can register until this is fixed");
+            return false;
+        }
+    }
+
+    private async Task<List<AppError>> ValidateNewUserAsync(User user, string password)
+    {
+        var errors = new List<IdentityError>();
+        foreach (var validator in userManager.UserValidators)
+        {
+            errors.AddRange((await validator.ValidateAsync(userManager, user)).Errors);
+        }
+
+        foreach (var validator in userManager.PasswordValidators)
+        {
+            errors.AddRange((await validator.ValidateAsync(userManager, user, password)).Errors);
+        }
+
+        return [.. errors.Select(MapIdentityError).Distinct()];
+    }
+
+    private static RegistrationStart NotStarted(params AppError[] errors) => new(null, errors);
 
     public const string InvitationInvalid = "invitation.invalid";
 
@@ -97,6 +267,8 @@ public partial class AccountService(
         {
             UserName = invitation.Email,
             Email = invitation.Email,
+            // The invitation came to this address.
+            EmailConfirmed = true,
             Name = name.Trim(),
             TenantId = invitation.TenantId,
             Language = language,

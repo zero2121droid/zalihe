@@ -85,6 +85,17 @@
       "privacyNote": "Registracijom prihvataš da se tvoji podaci obrađuju kako piše u dokumentu:",
       "privacyLink": "Politika privatnosti"
     },
+    "verify": {
+      "title": "Potvrdi email",
+      "subtitle": "Poslali smo šestocifreni kod na {{email}}. Kod važi 15 minuta.",
+      "code": "Kod iz emaila",
+      "hint": "Ne vidiš ga? Proveri i neželjenu poštu.",
+      "submit": "Potvrdi",
+      "resend": "Pošalji ponovo",
+      "resendIn": "Pošalji ponovo za {{seconds}} s",
+      "resent": "Poslato",
+      "changeEmail": "Promeni adresu"
+    },
     "invitation": {
       "title": "Poziv u firmu {{company}}",
       "subtitle": "{{name}} te poziva u {{company}}. Upiši ime i lozinku i ulaziš u firmu.",
@@ -197,7 +208,14 @@
       "password_too_short": "Lozinka mora imati najmanje {{min}} znakova.",
       "antiforgery_invalid": "Sesija je istekla. Osveži stranicu i pokušaj ponovo.",
       "wrong_password": "Trenutna lozinka nije tačna.",
-      "reset_invalid": "Link za novu lozinku ne važi. Zatraži nov."
+      "reset_invalid": "Link za novu lozinku ne važi. Zatraži nov.",
+      "registration_expired": "Registracija više ne važi. Počni ponovo.",
+      "code_invalid": "Kod nije tačan.",
+      "code_expired": "Kod je istekao. Zatraži nov.",
+      "code_attempts_exceeded": "Previše pogrešnih pokušaja. Zatraži nov kod.",
+      "code_limit_reached": "Na ovu adresu je poslato previše kodova. Pokušaj ponovo sutra.",
+      "code_resend_too_soon": "Sačekaj malo, pa zatraži nov kod.",
+      "too_many_requests": "Previše pokušaja. Pokušaj ponovo kasnije."
     },
     "item": {
       "sku_duplicate": "Artikal sa ovom šifrom već postoji.",
@@ -959,7 +977,7 @@
       },
       "retention": {
         "title": "Koliko dugo čuvamo",
-        "body": "Podatke čuvamo dok nalog postoji. Možeš da tražiš brisanje naloga i podataka firme emailom. Posle brisanja podaci mogu ostati u backupu još do 30 dana, a server logovi se čuvaju ograničeno vreme."
+        "body": "Podatke čuvamo dok nalog postoji. Registracija koja nije potvrđena kodom iz emaila briše se posle 24 sata. Možeš da tražiš brisanje naloga i podataka firme emailom. Posle brisanja podaci mogu ostati u backupu još do 30 dana, a server logovi se čuvaju ograničeno vreme."
       },
       "cookies": {
         "title": "Kolačići",

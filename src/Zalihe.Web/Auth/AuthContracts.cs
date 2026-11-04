@@ -15,10 +15,24 @@ public record RegisterRequest(
     string Name,
     [Required(ErrorMessage = "validation.required")]
     [EmailAddress(ErrorMessage = "validation.email")]
+    [MaxLength(Invitation.EmailMaxLength, ErrorMessage = "validation.max_length")]
     string Email,
     [Required(ErrorMessage = "validation.required")]
     string Password,
     string? Language);
+
+/// <param name="Token">Sent back with the emailed code; it works only for this registration.</param>
+public record RegisterResponse(string Token);
+
+public record ConfirmRegistrationRequest(
+    [Required(ErrorMessage = "validation.required")]
+    string Token,
+    [Required(ErrorMessage = "validation.required")]
+    string Code);
+
+public record ResendRegistrationCodeRequest(
+    [Required(ErrorMessage = "validation.required")]
+    string Token);
 
 public record LoginRequest(
     [Required(ErrorMessage = "validation.required")]

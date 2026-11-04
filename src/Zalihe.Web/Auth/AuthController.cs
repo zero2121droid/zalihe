@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
+using Zalihe.Application.Common;
 using Zalihe.Infrastructure.Identity;
 using Zalihe.Infrastructure.Platform;
 using Zalihe.Web.Errors;
@@ -18,22 +20,58 @@ public class AuthController(
     SignInManager<User> signInManager,
     IAntiforgery antiforgery) : ControllerBase
 {
-    /// <summary>Registers a company with its owner and signs the owner in.</summary>
+    /// <summary>
+    /// Starts a registration and emails a code to the address. The company exists only after
+    /// the code is confirmed with the token returned here.
+    /// </summary>
     [HttpPost("register", Name = "Register")]
+    [EnableRateLimiting(RegistrationRateLimit.Policy)]
+    [ProducesResponseType<RegisterResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status429TooManyRequests, "application/problem+json")]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+    public async Task<ActionResult<RegisterResponse>> Register(RegisterRequest request, CancellationToken ct)
+    {
+        var result = await accountService.StartRegistrationAsync(
+            new RegisterCommand(request.CompanyName, request.Name, request.Email, request.Password, request.Language), ct);
+        return result.Token is { } token ? new RegisterResponse(token) : RegistrationProblem(result.Errors);
+    }
+
+    /// <summary>Checks the emailed code, creates the company with its owner and signs the owner in.</summary>
+    [HttpPost("register/confirm", Name = "ConfirmRegistration")]
+    [EnableRateLimiting(RegistrationRateLimit.Policy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
-    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken ct)
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status429TooManyRequests, "application/problem+json")]
+    public async Task<IActionResult> ConfirmRegistration(ConfirmRegistrationRequest request, CancellationToken ct)
     {
-        var result = await accountService.RegisterAsync(
-            new RegisterCommand(request.CompanyName, request.Name, request.Email, request.Password, request.Language), ct);
+        var result = await accountService.ConfirmRegistrationAsync(request.Token, request.Code, ct);
         if (!result.Succeeded)
         {
-            return ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed, result.Errors);
+            return RegistrationProblem(result.Errors);
         }
 
         await signInManager.SignInAsync(result.User!, isPersistent: false);
         return NoContent();
     }
+
+    /// <summary>Emails a new code; the previous one stops working.</summary>
+    [HttpPost("register/resend", Name = "ResendRegistrationCode")]
+    [EnableRateLimiting(RegistrationRateLimit.Policy)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status429TooManyRequests, "application/problem+json")]
+    [ProducesResponseType<ApiProblemDetails>(StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+    public async Task<IActionResult> ResendRegistrationCode(ResendRegistrationCodeRequest request, CancellationToken ct)
+    {
+        var errors = await accountService.ResendRegistrationCodeAsync(request.Token, ct);
+        return errors.Count == 0 ? NoContent() : RegistrationProblem(errors);
+    }
+
+    private ObjectResult RegistrationProblem(IReadOnlyList<AppError> errors) =>
+        errors.Any(e => e.Code == AccountService.EmailUnavailable)
+            ? ApiProblems.Result(HttpContext, StatusCodes.Status503ServiceUnavailable, AccountService.EmailUnavailable)
+            : ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed, errors);
 
     [HttpPost("login", Name = "Login")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

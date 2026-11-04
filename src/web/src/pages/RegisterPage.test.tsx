@@ -32,8 +32,12 @@ describe('RegisterPage', () => {
 
   it('Submit_EnglishSelected_SendsEnglishAsUserLanguage', async () => {
     // Arrange
-    const fetchMock = mockFetch({ status: 204 })
-    await renderRoutes([{ path: '/register', element: <RegisterPage /> }, { path: '/', element: <div /> }], '/register', 'en')
+    const fetchMock = mockFetch({ status: 200, body: { token: 'tok' } })
+    await renderRoutes(
+      [{ path: '/register', element: <RegisterPage /> }, { path: '/verify-email', element: <div data-testid="verify" /> }],
+      '/register',
+      'en',
+    )
 
     // Act
     await userEvent.type(screen.getByLabelText('Company name'), 'Pržionica Zrno')
@@ -43,6 +47,7 @@ describe('RegisterPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Register company' }))
 
     // Assert
+    expect(await screen.findByTestId('verify')).toBeInTheDocument()
     const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string)
     expect(body).toEqual({
       companyName: 'Pržionica Zrno',

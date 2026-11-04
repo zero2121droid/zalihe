@@ -85,6 +85,17 @@
       "privacyNote": "By registering you accept that your data is processed as described in the:",
       "privacyLink": "Privacy policy"
     },
+    "verify": {
+      "title": "Confirm your email",
+      "subtitle": "We sent a six-digit code to {{email}}. It's valid for 15 minutes.",
+      "code": "Code from the email",
+      "hint": "Can't see it? Check your spam folder.",
+      "submit": "Confirm",
+      "resend": "Send again",
+      "resendIn": "Send again in {{seconds}} s",
+      "resent": "Sent",
+      "changeEmail": "Change address"
+    },
     "invitation": {
       "title": "Invitation to {{company}}",
       "subtitle": "{{name}} invites you to {{company}}. Enter your name and a password to join.",
@@ -197,7 +208,14 @@
       "password_too_short": "The password must have at least {{min}} characters.",
       "antiforgery_invalid": "Your session has expired. Refresh the page and try again.",
       "wrong_password": "The current password is wrong.",
-      "reset_invalid": "The link for a new password is not valid. Ask for a new one."
+      "reset_invalid": "The link for a new password is not valid. Ask for a new one.",
+      "registration_expired": "This registration is no longer valid. Start over.",
+      "code_invalid": "The code is not correct.",
+      "code_expired": "The code has expired. Ask for a new one.",
+      "code_attempts_exceeded": "Too many wrong attempts. Ask for a new code.",
+      "code_limit_reached": "Too many codes were sent to this address. Try again tomorrow.",
+      "code_resend_too_soon": "Wait a moment, then ask for a new code.",
+      "too_many_requests": "Too many attempts. Try again later."
     },
     "item": {
       "sku_duplicate": "An item with this SKU already exists.",
@@ -959,7 +977,7 @@
       },
       "retention": {
         "title": "How long we keep it",
-        "body": "We keep data while the account exists. You can ask by email to delete your account and your company's data. After deletion, data may remain in backups for up to 30 days, and server logs are kept for a limited time."
+        "body": "We keep data while the account exists. A registration not confirmed with the emailed code is deleted after 24 hours. You can ask by email to delete your account and your company's data. After deletion, data may remain in backups for up to 30 days, and server logs are kept for a limited time."
       },
       "cookies": {
         "title": "Cookies",

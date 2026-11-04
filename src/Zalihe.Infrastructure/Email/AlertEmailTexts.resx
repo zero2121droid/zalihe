@@ -42,6 +42,10 @@
   <data name="PasswordReset_Intro" xml:space="preserve"><value>Neko je zatražio novu lozinku za nalog {0}. Ako si to ti, otvori link i upiši novu lozinku.</value></data>
   <data name="PasswordReset_Open" xml:space="preserve"><value>Postavi novu lozinku</value></data>
   <data name="PasswordReset_Footer" xml:space="preserve"><value>Link važi do {0} i može da se iskoristi jednom. Ako zahtev nije od tebe, zanemari ovaj email: stara lozinka i dalje važi.</value></data>
+  <data name="RegistrationCode_Subject" xml:space="preserve"><value>{0} je tvoj kod za Lagerko</value></data>
+  <data name="RegistrationCode_Heading" xml:space="preserve"><value>Potvrdi email adresu</value></data>
+  <data name="RegistrationCode_Intro" xml:space="preserve"><value>Upiši ovaj kod na ekranu za registraciju:</value></data>
+  <data name="RegistrationCode_Footer" xml:space="preserve"><value>Kod važi {0} minuta. Ako registracija nije od tebe, zanemari ovaj email: nalog neće biti napravljen.</value></data>
   <data name="NewRegistration_Subject" xml:space="preserve"><value>Nova firma u Lagerku: {0}</value></data>
   <data name="NewRegistration_Heading" xml:space="preserve"><value>Nova registracija</value></data>
   <data name="NewRegistration_Intro" xml:space="preserve"><value>Firma {0} je upravo registrovana. Vlasnik: {1}, {2}.</value></data>

@@ -64,7 +64,7 @@ Aplikacija šalje preko SMTP-a (MailKit), pa je provajder samo podešavanje u `E
 - Pošiljalac na sopstvenom domenu (npr. `upozorenja@domen.rs`), uz SPF/DKIM zapise koje provajder da.
 - `Email:AppUrl` mora biti javna adresa aplikacije, jer se od nje prave linkovi u emailovima (pozivi).
 - Ako provajder servera blokira izlazne portove 587 i 465 (tako je na trenutnom netcup serveru), koristiti Brevo port 2525 sa `SMTP_SECURITY=StartTls`.
-- `PLATFORM_OWNER_EMAIL` (`Platform:OwnerEmails`) je adresa vlasnika platforme, na koju stiže email za svaku novu firmu, a njen nalog vidi stranicu „Platforma”. Dovoljno je prosleđivanje (npr. Cloudflare Email Routing), jer ta adresa samo prima poštu. **Prvo napraviti nalog sa tom adresom, pa je tek onda upisati ovde:** registracija ne proverava email, pa bi je inače neko drugi mogao zauzeti.
+- `PLATFORM_OWNER_EMAIL` (`Platform:OwnerEmails`) je adresa vlasnika platforme, na koju stiže email za svaku novu firmu, a njen nalog vidi stranicu „Platforma”. Dovoljno je prosleđivanje (npr. Cloudflare Email Routing), jer ta adresa samo prima poštu. Registracija potvrđuje email kodom, pa nalog sa tom adresom može da napravi samo onaj ko prima njenu poštu.
 
 ## 5. Backup baze
 
@@ -88,7 +88,7 @@ Aplikacija šalje preko SMTP-a (MailKit), pa je provajder samo podešavanje u `E
 Aplikacija u produkciji:
 
 - Migracije primenjuje sama pri pokretanju (`Database:MigrateOnStartup`).
-- Čita `X-Forwarded-*` od Caddyja (`ForwardedHeaders:Enabled`), pa su kolačići `Secure`.
+- Čita `X-Forwarded-*` od Caddyja (`ForwardedHeaders:Enabled`), pa su kolačići `Secure`, a ograničenje registracije po IP adresi vidi pravu adresu klijenta.
 - Ključeve za šifrovanje čuva u volumenu `keys` (`DataProtection:KeysPath`).
 - Na `/health` odgovara `Healthy` dok je baza dostupna.
 - Logove čuva Docker: 5 × 10 MB po kontejneru, pregled sa `docker compose logs app`.
@@ -246,6 +246,7 @@ Lagerko sada radi drugačije od postavke opisane u tačkama 6 i 9, jer deli serv
 - Adresa je `https://lagerko.miljanmilojkovic.com`, a kod je u `/srv/lagerko` (netcup, Debian 13, ARM64).
 - HTTPS i domen radi **Nginx** na serveru (Let's Encrypt preko certbota), a ne Caddy. Aplikacija je objavljena samo na `127.0.0.1:3001`.
 - `deploy/docker-compose.override.yml` postoji samo na serveru: isključuje Caddy i određuje port. Pravi ga skripta `app` (`/usr/local/bin/app`).
+- Nginx mora da šalje `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`. Bez toga aplikacija sve posetioce vidi kao jednu adresu, pa ograničenje registracije (30 zahteva na sat) važi za sve zajedno.
 - Zbog toga se **`deploy/deploy.sh` ovde ne pokreće**: sa `-f docker-compose.yml` zanemaruje override, pa bi aplikacija ostala bez porta, a Caddy bi tražio portove 80 i 443 koje drži Nginx.
 
 | Šta | Komanda |

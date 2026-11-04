@@ -7,12 +7,27 @@ namespace Zalihe.IntegrationTests.Infrastructure;
 
 public static class HttpClientExtensions
 {
-    public static async Task RegisterAsync(this HttpClient client, string email, string password = "sigurna-lozinka")
+    /// <summary>Registers a company all the way, with the code from the email, which signs the client in.</summary>
+    /// <returns>The answer to the confirmation, which carries the sign-in cookie.</returns>
+    public static async Task<HttpResponseMessage> RegisterAsync(this HttpClient client, ZaliheApiFactory factory, string email,
+        string password = "sigurna-lozinka", string companyName = "Test Firma", string name = "Miljan", string? language = null)
     {
-        var response = await client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = "Test Firma", name = "Miljan", email, password });
-        response.EnsureSuccessStatusCode();
+        var start = await client.StartRegistrationAsync(email, password, companyName, name, language);
+        start.EnsureSuccessStatusCode();
+        var confirm = await client.ConfirmRegistrationAsync(await start.ReadTokenAsync(), factory.Emails.LatestCode(email));
+        confirm.EnsureSuccessStatusCode();
+        return confirm;
     }
+
+    public static Task<HttpResponseMessage> StartRegistrationAsync(this HttpClient client, string email,
+        string password = "sigurna-lozinka", string companyName = "Test Firma", string name = "Miljan", string? language = null) =>
+        client.PostAsJsonAsync("/api/auth/register", new { companyName, name, email, password, language });
+
+    public static Task<HttpResponseMessage> ConfirmRegistrationAsync(this HttpClient client, string token, string code) =>
+        client.PostAsJsonAsync("/api/auth/register/confirm", new { token, code });
+
+    public static async Task<string> ReadTokenAsync(this HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
 
     /// <summary>
     /// A client signed in as the owner of a new company, sending the antiforgery header
@@ -21,7 +36,7 @@ public static class HttpClientExtensions
     public static async Task<HttpClient> CreateSignedInClientAsync(this ZaliheApiFactory factory)
     {
         var client = factory.CreateClient();
-        await client.RegisterAsync(UniqueEmail());
+        await client.RegisterAsync(factory, UniqueEmail());
         client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await client.GetAntiforgeryTokenAsync());
         return client;
     }

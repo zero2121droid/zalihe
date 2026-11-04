@@ -6,6 +6,7 @@ using Zalihe.Application.Alerts;
 using Zalihe.Application.Common;
 using Zalihe.Application.Orders;
 using Zalihe.Application.Webhooks;
+using Zalihe.Infrastructure.Identity;
 using Zalihe.Infrastructure.Tenancy;
 
 namespace Zalihe.Infrastructure.Jobs;
@@ -19,6 +20,7 @@ public static class RecurringJobs
     public const string OrderSyncId = "order-sync";
     public const string WebhookCleanupId = "webhook-event-cleanup";
     public const string LowStockAlertId = "low-stock-alerts";
+    public const string RegistrationCleanupId = "registration-cleanup";
 
     /// <summary>Registers (or updates) the jobs in Hangfire's storage; called once at startup.</summary>
     public static void ScheduleRecurringJobs(this IServiceProvider services)
@@ -32,6 +34,8 @@ public static class RecurringJobs
             job => job.RunAsync(CancellationToken.None));
         Schedule<LowStockAlertJob>(manager, LowStockAlertId, configuration["Jobs:LowStockAlertCron"],
             job => job.ScheduleAllAsync(CancellationToken.None));
+        Schedule<RegistrationCleanupJob>(manager, RegistrationCleanupId, configuration["Jobs:RegistrationCleanupCron"],
+            job => job.RunAsync(CancellationToken.None));
     }
 
     private static void Schedule<TJob>(IRecurringJobManager manager, string id, string? cron,
@@ -82,6 +86,12 @@ public class OrderSyncJob(IAppDbContext db, IBackgroundJobClient jobs, TenantCon
 public class WebhookCleanupJob(WebhookService webhooks)
 {
     public Task RunAsync(CancellationToken ct) => webhooks.DeleteExpiredAsync(ct);
+}
+
+/// <summary>Deletes registrations whose code was never confirmed (SPEC 2.7).</summary>
+public class RegistrationCleanupJob(AccountService accounts)
+{
+    public Task RunAsync(CancellationToken ct) => accounts.DeleteAbandonedRegistrationsAsync(ct);
 }
 
 /// <summary>

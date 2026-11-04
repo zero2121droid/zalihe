@@ -49,6 +49,9 @@ public class ZaliheApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Jobs:OrderSyncCron", "");
         builder.UseSetting("Jobs:WebhookCleanupCron", "");
         builder.UseSetting("Jobs:LowStockAlertCron", "");
+        builder.UseSetting("Jobs:RegistrationCleanupCron", "");
+        // Low, so the limit's own test is short. Only requests that name a client address are counted.
+        builder.UseSetting("RateLimiting:RegistrationPerHour", "2");
         builder.UseSetting("Email:AppUrl", "https://app.zalihe.test");
         builder.UseSetting("Platform:OwnerEmails:0", PlatformOwnerEmail);
         // As in production, behind Caddy.

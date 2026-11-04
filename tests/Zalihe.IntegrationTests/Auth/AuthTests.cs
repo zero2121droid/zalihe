@@ -18,12 +18,11 @@ public class AuthTests(ZaliheApiFactory factory)
         var email = UniqueEmail();
 
         // Act
-        var register = await client.PostAsJsonAsync("/api/auth/register",
-            new { companyName = "  Prodavnica Zalihe  ", name = " Miljan ", email, password = "sigurna-lozinka", language = "en" });
+        var confirm = await client.RegisterAsync(factory, email, companyName: "  Prodavnica Zalihe  ", name: " Miljan ", language: "en");
         var me = await client.GetFromJsonAsync<JsonElement>("/api/auth/me");
 
         // Assert
-        register.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        confirm.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         me.GetProperty("name").GetString().ShouldBe("Miljan");
         me.GetProperty("email").GetString().ShouldBe(email);
         me.GetProperty("language").GetString().ShouldBe("en");
@@ -37,7 +36,7 @@ public class AuthTests(ZaliheApiFactory factory)
         var client = factory.CreateClient();
 
         // Act
-        await client.RegisterAsync(UniqueEmail());
+        await client.RegisterAsync(factory, UniqueEmail());
         var me = await client.GetFromJsonAsync<JsonElement>("/api/auth/me");
 
         // Assert
@@ -49,7 +48,7 @@ public class AuthTests(ZaliheApiFactory factory)
     {
         // Arrange
         var email = UniqueEmail();
-        await factory.CreateClient().RegisterAsync(email);
+        await factory.CreateClient().RegisterAsync(factory, email);
 
         // Act
         var response = await factory.CreateClient().PostAsJsonAsync("/api/auth/register",
@@ -122,7 +121,7 @@ public class AuthTests(ZaliheApiFactory factory)
     {
         // Arrange
         var email = UniqueEmail();
-        await factory.CreateClient().RegisterAsync(email);
+        await factory.CreateClient().RegisterAsync(factory, email);
         var client = factory.CreateClient();
 
         // Act
@@ -139,7 +138,7 @@ public class AuthTests(ZaliheApiFactory factory)
     {
         // Arrange
         var email = UniqueEmail();
-        await factory.CreateClient().RegisterAsync(email);
+        await factory.CreateClient().RegisterAsync(factory, email);
 
         // Act
         var response = await factory.CreateClient().PostAsJsonAsync("/api/auth/login",
@@ -169,7 +168,7 @@ public class AuthTests(ZaliheApiFactory factory)
     {
         // Arrange
         var client = factory.CreateClient();
-        await client.RegisterAsync(UniqueEmail());
+        await client.RegisterAsync(factory, UniqueEmail());
 
         // Act
         var response = await client.PostAsync("/api/auth/logout", null);
@@ -185,7 +184,7 @@ public class AuthTests(ZaliheApiFactory factory)
     {
         // Arrange
         var client = factory.CreateClient();
-        await client.RegisterAsync(UniqueEmail());
+        await client.RegisterAsync(factory, UniqueEmail());
         var token = await client.GetAntiforgeryTokenAsync();
 
         // Act

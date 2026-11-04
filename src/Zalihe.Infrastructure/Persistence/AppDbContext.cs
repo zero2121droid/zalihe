@@ -31,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
     public DbSet<LowStockAlert> LowStockAlerts => Set<LowStockAlert>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<PendingRegistration> PendingRegistrations => Set<PendingRegistration>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -64,6 +65,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             invitation.HasIndex(i => new { i.TenantId, i.Email }).IsUnique();
             invitation.HasOne<Tenant>().WithMany().HasForeignKey(i => i.TenantId).OnDelete(DeleteBehavior.Restrict);
             invitation.HasOne<User>().WithMany().HasForeignKey(i => i.InvitedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // No TenantId: the company doesn't exist until the code is confirmed.
+        builder.Entity<PendingRegistration>(pending =>
+        {
+            pending.Property(p => p.Email).HasMaxLength(Invitation.EmailMaxLength);
+            pending.Property(p => p.CompanyName).HasMaxLength(Tenant.NameMaxLength);
+            pending.Property(p => p.Name).HasMaxLength(User.NameMaxLength);
+            pending.Property(p => p.Language).HasMaxLength(Languages.MaxLength);
+            pending.Property(p => p.TokenHash).HasMaxLength(64);
+            pending.Property(p => p.CodeHash).HasMaxLength(64);
+            pending.HasIndex(p => p.Email).IsUnique();
+            pending.HasIndex(p => p.TokenHash).IsUnique();
         });
 
         // Users are not company data in the filter sense: sign-in looks them up by email

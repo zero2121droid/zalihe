@@ -25,11 +25,14 @@ import type {
 
 import type {
   ApiProblemDetails,
+  ConfirmRegistrationRequest,
   CurrentUserResponse,
   ForgotPasswordRequest,
   LoginRequest,
   ProblemDetails,
   RegisterRequest,
+  RegisterResponse,
+  ResendRegistrationCodeRequest,
   ResetPasswordRequest
 } from '../model';
 
@@ -64,7 +67,7 @@ export const getRegisterUrl = () => {
   return `/api/auth/register`
 }
 
-export const register = async (registerRequest: RegisterRequest, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+export const register = async (registerRequest: RegisterRequest, options?: Parameters<typeof customFetch>[1]): Promise<RegisterResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -80,7 +83,7 @@ export const register = async (registerRequest: RegisterRequest, options?: Param
     }
     return headers;
   };
-return customFetch<void>(getRegisterUrl(),
+return customFetch<RegisterResponse>(getRegisterUrl(),
   {
     ...options,
     method: 'POST',
@@ -136,6 +139,168 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getRegisterMutationOptions(options), queryClient);
+    }
+    export const getConfirmRegistrationUrl = () => {
+
+
+
+
+  return `/api/auth/register/confirm`
+}
+
+export const confirmRegistration = async (confirmRegistrationRequest: ConfirmRegistrationRequest, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getConfirmRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(confirmRegistrationRequest)
+  }
+);}
+
+
+
+
+
+export const getConfirmRegistrationMutationKey = () => ['confirmRegistration'] as const;
+
+export const getConfirmRegistrationMutationOptions = <TError = ErrorType<ApiProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmRegistration>>, TError,ConfirmRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmRegistration>>, TError,ConfirmRegistrationMutationVariables, TContext> => {
+
+const mutationKey = getConfirmRegistrationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmRegistration>>, ConfirmRegistrationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmRegistration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof confirmRegistration>>>
+    export type ConfirmRegistrationMutationBody = BodyType<ConfirmRegistrationRequest>
+    export type ConfirmRegistrationMutationError = ErrorType<ApiProblemDetails>
+    export type ConfirmRegistrationMutationVariables = {data: BodyType<ConfirmRegistrationRequest>}
+
+    export const useConfirmRegistration = <TError = ErrorType<ApiProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmRegistration>>, TError,ConfirmRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmRegistration>>,
+        TError,
+        ConfirmRegistrationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmRegistrationMutationOptions(options), queryClient);
+    }
+    export const getResendRegistrationCodeUrl = () => {
+
+
+
+
+  return `/api/auth/register/resend`
+}
+
+export const resendRegistrationCode = async (resendRegistrationCodeRequest: ResendRegistrationCodeRequest, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getResendRegistrationCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resendRegistrationCodeRequest)
+  }
+);}
+
+
+
+
+
+export const getResendRegistrationCodeMutationKey = () => ['resendRegistrationCode'] as const;
+
+export const getResendRegistrationCodeMutationOptions = <TError = ErrorType<ApiProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendRegistrationCode>>, TError,ResendRegistrationCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendRegistrationCode>>, TError,ResendRegistrationCodeMutationVariables, TContext> => {
+
+const mutationKey = getResendRegistrationCodeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendRegistrationCode>>, ResendRegistrationCodeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  resendRegistrationCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendRegistrationCodeMutationResult = NonNullable<Awaited<ReturnType<typeof resendRegistrationCode>>>
+    export type ResendRegistrationCodeMutationBody = BodyType<ResendRegistrationCodeRequest>
+    export type ResendRegistrationCodeMutationError = ErrorType<ApiProblemDetails>
+    export type ResendRegistrationCodeMutationVariables = {data: BodyType<ResendRegistrationCodeRequest>}
+
+    export const useResendRegistrationCode = <TError = ErrorType<ApiProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendRegistrationCode>>, TError,ResendRegistrationCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resendRegistrationCode>>,
+        TError,
+        ResendRegistrationCodeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResendRegistrationCodeMutationOptions(options), queryClient);
     }
     export const getLoginUrl = () => {
 

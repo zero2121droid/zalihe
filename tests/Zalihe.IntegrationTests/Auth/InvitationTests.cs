@@ -162,7 +162,7 @@ public partial class InvitationTests(ZaliheApiFactory factory)
         // Arrange: someone already registered, in this company or another.
         var owner = await factory.CreateSignedInClientAsync();
         var existing = HttpClientExtensions.UniqueEmail();
-        await factory.CreateClient().RegisterAsync(existing);
+        await factory.CreateClient().RegisterAsync(factory, existing);
 
         // Act
         var response = await InviteAsync(owner, existing);

@@ -234,7 +234,7 @@ public class ItemsTests(ZaliheApiFactory factory)
     {
         // Arrange
         var client = factory.CreateClient();
-        await client.RegisterAsync(HttpClientExtensions.UniqueEmail());
+        await client.RegisterAsync(factory, HttpClientExtensions.UniqueEmail());
 
         // Act
         var response = await client.PostAsJsonAsync("/api/items", NewItem());

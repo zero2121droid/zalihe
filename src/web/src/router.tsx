@@ -20,6 +20,7 @@ export const routes: RouteObject[] = [
         children: [
           { path: '/login', element: <LoginPage /> },
           { path: '/register', element: <RegisterPage /> },
+          { path: '/verify-email', lazy: async () => ({ Component: (await import('./pages/VerifyEmailPage')).VerifyEmailPage }) },
           { path: '/forgot-password', lazy: async () => ({ Component: (await import('./pages/ForgotPasswordPage')).ForgotPasswordPage }) },
         ],
       },

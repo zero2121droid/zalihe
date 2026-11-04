@@ -16,7 +16,7 @@ public class AccountTests(ZaliheApiFactory factory)
     {
         var client = factory.CreateClient();
         var email = HttpClientExtensions.UniqueEmail();
-        await client.RegisterAsync(email, Password);
+        await client.RegisterAsync(factory, email, Password);
         client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await client.GetAntiforgeryTokenAsync());
         return (client, email);
     }

@@ -1,25 +1,24 @@
 import { Anchor, Button, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core'
-import { useQueryClient } from '@tanstack/react-query'
 import { type ChangeEvent, type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { fieldErrorMessages, formErrorMessage } from '../api/errors'
-import { getGetCurrentUserQueryKey, useRegister } from '../api/generated/auth/auth'
+import { useRegister } from '../api/generated/auth/auth'
 import type { RegisterRequest } from '../api/generated/model'
+import type { VerifyEmailState } from './VerifyEmailPage'
 
 type Fields = Omit<RegisterRequest, 'language'>
 
 export function RegisterPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [fields, setFields] = useState<Fields>({ companyName: '', name: '', email: '', password: '' })
 
   const register = useRegister({
     mutation: {
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() })
-        void navigate('/', { replace: true })
+      onSuccess: ({ token }) => {
+        const state: VerifyEmailState = { email: fields.email.trim(), token }
+        void navigate('/verify-email', { state })
       },
     },
   })

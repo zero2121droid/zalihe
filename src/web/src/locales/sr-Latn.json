@@ -81,7 +81,9 @@
       "passwordHint": "Najmanje 8 znakova",
       "submit": "Registruj firmu",
       "haveAccount": "Već imaš nalog?",
-      "toLogin": "Prijavi se"
+      "toLogin": "Prijavi se",
+      "privacyNote": "Registracijom prihvataš da se tvoji podaci obrađuju kako piše u dokumentu:",
+      "privacyLink": "Politika privatnosti"
     },
     "invitation": {
       "title": "Poziv u firmu {{company}}",
@@ -828,7 +830,8 @@
       "company": "Firma",
       "account": "Moj nalog",
       "maintenance": "Održavanje"
-    }
+    },
+    "privacy": "Politika privatnosti"
   },
   "receipts": {
     "title": "Prijem robe",
@@ -924,5 +927,52 @@
     "yours": "tvoja",
     "empty": "Još nema registrovanih firmi.",
     "noResults": "Nijedna firma ne sadrži „{{search}}“."
+  },
+  "privacy": {
+    "title": "Politika privatnosti",
+    "updated": "Poslednja izmena: {{date}}",
+    "intro": "Lagerko je alat za praćenje zaliha za firme. Ovde piše koje podatke čuva, zašto i šta možeš da uradiš s njima.",
+    "sections": {
+      "controller": {
+        "title": "Ko je odgovoran",
+        "body": "Rukovalac podacima je {{controller}}. Za sva pitanja o privatnosti piši na {{email}}."
+      },
+      "data": {
+        "title": "Šta čuvamo",
+        "body": "Nalog: ime, email, jezik i lozinka u obliku hasha, pa je ni mi ne možemo pročitati.\nFirma: naziv firme i ono što u Lagerko uneseš ili uvezeš iz prodavnice, npr. artikli, cene, stanje, kretanja, porudžbine bez podataka o kupcu i nazivi dobavljača.\nProdavnica: API ključevi povezane prodavnice, šifrovani.\nTehnički podaci: server beleži IP adresu i zahteve u logovima, radi bezbednosti i otklanjanja grešaka."
+      },
+      "notStored": {
+        "title": "Šta ne čuvamo",
+        "body": "Iz porudžbina iz prodavnice ne čuvamo lične podatke kupaca: ime, adresu, telefon ni email. Podatke ne prodajemo i ne koristimo ih za reklame."
+      },
+      "purposes": {
+        "title": "Zašto ih koristimo",
+        "body": "Da bismo pružili uslugu koju koristiš: nalog, praćenje zaliha, povezivanje prodavnice i emailovi kao što su upozorenja, pozivi i promena lozinke. Logove i podatke o korišćenju koristimo jer imamo opravdan interes da aplikacija bude bezbedna i ispravna."
+      },
+      "platform": {
+        "title": "Šta vidi vlasnik Lagerka",
+        "body": "Vlasnik Lagerka vidi nazive firmi, datum registracije, broj artikala, da li je prodavnica povezana i vreme poslednjeg kretanja. Pri registraciji nove firme dobija njen naziv, ime i email osobe koja ju je registrovala. Ovo služi za održavanje usluge i pomoć korisnicima. Ova stranica ne prikazuje artikle, cene ni porudžbine.\nAdmin firme vidi imena i email adrese korisnika svoje firme."
+      },
+      "processors": {
+        "title": "Ko još obrađuje podatke",
+        "body": "netcup GmbH (Nemačka): server i baza podataka, u Evropskoj uniji.\nBrevo (Francuska): slanje emailova, pa vidi adresu primaoca i sadržaj emaila.\nPovezana WooCommerce prodavnica je tvoja: Lagerko s njom razmenjuje samo podatke potrebne za zalihe i porudžbine."
+      },
+      "retention": {
+        "title": "Koliko dugo čuvamo",
+        "body": "Podatke čuvamo dok nalog postoji. Možeš da tražiš brisanje naloga i podataka firme emailom. Posle brisanja podaci mogu ostati u backupu još do 30 dana, a server logovi se čuvaju ograničeno vreme."
+      },
+      "cookies": {
+        "title": "Kolačići",
+        "body": "Koristimo samo kolačiće neophodne za rad: kolačić za prijavu (zalihe.auth, do 14 dana) i kolačić za zaštitu od lažnih zahteva. Izbor jezika i teme ostaje u tvom browseru. Nema kolačića za analitiku ni reklame, pa zato nema ni banera."
+      },
+      "security": {
+        "title": "Bezbednost",
+        "body": "Veza sa aplikacijom je šifrovana (HTTPS), lozinke su heširane, ključevi prodavnice šifrovani, a podaci jedne firme su odvojeni od drugih. Nijedan sistem nije potpuno bezbedan, ali ćemo te obavestiti ako dođe do povrede podataka kad to zakon traži."
+      },
+      "rights": {
+        "title": "Tvoja prava",
+        "body": "Po Zakonu o zaštiti podataka o ličnosti i GDPR-u možeš da tražiš pristup podacima, ispravku, brisanje, ograničenje obrade, prenos podataka i da uložiš prigovor. Piši na {{email}}. Imaš pravo i na pritužbu Povereniku za informacije od javnog značaja i zaštitu podataka o ličnosti."
+      }
+    }
   }
 }

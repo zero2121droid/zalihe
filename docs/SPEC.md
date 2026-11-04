@@ -326,3 +326,6 @@ Vlasnik platforme je osoba koja vodi Lagerko, ne uloga u firmi: admin je svako k
 - Aktivna firma ima bar jedno kretanje u poslednjih 7 dana, ručno ili iz prodavnice.
 - Firma vlasnika je u tabeli, označena kao „tvoja”, ali ne ulazi u zbirne brojeve. Probne firme se ne isključuju podešavanjem, nego se brišu.
 - Registracija ne proverava email, pa se adresa dodaje u `Platform:OwnerEmails` tek kad njen nalog postoji. Inače bi je neko drugi mogao registrovati i dobiti pristup.
+
+### 11.9 Politika privatnosti
+Javna stranica `/privacy` (srpski i engleski), dostupna bez prijave, sa linkom na registraciji i u podešavanjima. Opisuje ono što aplikacija stvarno radi, pa se menja kad se promene obrađivači, kolačići ili podaci koji se čuvaju, npr. kad se doda Cloudflare Web Analytics ili backup van servera. Rukovalac, kontakt i datum izmene su u `web/src/pages/legal.ts`. Tekst treba da pregleda pravnik pre prvih pravih korisnika.

@@ -70,6 +70,13 @@ export function RegisterPage() {
           </Text>
         )}
 
+        <Text fz="xs" c="dimmed">
+          {t('auth.register.privacyNote')}{' '}
+          <Anchor component={Link} to="/privacy" target="_blank" fz="xs">
+            {t('auth.register.privacyLink')}
+          </Anchor>
+        </Text>
+
         <Button type="submit" fullWidth loading={register.isPending}>
           {t('auth.register.submit')}
         </Button>

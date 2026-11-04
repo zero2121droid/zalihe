@@ -25,6 +25,12 @@ export const routes: RouteObject[] = [
       },
     ],
   },
+  // The privacy policy is public, so it can be read before registering.
+  {
+    HydrateFallback: StartingUp,
+    path: '/privacy',
+    lazy: async () => ({ Component: (await import('./pages/PrivacyPage')).PrivacyPage }),
+  },
   // The invitation and password reset links work signed in or not: both sign in as that link's user.
   {
     HydrateFallback: StartingUp,

@@ -140,7 +140,7 @@ describe('SettingsPage', () => {
     // Assert
     await waitFor(() => expect(router.state.location.pathname).toBe('/settings/profile'))
     const menu = screen.getByRole('navigation', { name: 'Delovi podešavanja' })
-    expect(within(menu).getAllByRole('link').map((link) => link.textContent)).toEqual(['Ime i jezik', 'Lozinka'])
+    expect(within(menu).getAllByRole('link').map((link) => link.textContent)).toEqual(['Ime i jezik', 'Lozinka', 'Politika privatnosti'])
   })
 })
 

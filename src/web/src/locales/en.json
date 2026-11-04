@@ -81,7 +81,9 @@
       "passwordHint": "At least 8 characters",
       "submit": "Register company",
       "haveAccount": "Already have an account?",
-      "toLogin": "Sign in"
+      "toLogin": "Sign in",
+      "privacyNote": "By registering you accept that your data is processed as described in the:",
+      "privacyLink": "Privacy policy"
     },
     "invitation": {
       "title": "Invitation to {{company}}",
@@ -828,7 +830,8 @@
       "company": "Company",
       "account": "My account",
       "maintenance": "Maintenance"
-    }
+    },
+    "privacy": "Privacy policy"
   },
   "receipts": {
     "title": "Goods receipt",
@@ -924,5 +927,52 @@
     "yours": "yours",
     "empty": "No companies have registered yet.",
     "noResults": "No company contains “{{search}}”."
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "updated": "Last updated: {{date}}",
+    "intro": "Lagerko is a stock tracking tool for companies. This page says what data it keeps, why, and what you can do about it.",
+    "sections": {
+      "controller": {
+        "title": "Who is responsible",
+        "body": "The data controller is {{controller}}. For any privacy question, write to {{email}}."
+      },
+      "data": {
+        "title": "What we store",
+        "body": "Account: name, email, language and a password hash, so even we can't read the password.\nCompany: the company's name and what you enter in Lagerko or import from your shop, such as items, prices, stock, movements, orders without customer details and supplier names.\nShop: the connected shop's API keys, encrypted.\nTechnical data: the server records IP addresses and requests in logs, for security and fixing errors."
+      },
+      "notStored": {
+        "title": "What we don't store",
+        "body": "From shop orders we don't store customers' personal data: no name, address, phone or email. We don't sell data or use it for advertising."
+      },
+      "purposes": {
+        "title": "Why we use it",
+        "body": "To provide the service you use: the account, stock tracking, connecting the shop, and emails such as alerts, invitations and password resets. We use logs and usage data because we have a legitimate interest in keeping the app secure and working."
+      },
+      "platform": {
+        "title": "What Lagerko's owner sees",
+        "body": "Lagerko's owner sees company names, registration dates, item counts, whether a shop is connected and the time of the last movement. When a company registers, the owner gets its name and the name and email of the person who registered it. This serves to maintain the service and help users. That page doesn't show items, prices or orders.\nA company's admin sees the names and email addresses of that company's users."
+      },
+      "processors": {
+        "title": "Who else processes data",
+        "body": "netcup GmbH (Germany): the server and the database, in the European Union.\nBrevo (France): sending emails, so it sees the recipient's address and the email's content.\nThe connected WooCommerce shop is yours: Lagerko exchanges with it only what stock and orders need."
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "body": "We keep data while the account exists. You can ask by email to delete your account and your company's data. After deletion, data may remain in backups for up to 30 days, and server logs are kept for a limited time."
+      },
+      "cookies": {
+        "title": "Cookies",
+        "body": "We use only the cookies needed to work: the sign-in cookie (zalihe.auth, up to 14 days) and a cookie that protects against forged requests. Your language and theme stay in your browser. There are no analytics or advertising cookies, which is why there is no banner."
+      },
+      "security": {
+        "title": "Security",
+        "body": "The connection to the app is encrypted (HTTPS), passwords are hashed, shop keys are encrypted, and one company's data is kept apart from another's. No system is completely secure, but we will tell you about a data breach when the law requires it."
+      },
+      "rights": {
+        "title": "Your rights",
+        "body": "Under Serbia's Law on Personal Data Protection and the GDPR you can ask for access to your data, correction, deletion, restricted processing and data portability, and you can object. Write to {{email}}. You can also complain to Serbia's Commissioner for Information of Public Importance and Personal Data Protection."
+      }
+    }
   }
 }

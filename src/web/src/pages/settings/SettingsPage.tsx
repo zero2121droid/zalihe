@@ -2,7 +2,7 @@ import { Box, Group, PasswordInput, SegmentedControl, Stack, Text, TextInput, Ti
 import { useQueryClient } from '@tanstack/react-query'
 import { type CSSProperties, type ReactNode, type SubmitEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Navigate, NavLink, useParams } from 'react-router'
+import { Link, Navigate, NavLink, useParams } from 'react-router'
 import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
 import { useChangePassword, useUpdateCompany, useUpdateProfile } from '../../api/generated/account/account'
 import { getGetCurrentUserQueryKey } from '../../api/generated/auth/auth'
@@ -128,6 +128,9 @@ function SettingsMenu({ groups }: { groups: ReturnType<typeof groupsFor> }) {
           ))}
         </div>
       ))}
+      <Link to="/privacy" target="_blank" className={`z-focus ${classes.link}`}>
+        {t('settings.privacy')}
+      </Link>
     </nav>
   )
 }

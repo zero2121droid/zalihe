@@ -296,6 +296,8 @@
     "noResults": "No items match “{{search}}”.",
     "form": {
       "title": "New item",
+      "imageNotSaved": "The item was saved, but its picture wasn't. Add it on the item's page.",
+      "openItem": "Open item",
       "name": "Name",
       "sku": "SKU",
       "barcode": "Barcode",

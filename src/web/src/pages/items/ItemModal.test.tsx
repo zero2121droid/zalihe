@@ -1,8 +1,21 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mockApi, renderPage, testUser } from '../../test/render'
 import { ItemModal } from './ItemModal'
+
+// Canvas doesn't exist in jsdom; the shrinking itself is the browser's.
+const shrunk = new Blob(['mala'], { type: 'image/webp' })
+vi.mock('../../lib/shrinkImage', async (original) => ({
+  ...(await original<typeof import('../../lib/shrinkImage')>()),
+  shrinkImage: async () => shrunk,
+}))
+
+const photo = new File(['velika fotografija'], 'IMG_2041.jpg', { type: 'image/jpeg' })
+const pickPhoto = () => userEvent.upload(document.querySelector<HTMLInputElement>('input[type="file"]')!, photo)
+const saveItem = async () => {
+  await userEvent.click(screen.getByRole('button', { name: 'Sačuvaj artikal' }))
+}
 
 const createdItem = {
   id: '1',
@@ -26,6 +39,84 @@ function bodyOf(fetchMock: ReturnType<typeof mockApi>, url: string) {
 }
 
 describe('ItemModal', () => {
+  beforeEach(() => {
+    URL.createObjectURL = () => 'blob:slika'
+    URL.revokeObjectURL = () => {}
+  })
+
+  it('Submit_NewItemWithPicture_CreatesTheItemThenSendsTheShrunkPicture', async () => {
+    // Arrange
+    const onClose = vi.fn()
+    const fetchMock = mockApi({
+      ...categories,
+      'POST /api/items': { status: 201, body: createdItem },
+      'PUT /api/items/1/image': { status: 200, body: createdItem },
+    })
+    await renderPage(<ItemModal opened onClose={onClose} />)
+
+    // Act
+    await pickPhoto()
+    await screen.findByRole('button', { name: 'Promeni sliku' })
+    await saveItem()
+
+    // Assert
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    const writes = fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST' || init?.method === 'PUT')
+    expect(writes.map(([url]) => url)).toEqual(['/api/items', '/api/items/1/image'])
+    expect((writes[1][1]!.body as FormData).get('file')).toBeInstanceOf(Blob)
+  })
+
+  it('Submit_PictureRemovedBeforeSaving_SendsNoPicture', async () => {
+    // Arrange
+    const onClose = vi.fn()
+    const fetchMock = mockApi({ ...categories, 'POST /api/items': { status: 201, body: createdItem } })
+    await renderPage(<ItemModal opened onClose={onClose} />)
+    await pickPhoto()
+
+    // Act
+    await userEvent.click(await screen.findByRole('button', { name: 'Ukloni sliku' }))
+    await saveItem()
+
+    // Assert
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false)
+  })
+
+  it('Submit_PictureFails_SaysTheItemIsSavedAndOffersNoSecondSave', async () => {
+    // Arrange
+    const onClose = vi.fn()
+    const fetchMock = mockApi({
+      ...categories,
+      'POST /api/items': { status: 201, body: createdItem },
+      'PUT /api/items/1/image': { status: 500, body: { status: 500, code: 'common.unexpected' } },
+    })
+    await renderPage(<ItemModal opened onClose={onClose} />)
+    await pickPhoto()
+    await screen.findByRole('button', { name: 'Promeni sliku' })
+
+    // Act
+    await saveItem()
+
+    // Assert
+    expect(await screen.findByRole('alert')).toHaveTextContent('Artikal je sačuvan, ali slika nije.')
+    expect(screen.getByRole('link', { name: 'Otvori artikal' })).toHaveAttribute('href', '/items/1')
+    expect(screen.queryByRole('button', { name: 'Sačuvaj artikal' })).not.toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1)
+  })
+
+  it('Open_ExistingItem_LeavesThePictureToTheItemsPage', async () => {
+    // Arrange
+    mockApi(categories)
+
+    // Act
+    await renderPage(<ItemModal opened onClose={() => {}} item={{ ...createdItem, imageUrl: null, hasOwnImage: false } as never} />)
+
+    // Assert
+    expect(await screen.findByLabelText(/^Naziv/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Dodaj sliku' })).not.toBeInTheDocument()
+  })
+
   it('Submit_DecimalsWithComma_SendsNumbers', async () => {
     // Arrange
     const fetchMock = mockApi({ ...categories, 'POST /api/items': { status: 201, body: createdItem } })

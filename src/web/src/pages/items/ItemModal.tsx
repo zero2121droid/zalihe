@@ -2,12 +2,14 @@ import { Autocomplete, Button, Group, Modal, Select, SimpleGrid, Stack, Text, Te
 import { useQueryClient } from '@tanstack/react-query'
 import { type SubmitEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { fieldErrorMessages, formErrorMessage } from '../../api/errors'
 import {
   getGetItemHistoryQueryKey,
   getGetItemQueryKey,
   getListItemCategoriesQueryKey,
   getListItemsQueryKey,
+  setItemImage,
   useActivateItem,
   useCreateItem,
   useDeactivateItem,
@@ -21,6 +23,7 @@ import { SaveButton } from '../../components/feedback'
 import { formatDecimalInput, readDecimal } from '../../lib/format'
 import { useSaved } from '../../lib/useSaved'
 import { useShake } from '../../lib/useShake'
+import { ItemImagePicker } from './ItemImagePicker'
 
 interface Fields {
   name: string
@@ -82,6 +85,10 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
   const [fields, setFields] = useState<Fields>(() => (item ? fieldsFrom(item, i18n.language) : emptyFields))
   const [localErrors, setLocalErrors] = useState<Partial<Record<keyof Fields, string>>>({})
   const categories = useListItemCategories({ query: { enabled: opened } })
+  // A new item has no address for its picture yet, so the picture waits here until the item is saved.
+  const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null)
+  const [shrinkingImage, setShrinkingImage] = useState(false)
+  const [savedWithoutImage, setSavedWithoutImage] = useState<string | null>(null)
 
   const saved = useSaved()
   const shake = useShake()
@@ -107,7 +114,26 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
     close()
   }
 
-  const createItem = useCreateItem({ mutation: { onSuccess: confirmAndClose, onError: shake.shake } })
+  function changeImage(blob: Blob | null) {
+    if (image) URL.revokeObjectURL(image.url)
+    setImage(blob && { blob, url: URL.createObjectURL(blob) })
+  }
+
+  async function saveImageAndClose(created: ItemDto) {
+    if (image) {
+      try {
+        await setItemImage(created.id, { file: image.blob })
+      } catch {
+        // The item exists, so saving again would only say that its SKU is taken.
+        await refresh()
+        setSavedWithoutImage(created.id)
+        return
+      }
+    }
+    await confirmAndClose()
+  }
+
+  const createItem = useCreateItem({ mutation: { onSuccess: saveImageAndClose, onError: shake.shake } })
   const updateItem = useUpdateItem({ mutation: { onSuccess: confirmAndClose, onError: shake.shake } })
   const deactivateItem = useDeactivateItem({
     mutation: {
@@ -128,6 +154,8 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
   function close() {
     setFields(item ? fieldsFrom(item, i18n.language) : emptyFields)
     setLocalErrors({})
+    changeImage(null)
+    setSavedWithoutImage(null)
     for (const mutation of [createItem, updateItem, deactivateItem, activateItem]) mutation.reset()
     onClose()
   }
@@ -139,6 +167,7 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (savedWithoutImage) return
 
     // Only the number format is checked here; every business rule is validated by the API.
     const numbers = Object.fromEntries(decimalFields.map((f) => [f, readDecimal(fields[f])]))
@@ -182,6 +211,17 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
             <Text fz="sm" c="dimmed" p="sm" bg="var(--z-surface-2)" style={{ borderRadius: 'var(--mantine-radius-sm)' }}>
               {t('items.form.inactiveNote')}
             </Text>
+          )}
+
+          {!item && (
+            <ItemImagePicker
+              url={image?.url ?? null}
+              busy={false}
+              canRemove={image !== null}
+              onShrinkingChange={setShrinkingImage}
+              onPicked={changeImage}
+              onRemove={() => changeImage(null)}
+            />
           )}
 
           <TextInput
@@ -271,33 +311,44 @@ export function ItemModal({ opened, onClose, item, onDeactivated }: ItemModalPro
             />
           </SimpleGrid>
 
-          {formError && (
+          {(savedWithoutImage || formError) && (
             <Text role="alert" c="var(--mantine-color-error)" fz="sm">
-              {formError}
+              {savedWithoutImage ? t('items.form.imageNotSaved') : formError}
             </Text>
           )}
 
-          <Group justify="space-between" gap="sm" className="z-modal-actions">
-            {item ? (
-              <Button
-                variant="default"
-                loading={toggleActive.isPending}
-                onClick={() => toggleActive.mutate({ id: item.id })}
-              >
-                {item.isActive ? t('items.form.deactivate') : t('items.form.activate')}
+          {savedWithoutImage ? (
+            <Group justify="flex-end" gap="sm" className="z-modal-actions">
+              <Button variant="default" onClick={close}>
+                {t('common.close')}
               </Button>
-            ) : (
-              <span />
-            )}
-            <Group gap="sm">
-              <Button variant="default" className="z-modal-cancel" onClick={close}>
-                {t('common.cancel')}
+              <Button component={Link} to={`/items/${savedWithoutImage}`}>
+                {t('items.form.openItem')}
               </Button>
-              <SaveButton type="submit" loading={save.isPending} saved={saved.saved}>
-                {t('items.form.submit')}
-              </SaveButton>
             </Group>
-          </Group>
+          ) : (
+            <Group justify="space-between" gap="sm" className="z-modal-actions">
+              {item ? (
+                <Button
+                  variant="default"
+                  loading={toggleActive.isPending}
+                  onClick={() => toggleActive.mutate({ id: item.id })}
+                >
+                  {item.isActive ? t('items.form.deactivate') : t('items.form.activate')}
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Group gap="sm">
+                <Button variant="default" className="z-modal-cancel" onClick={close}>
+                  {t('common.cancel')}
+                </Button>
+                <SaveButton type="submit" loading={save.isPending} disabled={shrinkingImage} saved={saved.saved}>
+                  {t('items.form.submit')}
+                </SaveButton>
+              </Group>
+            </Group>
+          )}
         </Stack>
       </form>
     </Modal>

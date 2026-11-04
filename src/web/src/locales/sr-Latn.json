@@ -296,6 +296,8 @@
     "noResults": "Nema artikala za „{{search}}”.",
     "form": {
       "title": "Novi artikal",
+      "imageNotSaved": "Artikal je sačuvan, ali slika nije. Dodaj je na stranici artikla.",
+      "openItem": "Otvori artikal",
       "name": "Naziv",
       "sku": "Šifra (SKU)",
       "barcode": "Barkod",

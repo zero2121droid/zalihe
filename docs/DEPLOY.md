@@ -255,3 +255,5 @@ Lagerko sada radi drugačije od postavke opisane u tačkama 6 i 9, jer deli serv
 | Logovi | `app logovi lagerko app` |
 
 Izmena `.env` običnim `nano` ne važi dok se ne pokrene `app env lagerko` ili `app deploy lagerko`. Email ide preko Breva na portu 2525, sa domena `lagerko.miljanmilojkovic.com`.
+
+**Pre pravog domena i prvih pravih korisnika:** podesiti kopiju backupa van servera (Backblaze B2 preko rclone `crypt`, tačka 9, korak 8) i isprobati vraćanje. Do tada se backup čuva samo na serveru, pa ne štiti od gubitka servera.

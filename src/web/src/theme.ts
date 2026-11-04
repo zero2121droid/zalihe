@@ -226,7 +226,7 @@ export const theme = createTheme({
     }),
     Input: Input.extend({
       defaultProps: { size: 'md' },
-      vars: () => ({ wrapper: { '--input-height': 'var(--z-control)', '--input-fz': '14px' } }),
+      vars: () => ({ wrapper: { '--input-height': 'var(--z-control)', '--input-fz': 'var(--z-input-text)' } }),
       styles: {
         input: { backgroundColor: 'var(--z-surface)', borderColor: 'var(--z-line)' },
       },

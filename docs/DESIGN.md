@@ -87,6 +87,7 @@ Jedinica mere stoji uz broj, manjom veličinom i `muted` bojom: **31** kom.
 
 - Meni na telefonu je traka na dnu ekrana (64 px, `sidebar`, linija `line` iznad): Početna, Artikli, Porudžbine i Više. Trenutna stavka ima tekst `text` i ikonu `accent-text`. „Više“ otvara listu odozdo sa ostalim ekranima, firmom, korisnikom, temom i odjavom (`PhoneTabs`). Gornja traka ima logo i lupu za brzu pretragu; burger meni ne postoji.
 - Visine kontrola idu preko tokena `--z-control` (dugmad i polja: 40 px, na telefonu 44 px) i `--z-icon-button` (36 / 44 px) u `global.css`, nikad fiksno u komponenti. Straničenje je 44 px na telefonu; filter pilule ostaju 32 px, ali primaju dodir u visini od 44 px.
+- Tekst u poljima za unos ide preko tokena `--z-input-text`: 14 px, a na telefonu i ekranima na dodir 16 px, jer iOS ispod toga zumira polje pri fokusu i ostane zumiran. Zum se ne zabranjuje preko `viewport` oznake, jer je uvećanje posao sistema i browsera.
 - Na telefonu se veći razmaci smanjuju za jedan korak: `lg` 24 → 16 px, `xl` 36 → 24 px.
 - Tabele ne skroluju u stranu: gde je prostor za sadržaj uzak (ispod `md`, a lista artikala ispod `lg`), tabela prelazi na sažet raspored (`useCompactTables`). Ostaju naziv i glavni broj, a šifra, status i ostalo idu ispod naziva. Tabele u modalima i u uvozu na telefonu postaju liste blokova.
 - KPI traka (`z-kpi`) je na telefonu jedna kolona: oznaka levo, broj desno, jer dve kolone ne primaju veće iznose, a tekst se ne smanjuje.

@@ -16,6 +16,17 @@
   /* Buttons and fields 40 px, icon buttons 36 px; on a phone both 44 px, big enough for a finger. */
   --z-control: 40px;
   --z-icon-button: 36px;
+  --z-input-text: 14px;
+}
+
+/*
+ * iOS zooms in on a focused field with text under 16 px and stays zoomed after the keyboard closes.
+ * Touch counts too, since a phone on its side is wider than the phone breakpoint.
+ */
+@media (max-width: 47.99em), (pointer: coarse) {
+  :root {
+    --z-input-text: 16px;
+  }
 }
 
 @media (max-width: 47.99em) {

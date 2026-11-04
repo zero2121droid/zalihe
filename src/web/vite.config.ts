@@ -36,7 +36,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    css: false,
+    // Only global.css, whose rules theme.test.ts reads.
+    css: { include: /global\.css/ },
     // Typing with userEvent goes past the default 5 s when the machine is busy (e.g. next to dotnet test).
     testTimeout: 15000,
   },

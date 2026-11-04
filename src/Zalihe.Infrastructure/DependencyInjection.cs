@@ -14,6 +14,7 @@ using Zalihe.Application.Dashboard;
 using Zalihe.Application.Imports;
 using Zalihe.Application.Items;
 using Zalihe.Application.Orders;
+using Zalihe.Application.Receipts;
 using Zalihe.Application.Reports;
 using Zalihe.Application.Webhooks;
 using Zalihe.Infrastructure.Jobs;
@@ -58,6 +59,7 @@ public static class DependencyInjection
         services.AddScoped<OrderSyncService>();
         services.AddScoped<OrderListService>();
         services.AddScoped<ManualOrderService>();
+        services.AddScoped<ReceiptService>();
         services.AddScoped<StockPushService>();
         services.AddScoped<LowStockAlertService>();
         services.AddScoped<ChannelFailureAlertService>();

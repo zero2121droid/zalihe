@@ -16,7 +16,8 @@
       "reports": "Reports",
       "settings": "Settings",
       "more": "More",
-      "phone": "Navigation"
+      "phone": "Navigation",
+      "receipts": "Goods receipt"
     },
     "logout": "Sign out",
     "cancel": "Cancel",
@@ -51,6 +52,10 @@
         "missing": "This device has no camera.",
         "failed": "The camera can’t start. Check whether another app is using it."
       }
+    },
+    "itemPicker": {
+      "placeholder": "Name, SKU or barcode",
+      "noMatches": "No item for “{{search}}”."
     }
   },
   "auth": {
@@ -241,6 +246,10 @@
     "order": {
       "item_not_found": "The item doesn't exist or was deleted.",
       "not_manual": "Only the shop changes its own orders."
+    },
+    "receipt": {
+      "item_not_found": "The item doesn't exist or was deleted.",
+      "duplicate_document": "This document is already posted."
     }
   },
   "items": {
@@ -457,9 +466,7 @@
       "title": "New order",
       "items": "Items",
       "addItem": "Add item",
-      "addItemPlaceholder": "Name, SKU or barcode",
       "noItems": "Add at least one item.",
-      "noMatches": "No item for “{{search}}”.",
       "remove": "Remove {{name}}",
       "quantity": "Quantity of {{name}}",
       "inStock": "in stock",
@@ -820,6 +827,67 @@
       "company": "Company",
       "account": "My account",
       "maintenance": "Maintenance"
+    }
+  },
+  "receipts": {
+    "title": "Goods receipt",
+    "description": "Goods from a supplier on one document: all lines are received at once.",
+    "new": "New receipt",
+    "search": "Search receipts",
+    "searchPlaceholder": "Supplier or document number",
+    "searching": "Searching…",
+    "columns": {
+      "date": "Document date",
+      "supplier": "Supplier",
+      "document": "Document",
+      "lines": "Lines",
+      "value": "Value",
+      "enteredBy": "Entered by"
+    },
+    "open": "Open receipt {{supplier}} {{document}}",
+    "noDocument": "no number",
+    "noResults": "No receipts for “{{search}}”.",
+    "empty": {
+      "title": "No receipts yet",
+      "description": "When goods arrive from a supplier, enter all lines from the invoice or delivery note at once."
+    },
+    "detail": {
+      "title": "Receipt {{document}}",
+      "posted": "Posted {{date}}",
+      "enteredBy": "Entered by {{name}}",
+      "item": "Item",
+      "quantity": "Quantity",
+      "unitPrice": "Purchase price",
+      "value": "Value",
+      "total": "Total",
+      "noPrice": "—",
+      "fixHint": "A posted receipt doesn't change. Fix a mistake with a stock correction on the item."
+    },
+    "form": {
+      "title": "New receipt",
+      "supplier": "Supplier",
+      "supplierPlaceholder": "e.g. Coffee Import Ltd.",
+      "documentNumber": "Invoice or delivery note number",
+      "documentDate": "Document date",
+      "addItem": "Add item",
+      "items": "Lines",
+      "noItems": "Add at least one item.",
+      "quantity": "Quantity of {{name}}",
+      "unitPrice": "Purchase price of {{name}}",
+      "pricePlaceholder": "Price",
+      "updatePrice": "Set as purchase price",
+      "currentPrice": "now {{price}}",
+      "noCurrentPrice": "the item has no purchase price yet",
+      "inStock": "in stock",
+      "remove": "Remove {{name}}",
+      "lineCount_one": "{{count}} line",
+      "lineCount_few": "{{count}} lines",
+      "lineCount_other": "{{count}} lines",
+      "total": "Total",
+      "submit": "Post receipt",
+      "duplicate": "This supplier's document was already posted on {{date}}. Is this the same goods?",
+      "postAnyway": "Post anyway",
+      "postedHint": "After posting, the receipt doesn't change; a mistake is fixed with a correction."
     }
   }
 }

@@ -1,4 +1,4 @@
-import { IconBox, IconChartBar, IconHome, IconLink, IconReceipt, IconSettings } from '@tabler/icons-react'
+import { IconBox, IconChartBar, IconHome, IconLink, IconReceipt, IconSettings, IconTruckDelivery } from '@tabler/icons-react'
 import type { ComponentType } from 'react'
 import type { Permissions } from '../auth/permissions'
 
@@ -15,6 +15,7 @@ export const navItems: NavItem[] = [
   { to: '/', labelKey: 'common.nav.home', icon: IconHome },
   { to: '/items', labelKey: 'common.nav.items', icon: IconBox },
   { to: '/orders', labelKey: 'common.nav.orders', icon: IconReceipt },
+  { to: '/receipts', labelKey: 'common.nav.receipts', icon: IconTruckDelivery },
   { to: '/reports', labelKey: 'common.nav.reports', icon: IconChartBar, requires: 'manage' },
   { to: '/channels', labelKey: 'common.nav.channels', icon: IconLink },
   { to: '/settings', labelKey: 'common.nav.settings', icon: IconSettings },

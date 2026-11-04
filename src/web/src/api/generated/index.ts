@@ -7,5 +7,6 @@ export * from './imports/imports';
 export * from './invitations/invitations';
 export * from './items/items';
 export * from './orders/orders';
+export * from './receipts/receipts';
 export * from './reports/reports';
 export * from './stock/stock';

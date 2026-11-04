@@ -576,6 +576,90 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                     b.ToTable("ExternalOrderLines", (string)null);
                 });
 
+            modelBuilder.Entity("Zalihe.Domain.Receipts.Receipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("DocumentDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("DocumentKey")
+                        .HasMaxLength(265)
+                        .HasColumnType("character varying(265)");
+
+                    b.Property<string>("DocumentNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("PostedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("SupplierName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "DocumentKey");
+
+                    b.HasIndex("TenantId", "PostedAt");
+
+                    b.ToTable("Receipts");
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Receipts.ReceiptLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("ReceiptId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("ReceiptId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ReceiptLines", (string)null);
+                });
+
             modelBuilder.Entity("Zalihe.Domain.Stock.StockLevel", b =>
                 {
                     b.Property<Guid>("ItemId")
@@ -1046,6 +1130,36 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Zalihe.Domain.Receipts.Receipt", b =>
+                {
+                    b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Receipts.ReceiptLine", b =>
+                {
+                    b.HasOne("Zalihe.Domain.Items.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Zalihe.Domain.Receipts.Receipt", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ReceiptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Zalihe.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Zalihe.Domain.Stock.StockLevel", b =>
                 {
                     b.HasOne("Zalihe.Domain.Items.Item", null)
@@ -1115,6 +1229,11 @@ namespace Zalihe.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("Zalihe.Domain.Orders.ExternalOrder", b =>
+                {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("Zalihe.Domain.Receipts.Receipt", b =>
                 {
                     b.Navigation("Lines");
                 });

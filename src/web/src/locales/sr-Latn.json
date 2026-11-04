@@ -16,7 +16,8 @@
       "reports": "Izveštaji",
       "settings": "Podešavanja",
       "more": "Više",
-      "phone": "Navigacija"
+      "phone": "Navigacija",
+      "receipts": "Prijem robe"
     },
     "logout": "Odjavi se",
     "cancel": "Otkaži",
@@ -51,6 +52,10 @@
         "missing": "Na ovom uređaju nema kamere.",
         "failed": "Kamera ne može da se pokrene. Proveri da li je koristi neka druga aplikacija."
       }
+    },
+    "itemPicker": {
+      "placeholder": "Naziv, šifra ili barkod",
+      "noMatches": "Nema artikla za „{{search}}”."
     }
   },
   "auth": {
@@ -241,6 +246,10 @@
     "order": {
       "item_not_found": "Artikal ne postoji ili je obrisan.",
       "not_manual": "Porudžbinu iz prodavnice menja samo prodavnica."
+    },
+    "receipt": {
+      "item_not_found": "Artikal ne postoji ili je obrisan.",
+      "duplicate_document": "Ovaj dokument je već proknjižen."
     }
   },
   "items": {
@@ -457,9 +466,7 @@
       "title": "Nova porudžbina",
       "items": "Artikli",
       "addItem": "Dodaj artikal",
-      "addItemPlaceholder": "Naziv, šifra ili barkod",
       "noItems": "Dodaj bar jedan artikal.",
-      "noMatches": "Nema artikla za „{{search}}”.",
       "remove": "Ukloni {{name}}",
       "quantity": "Količina za {{name}}",
       "inStock": "na stanju",
@@ -820,6 +827,67 @@
       "company": "Firma",
       "account": "Moj nalog",
       "maintenance": "Održavanje"
+    }
+  },
+  "receipts": {
+    "title": "Prijem robe",
+    "description": "Roba od dobavljača sa jednog dokumenta: sve stavke se prime odjednom.",
+    "new": "Novi prijem",
+    "search": "Pretraga prijema",
+    "searchPlaceholder": "Dobavljač ili broj dokumenta",
+    "searching": "Pretraga…",
+    "columns": {
+      "date": "Datum dokumenta",
+      "supplier": "Dobavljač",
+      "document": "Dokument",
+      "lines": "Stavki",
+      "value": "Vrednost",
+      "enteredBy": "Uneo"
+    },
+    "open": "Otvori prijem {{supplier}} {{document}}",
+    "noDocument": "bez broja",
+    "noResults": "Nema prijema za „{{search}}”.",
+    "empty": {
+      "title": "Još nema prijema",
+      "description": "Kad stigne roba od dobavljača, upiši sve stavke sa fakture ili otpremnice odjednom."
+    },
+    "detail": {
+      "title": "Prijem {{document}}",
+      "posted": "Proknjiženo {{date}}",
+      "enteredBy": "Uneo {{name}}",
+      "item": "Artikal",
+      "quantity": "Količina",
+      "unitPrice": "Nabavna cena",
+      "value": "Vrednost",
+      "total": "Ukupno",
+      "noPrice": "—",
+      "fixHint": "Proknjižen prijem se ne menja. Grešku ispravi korekcijom stanja na artiklu."
+    },
+    "form": {
+      "title": "Novi prijem",
+      "supplier": "Dobavljač",
+      "supplierPlaceholder": "npr. Kafa Import d.o.o.",
+      "documentNumber": "Broj fakture ili otpremnice",
+      "documentDate": "Datum dokumenta",
+      "addItem": "Dodaj artikal",
+      "items": "Stavke",
+      "noItems": "Dodaj bar jedan artikal.",
+      "quantity": "Količina za {{name}}",
+      "unitPrice": "Nabavna cena za {{name}}",
+      "pricePlaceholder": "Cena",
+      "updatePrice": "Postavi kao nabavnu cenu",
+      "currentPrice": "sada {{price}}",
+      "noCurrentPrice": "artikal još nema nabavnu cenu",
+      "inStock": "na stanju",
+      "remove": "Ukloni {{name}}",
+      "lineCount_one": "{{count}} stavka",
+      "lineCount_few": "{{count}} stavke",
+      "lineCount_other": "{{count}} stavki",
+      "total": "Ukupno",
+      "submit": "Proknjiži prijem",
+      "duplicate": "Ovaj dokument dobavljača je već proknjižen {{date}}. Da li je ovo ista roba?",
+      "postAnyway": "Ipak proknjiži",
+      "postedHint": "Posle knjiženja prijem se ne menja; greška se ispravlja korekcijom."
     }
   }
 }

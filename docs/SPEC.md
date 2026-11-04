@@ -257,9 +257,12 @@ Osnovno pravilo: AI nikad ne pravi kretanja zaliha. On samo popunjava **nacrt pr
 ```
 
 #### Faza 0: prijem sa više stavki (bez AI-ja)
+
+**Stanje (novembar 2026):** napravljeno. Ekran „Prijem robe” (`/receipts`) u meniju, lista proknjiženih prijema i stranica „Novi prijem”. Prijem se knjiži odmah, bez čuvanja nacrta: status `Draft` postoji u modelu za fazu 1, ali ga API još ne vraća. Kretanje svake stavke ima napomenu = dobavljač i `ExternalRef` = broj dokumenta. Broj dokumenta nije obavezan (prijem bez otpremnice). Polja za fazu 1 (`Origin`, `RawName`, `RawCode`, `MatchKind`) se dodaju sa njom.
+
 - Ekran „Prijem robe”: dobavljač (slobodan tekst), broj fakture ili otpremnice, datum, stavke (artikal, količina, opciono nabavna cena).
 - Potvrda pravi sva `Receipt` kretanja u jednoj transakciji, sa `ExternalRef` = broj dokumenta. Proknjižen prijem se ne menja; greška se ispravlja korekcijom, kao i svako kretanje.
-- Nabavna cena sa prijema se nudi kao nova cena artikla i primenjuje samo ako je korisnik izabere (isti obrazac kao razlike pri uvozu iz prodavnice, 2.4).
+- Nabavna cena sa prijema se nudi kao nova cena artikla i primenjuje samo ako je korisnik izabere (isti obrazac kao razlike pri uvozu iz prodavnice, 2.4). Polje za cenu se popuni trenutnom cenom artikla; izbor „Postavi kao nabavnu cenu” se pojavi tek kad se cena razlikuje, a unapred je označen samo za artikal koji još nema nabavnu cenu. Promena cene se upisuje u istoriju artikla.
 - Isti dobavljač i isti broj dokumenta drugi put: upozorenje (`receipt.duplicate_document`), uz mogućnost da se ipak nastavi.
 - Uloge (11.2): prijem sme svako ko sme kretanja. Zaposleni bez prava na nabavne cene ne vidi cene ni na prijemu, a API ih ne vraća i ne prima od njega; cene kasnije dopunjuje admin ili menadžer.
 
@@ -313,4 +316,4 @@ Sve tabele imaju global query filter po `TenantId`.
 #### Otvorena pitanja (pre faze 1)
 1. **SEF i e-fakture.** Domaći dobavljači firmama verovatno šalju e-fakture preko SEF-a kao UBL XML (proveriti za ciljne korisnike). Takva faktura se čita tačno i bez AI-ja, pa bi upload XML fajla bio jeftin dodatak, a AI ostaje za uvoznu robu, otpremnice bez cena, papir i PDF. Integracija sa SEF-om ostaje van obima (2.8).
 2. **Koja cena je nabavna.** Bez PDV-a i posle rabata (PDV obveznik može da odbije PDV) ili sa PDV-om (paušalac ne može)? Verovatno podešavanje na firmi.
-3. Da li faza 0 ulazi u v1.
+3. ~~Da li faza 0 ulazi u v1.~~ Napravljena je u novembru 2026.

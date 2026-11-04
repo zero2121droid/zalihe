@@ -6,6 +6,7 @@ using Zalihe.Application.Common;
 using Zalihe.Domain.Channels;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Orders;
+using Zalihe.Domain.Receipts;
 using Zalihe.Domain.Stock;
 using Zalihe.Domain.Tenants;
 using Zalihe.Domain.Users;
@@ -26,6 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<ShopAuthorization> ShopAuthorizations => Set<ShopAuthorization>();
     public DbSet<ItemChannelMapping> ItemChannelMappings => Set<ItemChannelMapping>();
     public DbSet<ExternalOrder> ExternalOrders => Set<ExternalOrder>();
+    public DbSet<Receipt> Receipts => Set<Receipt>();
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
     public DbSet<LowStockAlert> LowStockAlerts => Set<LowStockAlert>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
@@ -223,6 +225,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             // Old events are deleted by the time they were received (SPEC 8).
             webhookEvent.HasIndex(e => e.ReceivedAt);
             webhookEvent.HasIndex(e => e.TenantId);
+        });
+
+        builder.Entity<Receipt>(receipt =>
+        {
+            receipt.Property(r => r.SupplierName).HasMaxLength(Receipt.SupplierNameMaxLength);
+            receipt.Property(r => r.DocumentNumber).HasMaxLength(Receipt.DocumentNumberMaxLength);
+            receipt.Property(r => r.DocumentKey).HasMaxLength(Receipt.DocumentKeyMaxLength);
+            receipt.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
+            receipt.HasMany(r => r.Lines).WithOne().HasForeignKey(l => l.ReceiptId).OnDelete(DeleteBehavior.Cascade);
+            receipt.HasOne<Tenant>().WithMany().HasForeignKey(r => r.TenantId).OnDelete(DeleteBehavior.Restrict);
+            // The list shows the newest first; the same document entered twice is found by its key.
+            receipt.HasIndex(r => new { r.TenantId, r.PostedAt });
+            receipt.HasIndex(r => new { r.TenantId, r.DocumentKey });
+        });
+
+        builder.Entity<ReceiptLine>(line =>
+        {
+            line.ToTable("ReceiptLines");
+            // The receipt creates its lines with their IDs, so they are inserts (as with order lines).
+            line.Property(l => l.Id).ValueGeneratedNever();
+            line.Property(l => l.Quantity).HasPrecision(18, 3);
+            line.Property(l => l.UnitPrice).HasPrecision(18, 2);
+            line.HasOne<Item>().WithMany().HasForeignKey(l => l.ItemId).OnDelete(DeleteBehavior.Restrict);
+            line.HasOne<Tenant>().WithMany().HasForeignKey(l => l.TenantId).OnDelete(DeleteBehavior.Restrict);
+            line.HasIndex(l => l.TenantId);
+            line.HasIndex(l => l.ItemId);
         });
 
         ApplyTenantFilters(builder);

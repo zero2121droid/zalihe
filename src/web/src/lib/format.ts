@@ -87,6 +87,20 @@ export function readDecimal(input: string): number | null | 'invalid' {
   return parseDecimal(input) ?? 'invalid'
 }
 
+/**
+ * A calendar date without a time ("2026-11-02", e.g. the date on a supplier's document): "2. 11. 2026."
+ * / "Nov 2, 2026". It is read as that day everywhere, so no time zone can move it to the day before.
+ */
+export function formatDate(value: string, language: string): string {
+  return new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`))
+}
+
+/** Today in the user's time zone as "2026-11-02", the value of a date field. */
+export function todayIso(now = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
 /** A day and month for a chart axis: "24.10." in sr-Latn, "10/24" in English. */
 export function formatShortDate(value: string | Date, language: string): string {
   return new Intl.DateTimeFormat(language, { day: 'numeric', month: 'numeric' }).format(new Date(value))

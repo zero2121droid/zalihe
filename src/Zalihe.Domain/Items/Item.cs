@@ -106,6 +106,13 @@ public class Item : ITenantOwned
     }
 
     /// <summary>
+    /// Changes only the purchase price, e.g. to the price on a received invoice (SPEC 11.7). Returns the
+    /// change for the item's change log; empty when the price is the same.
+    /// </summary>
+    public IReadOnlyList<ItemFieldChange> ChangePurchasePrice(decimal? purchasePrice) =>
+        Update(Name, Sku, Unit, MinStock, Barcode, Category, GroupName, purchasePrice, SalePrice);
+
+    /// <summary>
     /// Hides the item from lists and pickers. Items are never deleted, because their stock
     /// history must stay; a deactivated item can be activated again.
     /// </summary>

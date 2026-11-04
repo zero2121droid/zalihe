@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Zalihe.Domain.Channels;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Orders;
+using Zalihe.Domain.Receipts;
 using Zalihe.Domain.Stock;
 using Zalihe.Domain.Tenants;
 
@@ -23,6 +24,7 @@ public interface IAppDbContext
     DbSet<ShopAuthorization> ShopAuthorizations { get; }
     DbSet<ItemChannelMapping> ItemChannelMappings { get; }
     DbSet<ExternalOrder> ExternalOrders { get; }
+    DbSet<Receipt> Receipts { get; }
     DbSet<WebhookEvent> WebhookEvents { get; }
     DbSet<LowStockAlert> LowStockAlerts { get; }
 

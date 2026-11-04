@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatLongDate, formatMoney, formatNumber, formatDecimalInput, formatRecentTime, formatSignedQuantity, parseDecimal, readDecimal } from './format'
+import { formatDate, formatLongDate, formatMoney, formatNumber, formatDecimalInput, formatRecentTime, formatSignedQuantity, parseDecimal, readDecimal, todayIso } from './format'
 
 describe('formatNumber', () => {
   it('formatNumber_SerbianLatin_UsesDotForThousandsAndCommaForDecimals', () => {
@@ -109,5 +109,21 @@ describe('formatRecentTime', () => {
 
   it('formatRecentTime_Older_ShowsDate', () => {
     expect(formatRecentTime(new Date(2026, 8, 28, 9, 0), 'sr-Latn', 'juče', now)).toBe('28. 9.')
+  })
+})
+
+describe('formatDate', () => {
+  it('formatDate_CalendarDate_ShowsThatDayInSerbian', () => {
+    expect(formatDate('2026-11-02', 'sr-Latn')).toBe('2. 11. 2026.')
+  })
+
+  it('formatDate_FirstOfMonth_IsNotMovedToDayBefore', () => {
+    expect(formatDate('2026-01-01', 'en')).toBe('Jan 1, 2026')
+  })
+})
+
+describe('todayIso', () => {
+  it('todayIso_LocalDate_PadsMonthAndDay', () => {
+    expect(todayIso(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05')
   })
 })

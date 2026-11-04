@@ -530,6 +530,226 @@
         }
       }
     },
+    "/api/receipts": {
+      "get": {
+        "tags": [
+          "Receipts"
+        ],
+        "operationId": "ListReceipts",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfReceiptDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfReceiptDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Receipts"
+        ],
+        "operationId": "CreateReceipt",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReceiptRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReceiptRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReceiptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/receipts/{id}": {
+      "get": {
+        "tags": [
+          "Receipts"
+        ],
+        "operationId": "GetReceipt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/orders": {
       "get": {
         "tags": [
@@ -4156,6 +4376,83 @@
           }
         }
       },
+      "CreateReceiptLineRequest": {
+        "required": [
+          "itemId",
+          "quantity"
+        ],
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "unitPrice": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "updatePurchasePrice": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "CreateReceiptRequest": {
+        "required": [
+          "supplierName",
+          "documentNumber",
+          "documentDate",
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "supplierName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "lines": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CreateReceiptLineRequest"
+            }
+          },
+          "allowDuplicate": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
       "CurrentUserResponse": {
         "required": [
           "id",
@@ -5266,6 +5563,35 @@
           }
         }
       },
+      "PagedResultOfReceiptDto": {
+        "required": [
+          "items",
+          "totalCount",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptDto"
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfSlowMoverDto": {
         "required": [
           "items",
@@ -5560,6 +5886,119 @@
         "properties": {
           "employeesSeePurchasePrices": {
             "type": "boolean"
+          }
+        }
+      },
+      "ReceiptDto": {
+        "required": [
+          "id",
+          "supplierName",
+          "documentNumber",
+          "documentDate",
+          "postedAt",
+          "createdByName",
+          "lineCount",
+          "totalValue",
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "documentNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "documentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "postedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalValue": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptLineDto"
+            }
+          }
+        }
+      },
+      "ReceiptItemDto": {
+        "required": [
+          "id",
+          "name",
+          "sku",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Unit"
+          }
+        }
+      },
+      "ReceiptLineDto": {
+        "required": [
+          "id",
+          "item",
+          "quantity",
+          "unitPrice"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "item": {
+            "$ref": "#/components/schemas/ReceiptItemDto"
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "unitPrice": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
           }
         }
       },
@@ -6217,6 +6656,9 @@
     },
     {
       "name": "Reports"
+    },
+    {
+      "name": "Receipts"
     },
     {
       "name": "Orders"

@@ -46,6 +46,8 @@ export const routes: RouteObject[] = [
           { path: '/items', lazy: async () => ({ Component: (await import('./pages/items/ItemsPage')).ItemsPage }), handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/items/:id', lazy: async () => ({ Component: (await import('./pages/items/ItemDetailPage')).ItemDetailPage }), handle: { width: 'wide' } satisfies RouteHandle },
           { path: '/orders', lazy: async () => ({ Component: (await import('./pages/orders/OrdersPage')).OrdersPage }), handle: { width: 'wide' } satisfies RouteHandle },
+          { path: '/receipts', lazy: async () => ({ Component: (await import('./pages/receipts/ReceiptsPage')).ReceiptsPage }), handle: { width: 'wide' } satisfies RouteHandle },
+          { path: '/receipts/new', lazy: async () => ({ Component: (await import('./pages/receipts/NewReceiptPage')).NewReceiptPage }) },
           { path: '/channels', lazy: async () => ({ Component: (await import('./pages/channels/ChannelsPage')).ChannelsPage }), handle: { width: 'wide' } satisfies RouteHandle },
           {
             // Admins and managers (SPEC 11.2).

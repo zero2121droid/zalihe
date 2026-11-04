@@ -17,7 +17,8 @@
       "settings": "Settings",
       "more": "More",
       "phone": "Navigation",
-      "receipts": "Goods receipt"
+      "receipts": "Goods receipt",
+      "platform": "Platform"
     },
     "logout": "Sign out",
     "cancel": "Cancel",
@@ -889,5 +890,39 @@
       "postAnyway": "Post anyway",
       "postedHint": "After posting, the receipt doesn't change; a mistake is fixed with a correction."
     }
+  },
+  "platform": {
+    "title": "Platform",
+    "description": "All companies on Lagerko: who registered and who actually started working.",
+    "summary": "Overview of all companies",
+    "search": "Search companies",
+    "searchPlaceholder": "Company name",
+    "searching": "Searching",
+    "figures": {
+      "companies": "Companies",
+      "companiesHint": "without your company",
+      "new": "New companies",
+      "last7Days": "last 7 days",
+      "active": "Active companies",
+      "activeHint": "at least one movement in 7 days",
+      "withShop": "With a shop",
+      "withShopHint": "shop connected"
+    },
+    "columns": {
+      "company": "Company",
+      "registered": "Registered",
+      "items": "Items",
+      "shop": "Shop",
+      "lastMovement": "Last movement"
+    },
+    "itemCount_one": "{{count}} item",
+    "itemCount_few": "{{count}} items",
+    "itemCount_other": "{{count}} items",
+    "shopConnected": "connected",
+    "noShop": "none",
+    "noMovements": "none yet",
+    "yours": "yours",
+    "empty": "No companies have registered yet.",
+    "noResults": "No company contains “{{search}}”."
   }
 }

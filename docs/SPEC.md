@@ -322,4 +322,7 @@ Sve tabele imaju global query filter po `TenantId`.
 Vlasnik platforme je osoba koja vodi Lagerko, ne uloga u firmi: admin je svako ko registruje firmu, pa ovo pravo ne sme da zavisi od te uloge. Određuje ga konfiguracija (`Platform:OwnerEmails`), bez nove uloge i migracije.
 
 - Za svaku novu firmu vlasnik dobija email (naziv firme, ime i email osobe koja ju je registrovala), kao posao u pozadini, pa greška u slanju ne obara registraciju. Prihvaćen poziv u postojeću firmu nije nova firma i ne šalje email.
-- Sledeće: stranica samo za vlasnika, sa brojevima i tabelom firmi (artikli, povezana prodavnica, poslednje kretanje). Prikazuje samo to, ne sadržaj podataka firme.
+- Stranica „Platforma” (`/platform`) je vidljiva samo vlasniku; API drugima vraća 403, i adminima firmi. Prikazuje zbirne brojeve (firme, nove i aktivne u 7 dana, sa prodavnicom) i tabelu firmi (registracija, aktivni artikli, povezana prodavnica, poslednje kretanje), a nikad sadržaj podataka firme.
+- Aktivna firma ima bar jedno kretanje u poslednjih 7 dana, ručno ili iz prodavnice.
+- Firma vlasnika je u tabeli, označena kao „tvoja”, ali ne ulazi u zbirne brojeve. Probne firme se ne isključuju podešavanjem, nego se brišu.
+- Registracija ne proverava email, pa se adresa dodaje u `Platform:OwnerEmails` tek kad njen nalog postoji. Inače bi je neko drugi mogao registrovati i dobiti pristup.

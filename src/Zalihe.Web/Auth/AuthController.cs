@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Zalihe.Infrastructure.Identity;
+using Zalihe.Infrastructure.Platform;
 using Zalihe.Web.Errors;
 
 namespace Zalihe.Web.Auth;
@@ -11,6 +13,7 @@ namespace Zalihe.Web.Auth;
 [Route("api/auth")]
 public class AuthController(
     AccountService accountService,
+    IOptions<PlatformOptions> platform,
     UserManager<User> userManager,
     SignInManager<User> signInManager,
     IAntiforgery antiforgery) : ControllerBase
@@ -110,6 +113,6 @@ public class AuthController(
         var tenant = await accountService.GetTenantAsync(user.TenantId, ct);
         CookieAntiforgeryFilter.IssueToken(antiforgery, HttpContext);
 
-        return CurrentUserResponse.For(user, tenant);
+        return CurrentUserResponse.For(user, tenant, platform.Value);
     }
 }

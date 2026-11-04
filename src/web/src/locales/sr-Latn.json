@@ -17,7 +17,8 @@
       "settings": "Podešavanja",
       "more": "Više",
       "phone": "Navigacija",
-      "receipts": "Prijem robe"
+      "receipts": "Prijem robe",
+      "platform": "Platforma"
     },
     "logout": "Odjavi se",
     "cancel": "Otkaži",
@@ -889,5 +890,39 @@
       "postAnyway": "Ipak proknjiži",
       "postedHint": "Posle knjiženja prijem se ne menja; greška se ispravlja korekcijom."
     }
+  },
+  "platform": {
+    "title": "Platforma",
+    "description": "Sve firme u Lagerku: ko se registrovao i ko je stvarno počeo da radi.",
+    "summary": "Pregled svih firmi",
+    "search": "Pretraga firmi",
+    "searchPlaceholder": "Naziv firme",
+    "searching": "Pretraga u toku",
+    "figures": {
+      "companies": "Firme",
+      "companiesHint": "bez tvoje firme",
+      "new": "Nove firme",
+      "last7Days": "poslednjih 7 dana",
+      "active": "Aktivne firme",
+      "activeHint": "bar jedno kretanje za 7 dana",
+      "withShop": "Sa prodavnicom",
+      "withShopHint": "povezana prodavnica"
+    },
+    "columns": {
+      "company": "Firma",
+      "registered": "Registrovana",
+      "items": "Artikli",
+      "shop": "Prodavnica",
+      "lastMovement": "Poslednje kretanje"
+    },
+    "itemCount_one": "{{count}} artikal",
+    "itemCount_few": "{{count}} artikla",
+    "itemCount_other": "{{count}} artikala",
+    "shopConnected": "povezana",
+    "noShop": "nema",
+    "noMovements": "još nema",
+    "yours": "tvoja",
+    "empty": "Još nema registrovanih firmi.",
+    "noResults": "Nijedna firma ne sadrži „{{search}}“."
   }
 }

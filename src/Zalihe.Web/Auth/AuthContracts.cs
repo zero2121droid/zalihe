@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Zalihe.Domain.Tenants;
 using Zalihe.Domain.Users;
 using Zalihe.Infrastructure.Identity;
+using Zalihe.Infrastructure.Platform;
 
 namespace Zalihe.Web.Auth;
 
@@ -42,6 +43,7 @@ public record ResetPasswordRequest(
 /// <param name="Role">What the user may do; the client shows only what the role allows, the API enforces it.</param>
 /// <param name="CanSeePurchasePrices">Whether the user sees purchase prices and stock value; the API leaves them out otherwise.</param>
 /// <param name="EmployeesSeePurchasePrices">The company's setting, which admins change.</param>
+/// <param name="IsPlatformOwner">Whether the user may open the page about all companies; the API enforces it.</param>
 public record CurrentUserResponse(
     Guid Id,
     string Name,
@@ -51,11 +53,13 @@ public record CurrentUserResponse(
     string TenantName,
     UserRole Role,
     bool CanSeePurchasePrices,
-    bool EmployeesSeePurchasePrices)
+    bool EmployeesSeePurchasePrices,
+    bool IsPlatformOwner)
 {
-    public static CurrentUserResponse For(User user, Tenant tenant) =>
+    public static CurrentUserResponse For(User user, Tenant tenant, PlatformOptions platform) =>
         new(user.Id, user.Name, user.Email!, user.Language, tenant.Id, tenant.Name, user.Role,
-            user.Role.SeesPurchasePrices(tenant.EmployeesSeePurchasePrices), tenant.EmployeesSeePurchasePrices);
+            user.Role.SeesPurchasePrices(tenant.EmployeesSeePurchasePrices), tenant.EmployeesSeePurchasePrices,
+            platform.IsOwner(user.Email));
 }
 
 public record PurchasePriceSettingRequest(bool EmployeesSeePurchasePrices);

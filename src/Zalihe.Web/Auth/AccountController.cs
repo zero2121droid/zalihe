@@ -2,8 +2,10 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Zalihe.Application.Common;
 using Zalihe.Infrastructure.Identity;
+using Zalihe.Infrastructure.Platform;
 using Zalihe.Web.Errors;
 
 namespace Zalihe.Web.Auth;
@@ -18,6 +20,7 @@ namespace Zalihe.Web.Auth;
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
 public class AccountController(
     AccountService accountService,
+    IOptions<PlatformOptions> platform,
     InvitationService invitations,
     UserManager<User> userManager,
     SignInManager<User> signInManager,
@@ -167,7 +170,7 @@ public class AccountController(
 
     private async Task<CurrentUserResponse> CurrentAsync(User user, CancellationToken ct)
     {
-        return CurrentUserResponse.For(user, await accountService.GetTenantAsync(user.TenantId, ct));
+        return CurrentUserResponse.For(user, await accountService.GetTenantAsync(user.TenantId, ct), platform.Value);
     }
 
     private ObjectResult Failed(IReadOnlyList<AppError> errors) =>

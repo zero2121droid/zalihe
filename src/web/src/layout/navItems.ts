@@ -1,4 +1,4 @@
-import { IconBox, IconChartBar, IconHome, IconLink, IconReceipt, IconSettings, IconTruckDelivery } from '@tabler/icons-react'
+import { IconBox, IconBuildingCommunity, IconChartBar, IconHome, IconLink, IconReceipt, IconSettings, IconTruckDelivery } from '@tabler/icons-react'
 import type { ComponentType } from 'react'
 import type { Permissions } from '../auth/permissions'
 
@@ -19,6 +19,7 @@ export const navItems: NavItem[] = [
   { to: '/reports', labelKey: 'common.nav.reports', icon: IconChartBar, requires: 'manage' },
   { to: '/channels', labelKey: 'common.nav.channels', icon: IconLink },
   { to: '/settings', labelKey: 'common.nav.settings', icon: IconSettings },
+  { to: '/platform', labelKey: 'common.nav.platform', icon: IconBuildingCommunity, requires: 'platform' },
 ]
 
 /** The screens the user's role may open. */

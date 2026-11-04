@@ -16,4 +16,5 @@ export interface CurrentUserResponse {
   role: UserRole;
   canSeePurchasePrices: boolean;
   employeesSeePurchasePrices: boolean;
+  isPlatformOwner: boolean;
 }

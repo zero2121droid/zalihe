@@ -8,18 +8,21 @@ export interface Permissions {
   manage: boolean
   /** Purchase prices and stock value: admins, managers, and employees when the company allows it. */
   seePurchasePrices: boolean
+  /** The page about all companies: only the platform's owner (SPEC 11.8), whatever the role. */
+  platform: boolean
 }
 
 /**
  * What a role may do (SPEC 11.2). The API enforces the same rules; the screens only leave out what it
  * would refuse.
  */
-export function permissionsFor(user: Pick<CurrentUserResponse, 'role' | 'canSeePurchasePrices'> | undefined): Permissions {
+export function permissionsFor(user: Pick<CurrentUserResponse, 'role' | 'canSeePurchasePrices' | 'isPlatformOwner'> | undefined): Permissions {
   const role = user?.role
   return {
     manageCompany: role === 'admin',
     manage: role === 'admin' || role === 'manager',
     seePurchasePrices: user?.canSeePurchasePrices ?? false,
+    platform: user?.isPlatformOwner ?? false,
   }
 }
 

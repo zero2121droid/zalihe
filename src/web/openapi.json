@@ -750,6 +750,147 @@
         }
       }
     },
+    "/api/platform/summary": {
+      "get": {
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "GetPlatformSummary",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSummaryDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSummaryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platform/companies": {
+      "get": {
+        "tags": [
+          "Platform"
+        ],
+        "operationId": "ListPlatformCompanies",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPlatformCompanyDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPlatformCompanyDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfPlatformCompanyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/orders": {
       "get": {
         "tags": [
@@ -4463,7 +4604,8 @@
           "tenantName",
           "role",
           "canSeePurchasePrices",
-          "employeesSeePurchasePrices"
+          "employeesSeePurchasePrices",
+          "isPlatformOwner"
         ],
         "type": "object",
         "properties": {
@@ -4494,6 +4636,9 @@
             "type": "boolean"
           },
           "employeesSeePurchasePrices": {
+            "type": "boolean"
+          },
+          "isPlatformOwner": {
             "type": "boolean"
           }
         }
@@ -5563,6 +5708,35 @@
           }
         }
       },
+      "PagedResultOfPlatformCompanyDto": {
+        "required": [
+          "items",
+          "totalCount",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlatformCompanyDto"
+            }
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PagedResultOfReceiptDto": {
         "required": [
           "items",
@@ -5645,6 +5819,75 @@
             "format": "int32"
           },
           "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PlatformCompanyDto": {
+        "required": [
+          "id",
+          "name",
+          "registeredAt",
+          "activeItems",
+          "hasShop",
+          "lastMovementAt",
+          "isOwn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activeItems": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasShop": {
+            "type": "boolean"
+          },
+          "lastMovementAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isOwn": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PlatformSummaryDto": {
+        "required": [
+          "companies",
+          "newLast7Days",
+          "activeLast7Days",
+          "withShop"
+        ],
+        "type": "object",
+        "properties": {
+          "companies": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "newLast7Days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activeLast7Days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "withShop": {
             "type": "integer",
             "format": "int32"
           }
@@ -6659,6 +6902,9 @@
     },
     {
       "name": "Receipts"
+    },
+    {
+      "name": "Platform"
     },
     {
       "name": "Orders"

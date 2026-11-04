@@ -64,7 +64,7 @@ Aplikacija šalje preko SMTP-a (MailKit), pa je provajder samo podešavanje u `E
 - Pošiljalac na sopstvenom domenu (npr. `upozorenja@domen.rs`), uz SPF/DKIM zapise koje provajder da.
 - `Email:AppUrl` mora biti javna adresa aplikacije, jer se od nje prave linkovi u emailovima (pozivi).
 - Ako provajder servera blokira izlazne portove 587 i 465 (tako je na trenutnom netcup serveru), koristiti Brevo port 2525 sa `SMTP_SECURITY=StartTls`.
-- `PLATFORM_OWNER_EMAIL` (`Platform:OwnerEmails`) je adresa vlasnika platforme, na koju stiže email za svaku novu firmu. Dovoljno je prosleđivanje (npr. Cloudflare Email Routing), jer ta adresa samo prima poštu.
+- `PLATFORM_OWNER_EMAIL` (`Platform:OwnerEmails`) je adresa vlasnika platforme, na koju stiže email za svaku novu firmu, a njen nalog vidi stranicu „Platforma”. Dovoljno je prosleđivanje (npr. Cloudflare Email Routing), jer ta adresa samo prima poštu. **Prvo napraviti nalog sa tom adresom, pa je tek onda upisati ovde:** registracija ne proverava email, pa bi je inače neko drugi mogao zauzeti.
 
 ## 5. Backup baze
 

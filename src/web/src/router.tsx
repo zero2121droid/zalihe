@@ -58,6 +58,13 @@ export const routes: RouteObject[] = [
               { path: '/channels/:id/import', lazy: async () => ({ Component: (await import('./pages/channels/ProductImportPage')).ProductImportPage }), handle: { width: 'wide' } satisfies RouteHandle },
             ],
           },
+          {
+            // Only the platform's owner (SPEC 11.8).
+            element: <RequirePermission permission="platform" />,
+            children: [
+              { path: '/platform', lazy: async () => ({ Component: (await import('./pages/platform/PlatformPage')).PlatformPage }), handle: { width: 'wide' } satisfies RouteHandle },
+            ],
+          },
           { path: '/settings', element: <Navigate to="/settings/company" replace /> },
           { path: '/settings/:section', lazy: async () => ({ Component: (await import('./pages/settings/SettingsPage')).SettingsPage }) },
         ],

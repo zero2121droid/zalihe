@@ -331,6 +331,8 @@ Zašto oznake, a ne slanje „onoga što se promenilo” iz samog posla: posao u
 
 ### Zalihe.Infrastructure
 
+**`Platform/PlatformStatsService.cs`**: brojevi o svim firmama za stranicu „Platforma” (SPEC 11.8). Jedino mesto koje za osobu čita preko svih firmi, pa samo ono gasi tenant filtere (`IgnoreQueryFilters`) i vraća samo brojeve i datume. Pristup čuva polisa `Policies.PlatformOwner`, koja email iz cookie-ja poredi sa konfiguracijom.
+
 **`Platform/PlatformOptions.cs`** i **`NewRegistrationEmailJob`**: vlasnik platforme (SPEC 11.8) je u konfiguraciji, jer je admin svako ko registruje firmu. `AccountService.RegisterAsync` posle commita zakaže posao sa ID-jevima, a `AlertEmails.SendNewRegistrationAsync` napiše email. Hangfire ponavlja posao ako slanje ne uspe.
 
 **`Identity/User.cs`**: korisnik. Nasleđuje `IdentityUser<Guid>`, pa dobija email, hash lozinke, zaključavanje i ostalo što Identity nudi, i dodaje `TenantId` (kojoj firmi pripada) i `Language`. `<Guid>` znači da je ključ GUID, a ne string.

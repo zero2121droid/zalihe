@@ -52,6 +52,7 @@ export const testUser = {
   role: 'admin',
   canSeePurchasePrices: true,
   employeesSeePurchasePrices: false,
+  isPlatformOwner: false,
 } satisfies CurrentUserResponse
 
 /**

@@ -322,15 +322,14 @@ certbot --nginx -d lagerko.com -d www.lagerko.com --redirect --non-interactive
 
 Proveriti da `https://lagerko.com/CLAUDE.md` vraća 404.
 
-**5. Dev na `dev.lagerko.com`.**
+**5. Dev na `dev.lagerko.com`.** Ime instance se daje uz komandu, jer ga `app nova` traži pre nego što postoji `.env`. Na pitanje o uređivanju `.env` odgovoriti `n`, a email podešavanja se posle prepisuju sa bete, pa se lozinka ne kuca.
 
 ```bash
-app nova lagerko-dev zero2121droid/zalihe dev.lagerko.com
-```
-
-Skripta nudi `nano` za `.env`: upisati `COMPOSE_PROJECT_NAME=zalihe-dev`, SMTP vrednosti, `EMAIL_FROM` i `PLATFORM_OWNER_EMAIL`. Zatim prebaciti folder na granu `dev` i zabraniti indeksiranje:
-
-```bash
+COMPOSE_PROJECT_NAME=zalihe-dev app nova lagerko-dev zero2121droid/zalihe dev.lagerko.com
+cd /srv/lagerko-dev/deploy
+sed -i 's/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=zalihe-dev/' .env
+sed -i '/^\(SMTP_\|EMAIL_FROM\|PLATFORM_OWNER_EMAIL\)/d' .env
+grep -E '^(SMTP_|EMAIL_FROM|PLATFORM_OWNER_EMAIL)' /srv/lagerko/deploy/.env >> .env
 git -C /srv/lagerko-dev checkout dev
 sed -i '/server_name dev.lagerko.com/a\    add_header X-Robots-Tag "noindex, nofollow" always;' /etc/nginx/conf.d/lagerko-dev.conf
 nginx -t && systemctl reload nginx

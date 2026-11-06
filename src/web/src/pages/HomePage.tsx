@@ -266,7 +266,7 @@ function FirstSteps({ setup }: { setup: SetupDto }) {
             {t('home.setup.description')}
           </Text>
         </Stack>
-        <Stack gap={6} align="flex-end">
+        <Stack gap={6} align="flex-end" className={classes.progress}>
           <Text ff="monospace" fz="xs" c="var(--z-text-2)">
             {t('home.setup.progress', { done, total })}
           </Text>

@@ -53,8 +53,12 @@
     grid-column: 2;
   }
 
+  .progress {
+    width: 100%;
+  }
+
   .bar {
-    width: 120px;
+    width: 100%;
   }
 }
 

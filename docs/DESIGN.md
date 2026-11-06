@@ -167,7 +167,7 @@ Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CS
 
 ## Prvi koraci
 
-- Na Početnoj, dok firma nema artikle ili nijedan minimum, stoji sekcija „Prvi koraci“: dodaj artikle, postavi minimalne zalihe, a treći korak, povezivanje WooCommerce prodavnice, nosi oznaku „nije obavezno“, jer firma bez web prodavnice radi ručno ili iz CSV fajla. Završen korak je precrtan, sa kvačicom u krugu (`selected`, okvir `accent`). Napredak „1 od 2“ i traka od 4 px broje samo obavezne korake. Kad su oba gotova, sekcija nestaje.
+- Na Početnoj, dok firma nema artikle ili nijedan minimum, stoji sekcija „Prvi koraci“: dodaj artikle, postavi minimalne zalihe, a treći korak, povezivanje WooCommerce prodavnice, nosi oznaku „nije obavezno“, jer firma bez web prodavnice radi ručno ili iz CSV fajla. Završen korak je precrtan, sa kvačicom u krugu (`selected`, okvir `accent`). Napredak „1 od 2“ i traka od 4 px (na telefonu cele širine) broje samo obavezne korake. Kad su oba gotova, sekcija nestaje.
 
 ## Grafik stanja
 

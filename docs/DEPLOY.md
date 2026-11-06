@@ -274,7 +274,7 @@ Izmena `.env` običnim `nano` ne važi dok se ne pokrene `app env` ili `app depl
 - Ne kopirati bazu bete na dev.
 - Izmena ide na granu `dev`, proveri se na `dev.lagerko.com`, pa se spoji u `main`. Migracije se tako prvo izvrše na dev bazi.
 
-**Pre prvih pravih korisnika:** podesiti kopiju backupa van servera (Backblaze B2 preko rclone `crypt`, tačka 9, korak 8) i isprobati vraćanje. Do tada se backup čuva samo na serveru, pa ne štiti od gubitka servera.
+**Backup bete** ide svake noći u 3:15 (root crontab, log u `/var/log/lagerko-backup.log`) na Backblaze B2, bucket `lagerko-backup` u regionu `eu-central-003`, preko rclone `crypt` remota `b2-crypt:zalihe`. Ključ `lagerko-server` važi samo za taj bucket, a prethodne verzije se čuvaju 7 dana. Lozinke za `crypt` su i van servera, u menadžeru lozinki: bez njih se backup ne može pročitati. Vraćanje je isprobano 6. 11. 2026 u privremenom Postgres kontejneru: sve tabele su vraćene, a ključevi su u kopiji. Dev instanca nema backup, namerno.
 
 ## 13. Selidba na lagerko.com
 

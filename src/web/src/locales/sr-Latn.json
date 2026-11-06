@@ -165,7 +165,7 @@
       "shop": {
         "title": "Poveži WooCommerce prodavnicu",
         "optional": "nije obavezno",
-        "description": "Ako imaš web prodavnicu: porudžbine same skidaju robu sa stanja, a stanje se vraća u prodavnicu.",
+        "description": "Ako imaš web prodavnicu, počni odavde: uvezi artikle bez kucanja, a porudžbine posle same skidaju robu sa stanja.",
         "action": "Poveži prodavnicu",
         "done": "Prodavnica je povezana."
       }

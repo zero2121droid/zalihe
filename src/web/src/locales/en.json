@@ -165,7 +165,7 @@
       "shop": {
         "title": "Connect a WooCommerce shop",
         "optional": "optional",
-        "description": "If you have a web shop: orders take stock off by themselves, and the stock goes back to the shop.",
+        "description": "If you have a web shop, start here: import your items without typing them in, and orders then take stock off by themselves.",
         "action": "Connect a shop",
         "done": "The shop is connected."
       }

@@ -1,5 +1,5 @@
 import { Anchor, Box, Button, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core'
-import { IconCheck } from '@tabler/icons-react'
+import { IconCheck, IconLink } from '@tabler/icons-react'
 import { type CSSProperties, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -247,8 +247,9 @@ function UnlinkedOrders({ count }: { count: number }) {
 
 /**
  * The first steps of a new company (DESIGN.md "Prvi koraci"): items, then minimum stock, each checked
- * off when it is really done. Connecting a shop is offered too, but it is optional: a company without
- * a web shop works by hand or from CSV, so the checklist goes away once the first two are done.
+ * off when it is really done. Connecting a shop comes first, since it saves typing the items in, but
+ * it has no number and doesn't count: a company without a web shop works by hand or from CSV, so the
+ * checklist goes away once the other two are done.
  */
 function FirstSteps({ setup }: { setup: SetupDto }) {
   const { t } = useTranslation()
@@ -276,6 +277,16 @@ function FirstSteps({ setup }: { setup: SetupDto }) {
         </Stack>
       </Group>
 
+      <Step
+        done={setup.hasShop}
+        title={t('home.setup.shop.title')}
+        optional={t('home.setup.shop.optional')}
+        text={t(setup.hasShop ? 'home.setup.shop.done' : 'home.setup.shop.description')}
+      >
+        <Button component={Link} to="/channels" variant="default">
+          {t('home.setup.shop.action')}
+        </Button>
+      </Step>
       <Step number={1} done={setup.hasItems} title={t('home.setup.items.title')} text={t(setup.hasItems ? 'home.setup.items.done' : 'home.setup.items.description')}>
         <Group gap="xs" className="z-phone-stack">
           <Button component={Link} to="/items?new=1">
@@ -298,17 +309,6 @@ function FirstSteps({ setup }: { setup: SetupDto }) {
           {t('home.setup.minStock.action')}
         </Button>
       </Step>
-      <Step
-        number={3}
-        done={setup.hasShop}
-        title={t('home.setup.shop.title')}
-        optional={t('home.setup.shop.optional')}
-        text={t(setup.hasShop ? 'home.setup.shop.done' : 'home.setup.shop.description')}
-      >
-        <Button component={Link} to="/channels" variant="default">
-          {t('home.setup.shop.action')}
-        </Button>
-      </Step>
     </Box>
   )
 }
@@ -321,7 +321,7 @@ function Step({
   optional,
   children,
 }: {
-  number: number
+  number?: number
   done: boolean
   title: string
   text: string
@@ -331,7 +331,7 @@ function Step({
   return (
     <div className={classes.step}>
       <span className={classes.mark} data-done={done || undefined} aria-hidden>
-        {done ? <IconCheck size={14} stroke={2.2} /> : number}
+        {done ? <IconCheck size={14} stroke={2.2} /> : (number ?? <IconLink size={14} stroke={1.8} />)}
       </span>
       <div>
         <Group gap="xs">

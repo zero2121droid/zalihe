@@ -83,7 +83,17 @@ public class WooCommerceClient(HttpClient http, string baseUrl, WooCommerceCrede
                 ? await SendAsync(HttpMethod.Post, "webhooks", ct, webhook)
                 : await SendAsync(HttpMethod.Put, $"webhooks/{Id(match)}", ct, webhook);
         }
+
+        // This channel's webhooks on another address (the app moved) would keep sending there.
+        var channelPath = new Uri(deliveryUrl).AbsolutePath;
+        foreach (var old in existing.Where(w => IsOldAddress(Text(w, "delivery_url"), deliveryUrl, channelPath)))
+        {
+            using var _ = await SendAsync(HttpMethod.Delete, $"webhooks/{Id(old)}?force=true", ct);
+        }
     }
+
+    private static bool IsOldAddress(string? url, string deliveryUrl, string channelPath) =>
+        url != deliveryUrl && Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.AbsolutePath == channelPath;
 
     public async Task<IReadOnlyList<ShopOrder>> FetchOrdersModifiedSinceAsync(DateTimeOffset since, CancellationToken ct)
     {

@@ -250,6 +250,37 @@ public class ChannelsTests(ZaliheApiFactory factory)
     }
 
     [Fact]
+    public async Task Check_WebhooksOnOldAddress_ReplacesThemAndLeavesOthersAlone()
+    {
+        // Arrange
+        var client = await factory.CreateSignedInClientAsync();
+        ShopAnswers(HttpStatusCode.OK);
+        var id = (await (await client.PostAsJsonAsync("/api/channels/woocommerce", Connect())).Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id").GetGuid();
+        // The app moved from old.example; another Lagerko channel and another plugin share the shop
+        var existing = JsonSerializer.Serialize(new object[]
+        {
+            new { id = 7, topic = "order.created", delivery_url = $"https://old.example/webhooks/woo/{id}", status = "active" },
+            new { id = 8, topic = "order.updated", delivery_url = $"https://old.example/webhooks/woo/{id}", status = "disabled" },
+            new { id = 9, topic = "order.created", delivery_url = $"https://old.example/webhooks/woo/{Guid.NewGuid()}", status = "active" },
+            new { id = 10, topic = "order.created", delivery_url = "https://other.example/hook", status = "active" },
+        });
+        factory.Shop.RespondWith(request => FakeShopHandler.Json(
+            request.Method == HttpMethod.Get && request.RequestUri!.AbsolutePath.EndsWith("/webhooks", StringComparison.Ordinal)
+            && request.RequestUri.Query.Contains("page=1", StringComparison.Ordinal) ? existing : "[]"));
+
+        // Act
+        var checkedChannel = await (await client.PostAsync($"/api/channels/{id}/check", null)).Content.ReadFromJsonAsync<JsonElement>();
+
+        // Assert
+        checkedChannel.GetProperty("status").GetString().ShouldBe("connected");
+        SentWebhooks(HttpMethod.Post).Select(w => w.GetProperty("delivery_url").GetString()).Distinct()
+            .ShouldBe([$"{ZaliheApiFactory.WebhookBaseUrl}/webhooks/woo/{id}"]);
+        factory.Shop.Requests.Where(r => r.Method == HttpMethod.Delete).Select(r => r.RequestUri!.PathAndQuery)
+            .ShouldBe(["/wp-json/wc/v3/webhooks/7?force=true", "/wp-json/wc/v3/webhooks/8?force=true"]);
+    }
+
+    [Fact]
     public async Task Connect_ReadOnlyKeys_ReturnsUnauthorizedAndSavesNothing()
     {
         // Arrange: reading works, but creating a webhook needs read/write keys

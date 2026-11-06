@@ -31,6 +31,8 @@ export default defineConfig({
       // Backend runs outside Docker via the "http" launch profile of Zalihe.Web.
       // API_URL points the proxy elsewhere, e.g. a second backend on another port.
       '/api': process.env.API_URL ?? 'http://localhost:5131',
+      // SignalR (SPEC 11.1), which needs WebSockets.
+      '/hubs': { target: process.env.API_URL ?? 'http://localhost:5131', ws: true },
     },
   },
   test: {

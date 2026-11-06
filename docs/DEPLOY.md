@@ -79,6 +79,7 @@ Aplikacija šalje preko SMTP-a (MailKit), pa je provajder samo podešavanje u `E
 |---|---|
 | `Dockerfile` | jedan image: React build u `wwwroot` i API; radi kao korisnik `app`, ne root |
 | `deploy/docker-compose.yml` | aplikacija, Postgres i Caddy; port aplikacije nije otvoren napolje, samo Caddy (80, 443) |
+| `deploy/nginx/` | landing na trenutnom serveru (tačka 13) |
 | `deploy/Caddyfile` | HTTPS (sertifikat sam), preusmerenje sa HTTP-a, bezbednosna zaglavlja, kompresija |
 | `deploy/.env.example` | podešavanja i lozinke; kopira se u `deploy/.env`, koji se nikad ne commituje |
 | `deploy/deploy.sh` | nova verzija: `git pull`, build, restart, čeka da sve bude zdravo |
@@ -105,6 +106,7 @@ Zato ih `backup.sh` uvek čuva zajedno.
 Pre servera, ili posle većih izmena, ista postavka se pokreće na računaru. Ovde su portovi 80 i 443 zauzeti, pa se koriste 8081 i 8443.
 
 1. `deploy/.env` popuniti ovako:
+   - `COMPOSE_PROJECT_NAME=zalihe-prod`
    - `DOMAIN=localhost`
    - `APP_URL=https://localhost:8443`
    - `HTTP_PORT=8081` i `HTTPS_PORT=8443`
@@ -179,7 +181,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 **5. Podešavanja.**
 
 1. `cp deploy/.env.example deploy/.env`
-2. Popuniti domen, `APP_URL`, `POSTGRES_PASSWORD` (`openssl rand -hex 32`), SMTP i `PLATFORM_OWNER_EMAIL`.
+2. Popuniti `COMPOSE_PROJECT_NAME` (`zalihe-prod`), domen, `APP_URL`, `POSTGRES_PASSWORD` (`openssl rand -hex 32`), SMTP i `PLATFORM_OWNER_EMAIL`.
 3. `chmod 600 deploy/.env`
 
 **6. DNS.** A zapis za domen (npr. `app.zalihe.rs`) na IP adresu servera, i AAAA ako server ima IPv6. Sačekati da `dig +short app.zalihe.rs` vrati tu adresu.
@@ -241,20 +243,96 @@ Rizik: kad server padne, padaju sve aplikacije zajedno. Zato je backup na drugom
 
 ## 12. Trenutni server
 
-Lagerko sada radi drugačije od postavke opisane u tačkama 6 i 9, jer deli server sa drugom aplikacijom:
+Lagerko sada radi drugačije od postavke opisane u tačkama 6 i 9, jer deli server sa drugom aplikacijom (netcup, Debian 13, ARM64, 4 GB, IP `152.53.182.73`):
 
-- Adresa je `https://lagerko.miljanmilojkovic.com`, a kod je u `/srv/lagerko` (netcup, Debian 13, ARM64).
-- HTTPS i domen radi **Nginx** na serveru (Let's Encrypt preko certbota), a ne Caddy. Aplikacija je objavljena samo na `127.0.0.1:3001`.
+| Adresa | Šta je | Kod | Grana | Port |
+|---|---|---|---|---|
+| `lagerko.com` | landing, Nginx direktno služi `landing/` | `/srv/lagerko` | `main` | |
+| `www.lagerko.com` | preusmerenje na `lagerko.com` | | | |
+| `app.lagerko.com` | beta | `/srv/lagerko` | `main` | 3001 |
+| `dev.lagerko.com` | provera izmena pre bete | `/srv/lagerko-dev` | `dev` | dodeli skripta |
+
+- HTTPS i domene radi **Nginx** na serveru (Let's Encrypt preko certbota), a ne Caddy. Aplikacija je objavljena samo na `127.0.0.1`.
 - `deploy/docker-compose.override.yml` postoji samo na serveru: isključuje Caddy i određuje port. Pravi ga skripta `app` (`/usr/local/bin/app`).
 - Nginx mora da šalje `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`. Bez toga aplikacija sve posetioce vidi kao jednu adresu, pa ograničenje registracije (30 zahteva na sat) važi za sve zajedno.
 - Zbog toga se **`deploy/deploy.sh` ovde ne pokreće**: sa `-f docker-compose.yml` zanemaruje override, pa bi aplikacija ostala bez porta, a Caddy bi tražio portove 80 i 443 koje drži Nginx.
 
-| Šta | Komanda |
-|---|---|
-| Nova verzija | `app deploy lagerko` |
-| Izmena podešavanja | `app env lagerko` (otvori `.env`, a posle izlaza primeni izmene) |
-| Logovi | `app logovi lagerko app` |
+| Šta | Beta | Dev |
+|---|---|---|
+| Nova verzija | `app deploy lagerko` | `app deploy lagerko-dev` |
+| Izmena podešavanja | `app env lagerko` | `app env lagerko-dev` |
+| Logovi | `app logovi lagerko app` | `app logovi lagerko-dev app` |
 
-Izmena `.env` običnim `nano` ne važi dok se ne pokrene `app env lagerko` ili `app deploy lagerko`. Email ide preko Breva na portu 2525, sa domena `lagerko.miljanmilojkovic.com`.
+Izmena `.env` običnim `nano` ne važi dok se ne pokrene `app env` ili `app deploy`. Email ide preko Breva na portu 2525. `app deploy` povlači granu koja je izabrana u tom folderu. Za izmenu samo landing strane nije potreban build, dovoljno je `git -C /srv/lagerko pull`.
 
-**Pre pravog domena i prvih pravih korisnika:** podesiti kopiju backupa van servera (Backblaze B2 preko rclone `crypt`, tačka 9, korak 8) i isprobati vraćanje. Do tada se backup čuva samo na serveru, pa ne štiti od gubitka servera.
+**Dve instance.** `COMPOSE_PROJECT_NAME` u `deploy/.env` je obavezan i različit: `zalihe-prod` i `zalihe-dev`. Po njemu se zovu kontejneri, baza, ključevi i image. Bez njega compose odbija da se pokrene, jer bi druga instanca inače preuzela bazu prve. Dok je jedan deploy u toku ne pokretati drugi: build traži 1,5–2 GB, a server ima 4 GB i 2 GB swapa.
+
+**Pravila za dev:**
+
+- Povezivati samo test prodavnice. Ista prodavnica na dve instance znači da obe menjaju njeno stanje.
+- Ne kopirati bazu bete na dev.
+- Izmena ide na granu `dev`, proveri se na `dev.lagerko.com`, pa se spoji u `main`. Migracije se tako prvo izvrše na dev bazi.
+
+**Pre prvih pravih korisnika:** podesiti kopiju backupa van servera (Backblaze B2 preko rclone `crypt`, tačka 9, korak 8) i isprobati vraćanje. Do tada se backup čuva samo na serveru, pa ne štiti od gubitka servera.
+
+## 13. Selidba na lagerko.com
+
+DNS je na Cloudflare-u, zapisi su **DNS only** (A na `152.53.182.73`). Beta kreće sa praznom bazom, pa nema prenosa podataka.
+
+**1. Kod.** Na `main` moraju biti `COMPOSE_PROJECT_NAME` u compose-u i `deploy/nginx/`, jer `app nova` klonira `main`.
+
+**2. Beta na `app.lagerko.com`.** Prvo se ime instance upisuje u `.env`, inače sledeći deploy ne prolazi:
+
+```bash
+cd /srv/lagerko/deploy
+grep -q '^COMPOSE_PROJECT_NAME=' .env || echo 'COMPOSE_PROJECT_NAME=zalihe-prod' >> .env
+docker compose down -v                     # BRIŠE bazu i ključeve dosadašnje probne verzije
+sed -i 's|^APP_URL=.*|APP_URL=https://app.lagerko.com|; s|^DOMAIN=.*|DOMAIN=app.lagerko.com|' .env
+sed -i 's|^DOMAIN=.*|DOMAIN=app.lagerko.com|' ../.app-config
+sed -i 's|lagerko.miljanmilojkovic.com|app.lagerko.com|g' /etc/nginx/conf.d/lagerko.conf
+```
+
+Zatim se pravi sertifikat za novu adresu i podiže aplikacija:
+
+```bash
+certbot --nginx -d app.lagerko.com --redirect --non-interactive
+app deploy lagerko
+```
+
+**3. Stara adresa.** U `/etc/nginx/conf.d/lagerko-old.conf` poseban blok za `lagerko.miljanmilojkovic.com`, sa `return 301 https://app.lagerko.com$request_uri;`, pa `certbot --nginx -d lagerko.miljanmilojkovic.com --redirect --non-interactive`. Ostaje dok svi linkovi ne pređu.
+
+**4. Landing.**
+
+```bash
+cp /srv/lagerko/deploy/nginx/lagerko.com.conf /etc/nginx/conf.d/
+nginx -t && systemctl reload nginx
+certbot --nginx -d lagerko.com -d www.lagerko.com --redirect --non-interactive
+```
+
+Proveriti da `https://lagerko.com/CLAUDE.md` vraća 404.
+
+**5. Dev na `dev.lagerko.com`.**
+
+```bash
+app nova lagerko-dev zero2121droid/zalihe dev.lagerko.com
+```
+
+Skripta nudi `nano` za `.env`: upisati `COMPOSE_PROJECT_NAME=zalihe-dev`, SMTP vrednosti, `EMAIL_FROM` i `PLATFORM_OWNER_EMAIL`. Zatim prebaciti folder na granu `dev` i zabraniti indeksiranje:
+
+```bash
+git -C /srv/lagerko-dev checkout dev
+sed -i '/server_name dev.lagerko.com/a\    add_header X-Robots-Tag "noindex, nofollow" always;' /etc/nginx/conf.d/lagerko-dev.conf
+nginx -t && systemctl reload nginx
+app deploy lagerko-dev
+```
+
+## 14. SignalR (SPEC 11.1)
+
+Hub se još ne pravi, ali je postavka spremna. Dogovor je da hubovi žive pod `/hubs/...`.
+
+- **Nginx:** konfiguracija iz skripte `app` već šalje `Upgrade` i `Connection "upgrade"`, a `proxy_read_timeout 300s` je duži od SignalR pinga (15 s).
+- **Caddy:** prosleđuje WebSocket sam.
+- **Vite:** `/hubs` se u razvoju prosleđuje na backend sa `ws: true`.
+- **Backplane nije potreban** dok radi jedan proces. Hangfire je u istom procesu, pa `IHubContext` iz posla stiže do povezanih klijenata. Beta i dev su odvojeni, svaka sa svojim klijentima.
+- **Mobilna aplikacija:** SignalR šalje bearer token kroz `?access_token=...` kod WebSocketa. Tada `/hubs` mora da se izuzme iz Nginx `access_log`-a, da tokeni ne završe u logu.
+- **Pri deployu** se sve veze prekinu. SPEC to već pokriva: posle ponovnog povezivanja frontend osveži aktivne upite.

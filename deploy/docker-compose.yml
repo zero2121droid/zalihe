@@ -3,13 +3,14 @@
 #
 #   docker compose -f deploy/docker-compose.yml up -d --build --wait
 
-name: zalihe-prod
+# Containers, volumes and the image are named after this, so instances on one server stay apart.
+# Required on purpose: without it a second instance would take over the first one's database.
+name: ${COMPOSE_PROJECT_NAME:?Set COMPOSE_PROJECT_NAME in deploy/.env (zalihe-prod or zalihe-dev)}
 
 services:
   app:
     build:
       context: ..
-    image: zalihe-app
     restart: unless-stopped
     depends_on:
       postgres:

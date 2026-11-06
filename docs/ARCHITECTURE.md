@@ -170,6 +170,7 @@ Radi kao korisnik `app`, ne root. Folder `/data/keys` (ključevi za šifrovanje)
 **`deploy/`**: produkcija, opisana u `docs/DEPLOY.md`.
 - `docker-compose.yml`: aplikacija, Postgres i Caddy. Aplikacija i baza nisu objavljene napolje, samo Caddy na 80 i 443. Sva podešavanja su promenljive okruženja iz `deploy/.env` (`Email__Host` je `Email:Host`).
 - `Caddyfile`: HTTPS sa automatskim sertifikatom i bezbednosna zaglavlja.
+- `nginx/lagerko.com.conf`: landing strana i preusmerenje sa `www` na trenutnom serveru, gde HTTPS radi Nginx (DEPLOY 13).
 - `deploy.sh`, `backup.sh` i `restore.sh`. Backup uvek čuva bazu i ključeve zajedno, jer jedno bez drugog ne vredi.
 
 **`docker/woocommerce/setup.sh`**: pravi lokalnu WooCommerce prodavnicu (SPEC 9): instalira WordPress i WooCommerce, podesi RSD i srpske separatore, doda test proizvode (šest prostih, među njima jedan bez zaliha i jedan koji ne postoji u aplikaciji, i majicu sa četiri varijacije veličina × boja) i pri svakom pokretanju napravi nov API ključ za Zalihe i ispiše ga. Može da se pokrene ponovo, jer proizvode ne duplira.
@@ -402,7 +403,7 @@ Slike: proizvod šalje `images` (uzima se prva), a varijacija `image`; varijacij
 
 **Uvoz proizvoda u `AppDbContext.cs`**: tabela `ItemChannelMappings` sa jedinstvenim indeksima iz `ItemChannelMapping`, migracija `AddItemChannelMappings`.
 
-**`Channels/WooCommerce/WooCommerceClient.cs`, webhookovi**: `EnsureWebhooksAsync()` pročita postojeće webhookove (`GET /webhooks`), pa za `order.created` i `order.updated` napravi webhook koji nedostaje (`POST`) ili ažurira postojeći sa istom adresom (`PUT`, status `active` i tajna). Tuđi webhookovi (druga adresa) se ne diraju. Pri pravljenju webhooka WooCommerce odmah pošalje „ping” na adresu.
+**`Channels/WooCommerce/WooCommerceClient.cs`, webhookovi**: `EnsureWebhooksAsync()` pročita postojeće webhookove (`GET /webhooks`), pa za `order.created` i `order.updated` napravi webhook koji nedostaje (`POST`) ili ažurira postojeći sa istom adresom (`PUT`, status `active` i tajna). Webhookovi ovog kanala na staroj adresi (ista putanja `/webhooks/woo/{id}`, drugi domen, npr. posle selidbe aplikacije) se brišu, ali tek kad novi postoje. Tuđi webhookovi se ne diraju. Pri pravljenju webhooka WooCommerce odmah pošalje „ping” na adresu.
 
 **`Channels/WooCommerce/WooCommerceOrderReader.cs`**: čita porudžbinu iz WooCommerce JSON-a: `id`, `status`, `date_created_gmt` i `date_modified_gmt` (UTC bez oznake zone) i stavke. Proizvod stavke je `variation_id` ako postoji, inače `product_id`; stavka obrisanog proizvoda (`product_id: 0`) se preskače. Polja kupca se ne čitaju uopšte. Koristi ga i usklađivanje.
 

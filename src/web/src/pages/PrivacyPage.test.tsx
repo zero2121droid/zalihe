@@ -18,5 +18,6 @@ describe('PrivacyPage', () => {
     expect(await screen.findByRole('heading', { name: 'Politika privatnosti' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Šta ne čuvamo' })).toBeInTheDocument()
     expect(screen.getByText(new RegExp(legal.controller))).toBeInTheDocument()
+    expect(screen.getAllByText(/kontakt@lagerko\.com/).length).toBeGreaterThan(0)
   })
 })

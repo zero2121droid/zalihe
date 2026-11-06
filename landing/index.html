@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lagerko: praćenje zaliha za WooCommerce prodavnice</title>
+  <meta name="description" content="Znaj koliko robe stvarno imaš, gde god da prodaješ. Sajt, Instagram, telefon i lokal na jednom mestu.">
+  <link rel="canonical" href="https://lagerko.com/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Lagerko">
+  <meta property="og:locale" content="sr_RS">
+  <meta property="og:url" content="https://lagerko.com/">
+  <meta property="og:title" content="Lagerko: praćenje zaliha za WooCommerce prodavnice">
+  <meta property="og:description" content="Znaj koliko robe stvarno imaš, gde god da prodaješ. Sajt, Instagram, telefon i lokal na jednom mestu.">
+  <meta property="og:image" content="https://lagerko.com/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preload" href="assets/fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/ibm-plex-sans-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Runs before first paint, so the saved theme and the pinned scene never flash. -->
+  <script>
+    (function (root) {
+      root.classList.add('js');
+      try {
+        var theme = localStorage.getItem('lagerko-theme');
+        if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+      } catch (e) {}
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) root.classList.add('pinned');
+    })(document.documentElement);
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Lagerko",
+    "url": "https://lagerko.com/",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "sr-Latn",
+    "description": "Veb aplikacija za praćenje zaliha za male firme i WooCommerce prodavnice."
+  }
+  </script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="logo" href="#vrh" aria-label="Lagerko, na vrh strane">
+      <svg class="mark land" viewBox="0 0 16 16" aria-hidden="true">
+        <mask id="eyes-top" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+          <rect x="1" y="6" width="14" height="9" fill="white"/>
+          <g class="eyes"><g class="blink"><rect class="eye" x="4.5" y="8.5" width="2" height="3.5" fill="black"/></g><g class="blink"><rect class="eye" x="9.5" y="8.5" width="2" height="3.5" fill="black"/></g></g>
+        </mask>
+        <g class="hop"><path class="lid" d="M0 1h16v4H0z"/></g>
+        <g class="body"><rect x="1" y="6" width="14" height="9" mask="url(#eyes-top)"/></g>
+      </svg>
+      <span>lagerko</span>
+    </a>
+    <div class="top-actions">
+      <button class="theme" id="theme-toggle" type="button" aria-label="Promeni temu">
+        <svg class="ic ic-sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/></svg>
+        <svg class="ic ic-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008"/></svg>
+      </button>
+      <a class="login" href="https://app.lagerko.com/login">Prijava</a>
+      <a class="btn" href="https://app.lagerko.com/register">Napravi nalog</a>
+    </div>
+  </div>
+</header>
+
+<main id="vrh">
+
+  <section class="hero">
+    <div class="wrap hero-in">
+      <div class="hero-copy">
+        <div class="brand" id="hero-brand" aria-hidden="true">
+          <svg class="mark stack go" viewBox="0 0 16 16" aria-hidden="true">
+        <mask id="eyes-hero" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+          <rect x="1" y="6" width="14" height="9" fill="white"/>
+          <g class="eyes"><g class="blink"><rect class="eye" x="4.5" y="8.5" width="2" height="3.5" fill="black"/></g><g class="blink"><rect class="eye" x="9.5" y="8.5" width="2" height="3.5" fill="black"/></g></g>
+        </mask>
+        <g class="hop"><path class="lid" d="M0 1h16v4H0z"/></g>
+        <g class="body"><rect x="1" y="6" width="14" height="9" mask="url(#eyes-hero)"/></g>
+      </svg>
+          <span class="brand-name">lagerko</span>
+        </div>
+        <p class="eyebrow">Za WooCommerce prodavnice</p>
+        <h1>Znaj koliko robe stvarno imaš.</h1>
+        <p class="sub">Sajt, Instagram, telefon i lokal na jednom mestu. Lagerko vodi stanje za svaki artikal i kaže ti šta treba da naručiš.</p>
+        <div class="cta-row">
+          <a class="cta" href="https://app.lagerko.com/register">Napravi besplatan nalog</a>
+          <p class="note">Bez kartice. Prvih 10 firmi dobija osnivački popust.</p>
+        </div>
+      </div>
+
+      <div class="panel live" id="hero-demo">
+        <div class="bar"><span>Artikli</span><span>demo podaci</span></div>
+        <div class="card">
+          <div class="card-head"><b>Majica Nit · M · plava</b><span class="sku">NIT-M-PL</span></div>
+          <div class="mid">
+            <div class="big"><span class="delta" aria-hidden="true"></span><span class="num">29</span><span class="unit">kom</span></div>
+            <div class="mid-side">
+              <span class="status"><i></i>Na stanju</span>
+              <small>minimum 25</small>
+            </div>
+          </div>
+          <p class="sync">
+            <svg class="ic ic-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg>
+            <svg class="ic ic-send" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+            <span class="sync-text">Isto stanje je u prodavnici</span>
+          </p>
+          <ul class="moves">
+            <li class="move-new"><span>Sajt · #1042</span><b>−2</b></li>
+            <li><span>Prijem · faktura 118</span><b class="plus">+48</b></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Without JavaScript or with reduced motion this is a plain list next to the finished table. -->
+  <section class="scene" id="od-excela" aria-labelledby="scene-title">
+    <div class="pin">
+      <div class="wrap scene-grid">
+        <div class="copy">
+          <h2 class="eyebrow" id="scene-title">Od Excela do tačnog stanja</h2>
+          <div class="copy-now" hidden>
+            <p class="eyebrow step-count"></p>
+            <h3 class="step-title"></h3>
+            <p class="step-text"></p>
+          </div>
+          <ol class="steps">
+            <li data-label="Stari Excel"><h3>Ovako često izgleda lager.</h3><p>Fajl koji se zove FINAL, pa novo, pa (2).</p></li>
+            <li data-label="Nejasna stanja"><h3>Niko ne zna koji broj je tačan.</h3><p>Isti artikal u dva reda, a umesto količine upitnik i komentar.</p></li>
+            <li data-label="Svaki artikal ima šifru"><h3>Svaki artikal dobija svoju šifru.</h3><p>Jedan artikal, jedan red, jedno stanje.</p></li>
+            <li data-label="Popis"><h3>Prebrojiš jednom.</h3><p>To je početno stanje. Svaka sledeća promena ostaje zapisana.</p></li>
+            <li data-label="Šta fali"><h3>Odmah vidiš šta fali.</h3><p>Status pokazuje šta je ispod minimuma i čega više nema.</p></li>
+          </ol>
+        </div>
+
+        <div class="win app">
+          <div class="win-side" aria-hidden="true">
+            <div class="logo side-logo">
+              <svg class="mark land" viewBox="0 0 16 16" aria-hidden="true">
+        <mask id="eyes-side" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+          <rect x="1" y="6" width="14" height="9" fill="white"/>
+          <g class="eyes"><g class="blink"><rect class="eye" x="4.5" y="8.5" width="2" height="3.5" fill="black"/></g><g class="blink"><rect class="eye" x="9.5" y="8.5" width="2" height="3.5" fill="black"/></g></g>
+        </mask>
+        <g class="hop"><path class="lid" d="M0 1h16v4H0z"/></g>
+        <g class="body"><rect x="1" y="6" width="14" height="9" mask="url(#eyes-side)"/></g>
+      </svg>
+              <b>lagerko</b>
+            </div>
+            <span><svg class="ic" viewBox="0 0 24 24"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/></svg>Početna</span>
+            <span class="on"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5"/><path d="M12 12l8 -4.5"/><path d="M12 12l0 9"/><path d="M12 12l-8 -4.5"/></svg>Artikli</span>
+            <span><svg class="ic" viewBox="0 0 24 24"><path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304"/><path d="M9 11v-5a3 3 0 0 1 6 0v5"/></svg>Porudžbine</span>
+            <span><svg class="ic" viewBox="0 0 24 24"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"/></svg>Prijem robe</span>
+            <span><svg class="ic" viewBox="0 0 24 24"><path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6"/><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10"/><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14"/></svg>Izveštaji</span>
+          </div>
+          <div class="win-main">
+            <div class="bar"><span class="sheet-name">Artikli</span><span class="sheet-note">4 artikla · demo podaci</span></div>
+            <div class="sheet">
+              <div class="row head"><div class="cells"><div class="cell">Artikal</div><div class="cell s">Šifra</div><div class="cell q">Stanje</div><div class="cell">Status</div></div></div>
+              <div class="row" data-raw="majica m plava" data-rawq="31"><div class="cells"><div class="cell">Majica Nit · M · plava</div><div class="cell s">NIT-M-PL</div><div class="cell q">29</div><div class="cell st"><span class="status"><i></i>Na stanju</span></div></div></div>
+              <div class="row gone" data-raw="Majica M Plava (staro)" data-rawq="28?" data-dup data-flag><div class="cells"><div class="cell"></div><div class="cell s"></div><div class="cell q"></div><div class="cell st"></div></div></div>
+              <div class="row" data-raw="duks L crni" data-rawq="12 ili 9" data-flag><div class="cells"><div class="cell">Duks · L · crni</div><div class="cell s">DKS-L-CR</div><div class="cell q">9</div><div class="cell st"><span class="status low"><i></i>Ispod minimuma</span></div></div></div>
+              <div class="row" data-raw="KAPA siva" data-rawq="?" data-flag><div class="cells"><div class="cell">Kapa · siva</div><div class="cell s">KPA-SI</div><div class="cell q">0</div><div class="cell st"><span class="status out"><i></i>Nema na stanju</span></div></div></div>
+              <div class="row" data-raw="torba platnena" data-rawq="64"><div class="cells"><div class="cell">Torba · platnena</div><div class="cell s">TRB-PL</div><div class="cell q">64</div><div class="cell st"><span class="status"><i></i>Na stanju</span></div></div></div>
+              <div class="row gone" data-raw="TORBA" data-rawq="u lokalu?" data-dup data-flag><div class="cells"><div class="cell"></div><div class="cell s"></div><div class="cell q"></div><div class="cell st"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Problem</p>
+        <h2>Excel je tačan samo dok neko ne proda nešto.</h2>
+      </div>
+      <div class="strip">
+        <div><h3>Prodaš nešto čega nema.</h3><p>Na sajtu piše da ima, a na polici je prazno. Sledi poziv kupcu i izvinjenje.</p></div>
+        <div><h3>Stanje je u više glava.</h3><p>Sajt ima svoj broj, Excel svoj, a poruke sa Instagrama nisu nigde.</p></div>
+        <div><h3>Naručuješ napamet.</h3><p>Ono što se prodaje ponestane, a ono što stoji vezuje novac.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Kako radi</p>
+        <h2>Tri koraka do tačnog stanja.</h2>
+      </div>
+      <ol class="strip" data-play>
+        <li>
+          <svg class="draw" viewBox="0 0 120 48" aria-hidden="true">
+            <path class="line" transform="translate(2 6) scale(1.5)" d="M3 21l18 0M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4M5 21l0 -10.15M19 21l0 -10.15M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4"/>
+            <path class="wire" d="M42 24h40"/>
+            <rect class="packet" x="40" y="21.5" width="5" height="5" rx="1"/>
+            <rect class="packet" x="40" y="21.5" width="5" height="5" rx="1"/>
+            <rect class="packet" x="40" y="21.5" width="5" height="5" rx="1"/>
+            <g class="whs" transform="translate(90 9) scale(1.75)"><path d="M0 1h16v4H0z"/><path fill-rule="evenodd" d="M1 6h14v9H1z M4.5 8.5h2v3.5h-2z M9.5 8.5h2v3.5h-2z"/></g>
+          </svg>
+          <span class="n">1</span><h3>Poveži prodavnicu.</h3><p>Odobriš pristup u WooCommerce-u, bez kopiranja ključeva. Proizvodi i varijacije se uvoze sa pregledom pre potvrde.</p></li>
+        <li>
+          <svg class="draw" viewBox="0 0 120 48" aria-hidden="true">
+            <g class="drop"><g transform="translate(4 24) scale(1.5)"><path d="M0 1h16v4H0z"/><path fill-rule="evenodd" d="M1 6h14v9H1z M4.5 8.5h2v3.5h-2z M9.5 8.5h2v3.5h-2z"/></g></g>
+            <g class="drop"><g transform="translate(32 24) scale(1.5)"><path d="M0 1h16v4H0z"/><path fill-rule="evenodd" d="M1 6h14v9H1z M4.5 8.5h2v3.5h-2z M9.5 8.5h2v3.5h-2z"/></g></g>
+            <g class="drop"><g transform="translate(18 0) scale(1.5)"><path d="M0 1h16v4H0z"/><path fill-rule="evenodd" d="M1 6h14v9H1z M4.5 8.5h2v3.5h-2z M9.5 8.5h2v3.5h-2z"/></g></g>
+          </svg>
+          <span class="n">2</span><h3>Upiši šta se dešava van sajta.</h3><p>Prijem robe, popis i prodaja preko Instagrama, telefona ili u lokalu.</p></li>
+        <li>
+          <svg class="draw" viewBox="0 0 120 48" aria-hidden="true">
+            <text class="draw-num" x="2" y="40">29</text>
+            <path class="tick" pathLength="1" transform="translate(58 4) scale(1.7)" d="M5 12l5 5l10 -10"/>
+          </svg>
+          <span class="n">3</span><h3>Gledaj jedan broj.</h3><p>Porudžbine skidaju robu sa stanja, a novo stanje ide nazad u prodavnicu.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Šta dobijaš</p>
+        <h2>Sve što se dešava sa robom, na jednom mestu.</h2>
+      </div>
+      <div class="feats">
+        <article class="panel feat">
+          <svg class="ic feat-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.331 8h11.339a2 2 0 0 1 1.977 2.304l-1.255 8.152a3 3 0 0 1 -2.966 2.544h-6.852a3 3 0 0 1 -2.965 -2.544l-1.255 -8.152a2 2 0 0 1 1.977 -2.304"/><path d="M9 11v-5a3 3 0 0 1 6 0v5"/></svg>
+          <h3>Prodaja van sajta</h3>
+          <p>Ručna porudžbina skida robu sa stanja, pa sajt ne prodaje ono što je otišlo preko Instagrama.</p>
+          <!-- TODO: snimak ručne porudžbine na telefonu, demo podaci prodavnice Nit -->
+          <div class="mini"><div><span>Instagram · R-0007</span><b>−2</b></div><div><span>Lokal · R-0008</span><b>−3</b></div></div>
+        </article>
+        <article class="panel feat">
+          <svg class="ic feat-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"/><path d="M3 9l4 0"/></svg>
+          <h3>Prijem robe</h3>
+          <p>Dobavljač, broj fakture i stavke na jednom mestu, sa nabavnom cenom ako je želiš.</p>
+          <div class="mini"><div><span>Faktura 118 · Majica M</span><b class="plus">+48</b></div><div><span>Faktura 118 · Duks L</span><b class="plus">+24</b></div></div>
+        </article>
+        <article class="panel feat">
+          <svg class="ic feat-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"/><path d="M9 17v1a3 3 0 0 0 6 0v-1"/></svg>
+          <h3>Upozorenja za minimum</h3>
+          <p>Vidiš šta je ispod minimuma, a jednom dnevno stiže i email sa spiskom.</p>
+          <div class="mini"><div><span>Duks · L · crni</span><b class="low">9 · Ispod minimuma</b></div><div><span>Kapa · siva</span><b class="out">0 · Nema na stanju</b></div></div>
+        </article>
+        <article class="panel feat" data-play>
+          <svg class="ic feat-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6"/><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10"/><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14"/><path d="M4 20h14"/></svg>
+          <h3>Izveštaji za naručivanje</h3>
+          <p>Najprodavaniji artikli i roba koja stoji, zajedno sa vrednošću zaliha.</p>
+          <!-- TODO: snimak izveštaja, demo podaci prodavnice Nit -->
+          <div class="mini"><div><span>Majica · M · plava</span><b>64</b></div><div class="meter"><i style="--w:100%"></i></div><div><span>Duks · L · crni</span><b>41</b></div><div class="meter"><i style="--w:64%"></i></div></div>
+        </article>
+        <article class="panel feat">
+          <svg class="ic feat-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8l0 4l2 2"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg>
+          <h3>Istorija svake promene</h3>
+          <p>Za svaki artikal znaš ko je, kada i zašto promenio stanje.</p>
+          <div class="mini"><div><span>Danas 10:42 · Sajt #1042</span><b>−2</b></div><div><span>Juče 16:05 · Ana, popis</span><b>−1</b></div></div>
+        </article>
+        <article class="panel feat">
+          <svg class="ic feat-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></svg>
+          <h3>Zaposleni bez wp-admina</h3>
+          <p>Svako dobija svoju ulogu, a nabavne cene vidi samo ko sme.</p>
+          <div class="mini"><div><span>Vlasnik</span><b>Administrator</b></div><div><span>Magacin</span><b>Zaposleni</b></div></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="panel price">
+        <div class="sec-head">
+          <p class="eyebrow">Cena</p>
+          <h2>Besplatno dok traje beta.</h2>
+          <p>Probaj Lagerko na svojoj prodavnici bez kartice. Pre bilo kakve naplate znaćeš tačnu cenu, a prvih 10 firmi dobija osnivački popust.</p>
+        </div>
+        <a class="cta" href="https://app.lagerko.com/register">Napravi besplatan nalog</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Pitanja</p>
+        <h2>Česta pitanja</h2>
+      </div>
+      <div class="faq">
+        <details><summary>Radi li bez web prodavnice?</summary><p>Radi. Artikle možeš da uneseš ručno ili uvezeš iz CSV fajla.</p></details>
+        <details><summary>Radi li sa Shopify-jem?</summary><p>Još ne. Za sada se povezuje samo WooCommerce.</p></details>
+        <details><summary>Mogu li da koristim Lagerko umesto kase ili knjigovodstva?</summary><p>Ne. Lagerko vodi robu. Ne izdaje fiskalne račune i nije knjigovodstveni program.</p></details>
+        <details><summary>Čuvate li podatke mojih kupaca?</summary><p>Ne. Iz porudžbina uzimamo ono što je potrebno za stanje, bez imena, adrese, telefona i emaila kupca.</p></details>
+        <details><summary>Šta ako Lagerko privremeno ne radi?</summary><p>Prodavnica nastavlja da radi, jer WooCommerce sam smanjuje stanje. Lagerko posle preuzme ono što je propustio.</p></details>
+        <details><summary>Da li radi na telefonu?</summary><p>Radi u browseru na računaru i telefonu. Posebna mobilna aplikacija još ne postoji.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec final">
+    <div class="wrap" data-play>
+      <svg class="mark stack" viewBox="0 0 16 16" aria-hidden="true">
+        <mask id="eyes-final" maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+          <rect x="1" y="6" width="14" height="9" fill="white"/>
+          <g class="eyes"><g class="blink"><rect class="eye" x="4.5" y="8.5" width="2" height="3.5" fill="black"/></g><g class="blink"><rect class="eye" x="9.5" y="8.5" width="2" height="3.5" fill="black"/></g></g>
+        </mask>
+        <g class="hop"><path class="lid" d="M0 1h16v4H0z"/></g>
+        <g class="body"><rect x="1" y="6" width="14" height="9" mask="url(#eyes-final)"/></g>
+      </svg>
+      <h2>Saznaj koliko robe stvarno imaš.</h2>
+      <a class="cta" href="https://app.lagerko.com/register">Napravi besplatan nalog</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <span class="logo">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M0 1h16v4H0z M1 6h14v9H1z M4.5 8.5h2v3.5h-2z M9.5 8.5h2v3.5h-2z"/></svg>
+      <span>lagerko</span>
+    </span>
+    <!-- TODO: kontakt email, kad vlasnik projekta potvrdi adresu -->
+    <nav class="foot-nav" aria-label="Podnožje">
+      <a href="https://app.lagerko.com/privacy">Politika privatnosti</a>
+      <a href="https://app.lagerko.com/login">Prijava</a>
+      <span>2026</span>
+    </nav>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

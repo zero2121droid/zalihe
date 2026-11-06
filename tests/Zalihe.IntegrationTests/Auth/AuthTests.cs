@@ -30,6 +30,19 @@ public class AuthTests(ZaliheApiFactory factory)
     }
 
     [Fact]
+    public async Task Register_ValidData_KeepsTheSignInAfterTheBrowserCloses()
+    {
+        // Arrange
+        var client = factory.CreateClient();
+
+        // Act
+        var confirm = await client.RegisterAsync(factory, UniqueEmail());
+
+        // Assert
+        confirm.SignInCookie().ShouldContain("expires=", Case.Insensitive);
+    }
+
+    [Fact]
     public async Task Register_NoLanguage_UsesSerbianLatin()
     {
         // Arrange

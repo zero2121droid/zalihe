@@ -51,7 +51,7 @@ public class AuthController(
             return RegistrationProblem(result.Errors);
         }
 
-        await signInManager.SignInAsync(result.User!, isPersistent: false);
+        await signInManager.SignInAsync(result.User!, isPersistent: true);
         return NoContent();
     }
 

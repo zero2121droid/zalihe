@@ -59,6 +59,10 @@ public static class HttpClientExtensions
         return client;
     }
 
+    /// <summary>The sign-in cookie a response sets, with its attributes.</summary>
+    public static string SignInCookie(this HttpResponseMessage response) =>
+        response.Headers.GetValues("Set-Cookie").Single(c => c.StartsWith("zalihe.auth="));
+
     /// <summary>Calls "me" and returns the antiforgery token it issues in the XSRF-TOKEN cookie.</summary>
     public static async Task<string> GetAntiforgeryTokenAsync(this HttpClient client)
     {

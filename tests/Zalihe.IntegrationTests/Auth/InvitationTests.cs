@@ -33,6 +33,20 @@ public partial class InvitationTests(ZaliheApiFactory factory)
         (client ?? factory.CreateClient()).PostAsJsonAsync($"/api/invitations/{token}/accept", new { name = "Ana", password });
 
     [Fact]
+    public async Task Accept_ValidToken_KeepsTheSignInAfterTheBrowserCloses()
+    {
+        // Arrange
+        var owner = await factory.CreateSignedInClientAsync();
+        var (_, token) = await InvitedAsync(owner);
+
+        // Act
+        var response = await AcceptAsync(token);
+
+        // Assert
+        response.SignInCookie().ShouldContain("expires=", Case.Insensitive);
+    }
+
+    [Fact]
     public async Task Invite_NewAddress_EmailsALinkInTheInvitersLanguage()
     {
         // Arrange

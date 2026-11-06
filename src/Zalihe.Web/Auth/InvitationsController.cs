@@ -35,7 +35,7 @@ public class InvitationsController(InvitationService invitations, AccountService
             return ApiProblems.Result(HttpContext, StatusCodes.Status400BadRequest, ApiProblems.ValidationFailed, result.Errors);
         }
 
-        await signInManager.SignInAsync(result.User!, isPersistent: false);
+        await signInManager.SignInAsync(result.User!, isPersistent: true);
         return NoContent();
     }
 }

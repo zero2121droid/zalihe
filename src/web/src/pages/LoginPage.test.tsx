@@ -36,7 +36,7 @@ describe('LoginPage', () => {
     expect(JSON.parse(init?.body as string)).toEqual({
       email: 'miljan@example.com',
       password: 'sigurna-lozinka',
-      rememberMe: false,
+      rememberMe: true,
     })
   })
 })

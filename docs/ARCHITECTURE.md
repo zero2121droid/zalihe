@@ -170,6 +170,7 @@ Radi kao korisnik `app`, ne root. Folder `/data/keys` (ključevi za šifrovanje)
 **`deploy/`**: produkcija, opisana u `docs/DEPLOY.md`.
 - `docker-compose.yml`: aplikacija, Postgres i Caddy. Aplikacija i baza nisu objavljene napolje, samo Caddy na 80 i 443. Sva podešavanja su promenljive okruženja iz `deploy/.env` (`Email__Host` je `Email:Host`).
 - `Caddyfile`: HTTPS sa automatskim sertifikatom i bezbednosna zaglavlja.
+- `ci-deploy.sh`: jedino što ključ iz `.github/workflows/deploy.yml` sme da pokrene na serveru (DEPLOY 15).
 - `nginx/lagerko.com.conf`: landing strana i preusmerenje sa `www` na trenutnom serveru, gde HTTPS radi Nginx (DEPLOY 13).
 - `deploy.sh`, `backup.sh` i `restore.sh`. Backup uvek čuva bazu i ključeve zajedno, jer jedno bez drugog ne vredi.
 

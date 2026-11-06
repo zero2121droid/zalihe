@@ -1,0 +1,57 @@
+# Every push to main or dev runs the tests, then puts that branch on its instance: main on
+# app.lagerko.com, dev on dev.lagerko.com. Nothing is deployed until the repository variable
+# DEPLOY_HOST exists. Setup and the server's side: docs/DEPLOY.md, section 15.
+name: Test and deploy
+
+on:
+  push:
+    branches: [main, dev]
+    paths-ignore: ['docs/**']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      # The integration tests start their own Postgres with Testcontainers.
+      - run: dotnet test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - working-directory: src/web
+        run: |
+          npm ci
+          npm test
+          npm run build
+          npm run lint
+
+  deploy:
+    needs: test
+    if: vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # One at a time, whichever branch: two builds at once don't fit in the server's memory.
+    concurrency:
+      group: server-deploy
+    steps:
+      - name: Deploy over SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          TARGET: ${{ github.ref_name == 'main' && 'beta' || 'dev' }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ServerAliveInterval=30 "root@$HOST" "$TARGET"

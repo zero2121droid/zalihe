@@ -80,6 +80,7 @@ Aplikacija šalje preko SMTP-a (MailKit), pa je provajder samo podešavanje u `E
 | `Dockerfile` | jedan image: React build u `wwwroot` i API; radi kao korisnik `app`, ne root |
 | `deploy/docker-compose.yml` | aplikacija, Postgres i Caddy; port aplikacije nije otvoren napolje, samo Caddy (80, 443) |
 | `deploy/nginx/` | landing na trenutnom serveru (tačka 13) |
+| `deploy/ci-deploy.sh` | šta GitHub Actions sme da pokrene na serveru (tačka 15) |
 | `deploy/Caddyfile` | HTTPS (sertifikat sam), preusmerenje sa HTTP-a, bezbednosna zaglavlja, kompresija |
 | `deploy/.env.example` | podešavanja i lozinke; kopira se u `deploy/.env`, koji se nikad ne commituje |
 | `deploy/deploy.sh` | nova verzija: `git pull`, build, restart, čeka da sve bude zdravo |
@@ -259,7 +260,7 @@ Lagerko sada radi drugačije od postavke opisane u tačkama 6 i 9, jer deli serv
 
 | Šta | Beta | Dev |
 |---|---|---|
-| Nova verzija | `app deploy lagerko` | `app deploy lagerko-dev` |
+| Nova verzija (radi i sam push, tačka 15) | `app deploy lagerko` | `app deploy lagerko-dev` |
 | Izmena podešavanja | `app env lagerko` | `app env lagerko-dev` |
 | Logovi | `app logovi lagerko app` | `app logovi lagerko-dev app` |
 
@@ -277,11 +278,11 @@ Izmena `.env` običnim `nano` ne važi dok se ne pokrene `app env` ili `app depl
 
 ## 13. Selidba na lagerko.com
 
-DNS je na Cloudflare-u, zapisi su **DNS only** (A na `152.53.182.73`). Beta kreće sa praznom bazom, pa nema prenosa podataka.
+DNS je na Cloudflare-u, zapisi su **DNS only** (A na `152.53.182.73`): `@`, `www`, `app` i `dev`. Beta kreće sa praznom bazom, pa nema prenosa podataka.
 
-**1. Kod.** Na `main` moraju biti `COMPOSE_PROJECT_NAME` u compose-u i `deploy/nginx/`, jer `app nova` klonira `main`.
+**1. Kod.** Grane `main` i `dev` moraju biti na GitHub-u sa ovim izmenama, jer `app nova` i `app deploy` kod uzimaju odatle.
 
-**2. Beta na `app.lagerko.com`.** Prvo se ime instance upisuje u `.env`, inače sledeći deploy ne prolazi:
+**2. Beta na `app.lagerko.com`.** Prvo se ime instance upisuje u `.env`, inače deploy ne prolazi. `/letsencrypt/!` čuva putanje do starog sertifikata, jer `nginx` bez njih ne prolazi proveru dok certbot ne upiše nove.
 
 ```bash
 cd /srv/lagerko/deploy
@@ -289,17 +290,27 @@ grep -q '^COMPOSE_PROJECT_NAME=' .env || echo 'COMPOSE_PROJECT_NAME=zalihe-prod'
 docker compose down -v                     # BRIŠE bazu i ključeve dosadašnje probne verzije
 sed -i 's|^APP_URL=.*|APP_URL=https://app.lagerko.com|; s|^DOMAIN=.*|DOMAIN=app.lagerko.com|' .env
 sed -i 's|^DOMAIN=.*|DOMAIN=app.lagerko.com|' ../.app-config
-sed -i 's|lagerko.miljanmilojkovic.com|app.lagerko.com|g' /etc/nginx/conf.d/lagerko.conf
-```
-
-Zatim se pravi sertifikat za novu adresu i podiže aplikacija:
-
-```bash
+sed -i '/letsencrypt/!s|lagerko\.miljanmilojkovic\.com|app.lagerko.com|g' /etc/nginx/conf.d/lagerko.conf
+nginx -t
 certbot --nginx -d app.lagerko.com --redirect --non-interactive
 app deploy lagerko
 ```
 
-**3. Stara adresa.** U `/etc/nginx/conf.d/lagerko-old.conf` poseban blok za `lagerko.miljanmilojkovic.com`, sa `return 301 https://app.lagerko.com$request_uri;`, pa `certbot --nginx -d lagerko.miljanmilojkovic.com --redirect --non-interactive`. Ostaje dok svi linkovi ne pređu.
+**3. Stara adresa.** Preusmerava se na novu dok svi linkovi ne pređu:
+
+```bash
+cat > /etc/nginx/conf.d/lagerko-old.conf <<'CONF'
+server {
+    listen 80;
+    listen [::]:80;
+    server_name lagerko.miljanmilojkovic.com;
+
+    return 301 https://app.lagerko.com$request_uri;
+}
+CONF
+nginx -t && systemctl reload nginx
+certbot --nginx -d lagerko.miljanmilojkovic.com --keep-until-expiring --redirect --non-interactive
+```
 
 **4. Landing.**
 
@@ -336,3 +347,31 @@ Hub se još ne pravi, ali je postavka spremna. Dogovor je da hubovi žive pod `/
 - **Backplane nije potreban** dok radi jedan proces. Hangfire je u istom procesu, pa `IHubContext` iz posla stiže do povezanih klijenata. Beta i dev su odvojeni, svaka sa svojim klijentima.
 - **Mobilna aplikacija:** SignalR šalje bearer token kroz `?access_token=...` kod WebSocketa. Tada `/hubs` mora da se izuzme iz Nginx `access_log`-a, da tokeni ne završe u logu.
 - **Pri deployu** se sve veze prekinu. SPEC to već pokriva: posle ponovnog povezivanja frontend osveži aktivne upite.
+
+## 15. Automatski deploy (GitHub Actions)
+
+`.github/workflows/deploy.yml`: svaki push na `main` ili `dev` pokrene testove, pa, ako prođu, `app deploy` za tu granu (`main` na betu, `dev` na dev). Izmene samo u `docs/` ne pokreću ništa. Deploy radi jedan po jedan, a build je i dalje na serveru.
+
+Deploy se ne izvršava dok ne postoji promenljiva `DEPLOY_HOST`, pa se ona dodaje poslednja, kad je tačka 13 gotova.
+
+Ključ sme da pokrene samo `deploy/ci-deploy.sh`, koji prima isključivo `beta` ili `dev`. Ko dođe do ključa ne dobija shell na serveru.
+
+Na serveru:
+
+```bash
+git -C /srv/lagerko pull --ff-only
+install -m 755 /srv/lagerko/deploy/ci-deploy.sh /usr/local/bin/lagerko-ci
+```
+
+Na Macu, iz foldera projekta (potreban je `gh`):
+
+```bash
+ssh-keygen -t ed25519 -N '' -C github-actions-lagerko -f /tmp/lagerko-ci
+gh secret set DEPLOY_SSH_KEY < /tmp/lagerko-ci
+ssh root@152.53.182.73 'ssh-keyscan -t ed25519 localhost' | sed 's/^localhost/152.53.182.73/' | gh secret set DEPLOY_KNOWN_HOSTS
+ssh root@152.53.182.73 "echo 'restrict,command=\"/usr/local/bin/lagerko-ci\" $(cat /tmp/lagerko-ci.pub)' >> ~/.ssh/authorized_keys"
+rm /tmp/lagerko-ci /tmp/lagerko-ci.pub
+gh variable set DEPLOY_HOST --body 152.53.182.73
+```
+
+Kad build na serveru počne da smeta, image može da se pravi na GitHub-u (tačka 11, korak 5).

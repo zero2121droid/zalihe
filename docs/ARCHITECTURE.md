@@ -136,10 +136,11 @@ zalihe/
 │   ├── Zalihe.Infrastructure/
 │   ├── Zalihe.Web/
 │   └── web/                   React aplikacija
-└── tests/
-    ├── Zalihe.Domain.Tests/
-    ├── Zalihe.Application.Tests/
-    └── Zalihe.IntegrationTests/
+├── tests/
+│   ├── Zalihe.Domain.Tests/
+│   ├── Zalihe.Application.Tests/
+│   └── Zalihe.IntegrationTests/
+└── video/                     promo snimci: pravila (STIL.md), alati i scenariji; nije deo aplikacije
 ```
 
 **Unutar projekata, folderi su po oblasti, ne po tehničkoj vrsti.** Na primer `Web/Auth/` sadrži kontroler, zahteve, filter i podešavanje za prijavu, umesto da budu razbacani po `Controllers/`, `Models/` i `Filters/`. Kad se radi na prijavi, sve je na jednom mestu. Artikli dobijaju `Web/Items/`, `Domain/Items/` i tako dalje.

@@ -12,17 +12,17 @@ Dve teme: **tamna** (podrazumevana) i **svetla**. Korisnik bira temu prekidačem
 
 | Token | Tamna | Svetla | Upotreba |
 |---|---|---|---|
-| `bg` | `#11130E` | `#F5F5EF` | pozadina stranice |
-| `sidebar` | `#141710` | `#EDEEE6` | bočna navigacija |
-| `surface` | `#191C15` | `#FFFFFF` | sekcije, tabele, polja za unos, modal |
-| `surface-2` | `#20241B` | `#E9EBE1` | aktivna stavka navigacije, dugmad za količinu |
-| `selected` | `#252B1C` | `#E1E7CF` | izabrani filter ili opcija |
-| `line` | `#2C3125` | `#D9DCCE` | okviri sekcija |
-| `line-soft` | `#23271E` | `#E7E9DF` | linije između redova |
-| `line-strong` | `#3A4030` | `#BFC4B0` | okvir sekundarnog dugmeta i istaknute kartice |
-| `text` | `#E4E7DC` | `#1B1E16` | glavni tekst |
-| `text-2` | `#C4C9B8` | `#3B4033` | sekundarni tekst u tabelama |
-| `muted` | `#9BA18F` | `#5C6250` | opisi, oznake, jedinice mere |
+| `bg` | `#11130E` | `#F2EFE6` | pozadina stranice |
+| `sidebar` | `#141710` | `#EAE6DA` | bočna navigacija |
+| `surface` | `#191C15` | `#FCFAF4` | sekcije, tabele, polja za unos, modal |
+| `surface-2` | `#20241B` | `#E8E4D8` | hover u navigaciji, dugmad za količinu |
+| `selected` | `#252B1C` | `#E1E7CF` | izabrani filter ili opcija, aktivna stavka navigacije |
+| `line` | `#2C3125` | `#D6D0BF` | okviri sekcija |
+| `line-soft` | `#23271E` | `#E6E1D4` | linije između redova |
+| `line-strong` | `#3A4030` | `#BBB39D` | okvir sekundarnog dugmeta i istaknute kartice |
+| `text` | `#E4E7DC` | `#1E1C15` | glavni tekst |
+| `text-2` | `#C4C9B8` | `#3C392E` | sekundarni tekst u tabelama |
+| `muted` | `#9BA18F` | `#5D5848` | opisi, oznake, jedinice mere |
 | `accent` | `#B4C17E` | `#B4C17E` | primarno dugme (tamni tekst na njemu) |
 | `accent-hover` | `#CBD69A` | `#A3B16A` | hover za primarno dugme |
 | `accent-text` | `#B4C17E` | `#55621E` | linkovi, ikona aktivne stavke, fokus okvir, znak u logou |
@@ -117,7 +117,7 @@ Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CS
 - Veza sa prodavnicom (Kanali prodaje) je uvek ikona i tekst: dok traje provera, strelice se vrte; kad provera uspe, kvačica se iscrta; dok veza ne radi, uzvičnik se povremeno malo pomeri (`ChannelStatus`).
 - Red koji ispadne iz liste zbog akcije korisnika (porudžbina iz filtera „Nepovezani“ kad se njeni proizvodi povežu, opozvan poziv u Podešavanjima) se skupi (0,3 s), kao kod pretrage, umesto da nestane naglo (`useLeaving`). Broj nepovezanih porudžbina na pilulama se zavrti kao brojčanik (`Odometer`).
 - Novi poziv u Podešavanjima se kratko istakne (kao novo kretanje). „Pošalji ponovo“ posle slanja pokaže kvačicu koja se iscrta i „Poslato“ (1,6 s), pa se vrati.
-- Navigacija: pozadina trenutne stranice (`surface-2`) otklizi do nove stavke (0,3 s), kao izbor na filter pilulama (`useSlidingBox`).
+- Navigacija: trenutna stranica je označena kao izabrana filter pilula (pozadina `selected`, okvir `accent`), a ta oznaka otklizi do nove stavke (0,3 s) (`useSlidingBox`). Hover je `surface-2`, samo na ostalim stavkama, da ne prekrije izbor.
 - Straničenje: redovi nove strane uđu sa 8 px pomaka sa strane na koju se ide (sledeća zdesna, prethodna sleva, 0,25 s), tek kad stigne odgovor (`PageTurn`).
 - Prekidač teme: sunce se okrene i smanji, a mesec dođe na njegovo mesto (0,35 s), i obrnuto.
 - Kad nešto nestane sa ekrana, a može da se vrati (deaktiviran artikal), dole u sredini se pojavi poruka sa „Poništi” (pozadina `text`, tekst `bg`). Linija `accent` ispod nje se skraćuje 5 s, koliko traje mogućnost poništavanja, i staje dok je pokazivač ili fokus na poruci (`UndoToast`).

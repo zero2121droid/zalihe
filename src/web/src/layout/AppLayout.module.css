@@ -27,8 +27,9 @@
   right: 0;
   left: 0;
   transform: translateY(var(--y));
+  border: 1px solid var(--z-accent);
   border-radius: var(--mantine-radius-sm);
-  background: var(--z-surface-2);
+  background: var(--z-selected);
   pointer-events: none;
 }
 
@@ -38,14 +39,16 @@
     height 0.3s cubic-bezier(0.3, 0.7, 0.3, 1);
 }
 
-.navLink:hover {
+/* The current page shows .navCurrent beneath it, so its own hover background would cover that. */
+.navLink:not([aria-current='page']):hover {
   background-color: var(--z-surface-2);
   color: var(--z-text);
 }
 
+/* Same weight as the other links, so the label does not jump while the highlight slides over. */
 .navLink[aria-current='page'] {
+  --nl-hover: transparent;
   color: var(--z-text);
-  font-weight: 500;
 }
 
 .navLink[aria-current='page'] .navIcon {

@@ -1,0 +1,26 @@
+{
+  "duration": 14.766667,
+  "chapters": [
+    {
+      "at": 0,
+      "name": "Nova porudžbina"
+    },
+    {
+      "at": 2.266667,
+      "name": "Izbor artikla"
+    },
+    {
+      "at": 3.966667,
+      "name": "Količina i referenca"
+    },
+    {
+      "at": 6.633334,
+      "name": "Sačuvano"
+    },
+    {
+      "at": 11.266667,
+      "name": "Završna kartica"
+    }
+  ],
+  "endcard": 3.5
+}

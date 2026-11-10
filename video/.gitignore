@@ -1,0 +1,10 @@
+node_modules/
+.tmp/
+# Everything rendered can be made again with the clip's snimi.js and is too large for the repository.
+**/raw/
+**/scenes/
+**/kadrovi/
+*.mp4
+*.jpg
+obilazak/ekrani/
+lib/assets/

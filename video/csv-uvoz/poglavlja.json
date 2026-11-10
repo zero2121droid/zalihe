@@ -1,0 +1,26 @@
+{
+  "duration": 12.8,
+  "chapters": [
+    {
+      "at": 0,
+      "name": "Artikli"
+    },
+    {
+      "at": 2.033333,
+      "name": "Izbor fajla"
+    },
+    {
+      "at": 2.866666,
+      "name": "Kolone"
+    },
+    {
+      "at": 4.899998999999999,
+      "name": "Potvrda"
+    },
+    {
+      "at": 9.299999,
+      "name": "Završna kartica"
+    }
+  ],
+  "endcard": 3.5
+}

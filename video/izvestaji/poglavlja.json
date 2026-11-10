@@ -1,0 +1,26 @@
+{
+  "duration": 12.799674,
+  "chapters": [
+    {
+      "at": 0,
+      "name": "Otvaranje izveštaja"
+    },
+    {
+      "at": 1.733333,
+      "name": "Najprodavaniji"
+    },
+    {
+      "at": 4.0663409999999995,
+      "name": "Roba koja stoji"
+    },
+    {
+      "at": 6.699674,
+      "name": "Vrednost po kategoriji"
+    },
+    {
+      "at": 9.299674,
+      "name": "Završna kartica"
+    }
+  ],
+  "endcard": 3.5
+}

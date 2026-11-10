@@ -1,0 +1,26 @@
+{
+  "duration": 13.432682,
+  "chapters": [
+    {
+      "at": 0,
+      "name": "Pretraga"
+    },
+    {
+      "at": 1.533333,
+      "name": "Stanje 28 kom"
+    },
+    {
+      "at": 3.899349,
+      "name": "Stanje kroz vreme"
+    },
+    {
+      "at": 5.7326820000000005,
+      "name": "Istorija"
+    },
+    {
+      "at": 9.932682,
+      "name": "Završna kartica"
+    }
+  ],
+  "endcard": 3.5
+}

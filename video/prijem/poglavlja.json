@@ -1,0 +1,26 @@
+{
+  "duration": 15.665365,
+  "chapters": [
+    {
+      "at": 0,
+      "name": "Novi prijem"
+    },
+    {
+      "at": 1.833333,
+      "name": "Faktura"
+    },
+    {
+      "at": 3.733333,
+      "name": "Stavka"
+    },
+    {
+      "at": 7.4993490000000005,
+      "name": "Proknjiženo"
+    },
+    {
+      "at": 12.165365000000001,
+      "name": "Završna kartica"
+    }
+  ],
+  "endcard": 3.5
+}

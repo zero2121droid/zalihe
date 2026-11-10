@@ -212,6 +212,8 @@ Ovo treba uraditi jednom pre prvog pravog korisnika, i ponoviti s vremena na vre
 
 **10. Praćenje.** Besplatan uptime monitor (npr. UptimeRobot ili Better Stack) na `https://<domen>/health`, sa emailom kad prestane da odgovara.
 
+Backup se prati posebno, jer aplikacija radi i kad backup ne radi. Na Healthchecks.io napraviti proveru sa periodom od 1 dan i odstupanjem od 2 sata, pa njenu adresu upisati u `deploy/.env` kao `BACKUP_PING_URL`. `backup.sh` je pozove tek kad se sve uspešno završi, pa Healthchecks.io pošalje email ako se backup te noći ne javi. Adresa ne ide u repo.
+
 **Nova verzija**, posle pusha na `main`: na serveru pokrenuti `deploy/deploy.sh`. Na trenutnom serveru se umesto toga koristi `app deploy lagerko` (tačka 12).
 
 ## 10. Redosled

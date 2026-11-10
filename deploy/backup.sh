@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Nightly backup: the database and the Data Protection keys (without the keys, the shops' API keys in
 # the database can't be read, so one is useless without the other). Kept BACKUP_KEEP_DAYS days on the
-# server and copied to BACKUP_REMOTE with rclone, if set. Run by cron (see docs/DEPLOY.md):
+# server and copied to BACKUP_REMOTE with rclone, if set. BACKUP_PING_URL, if set, is called once
+# everything has succeeded, so a monitor can warn when a night passes without it. Run by cron (see
+# docs/DEPLOY.md):
 #
 #   deploy/backup.sh
 set -euo pipefail
@@ -39,3 +41,9 @@ if [[ -n "${BACKUP_REMOTE:-}" ]]; then
 fi
 
 echo "Backup $stamp: $(du -sh "$target" | cut -f1)"
+
+# Last on purpose: set -e stops the script on any failure above, so the call means a finished backup.
+# A failed call only warns: the backup itself is done, and the monitor will report the missing call.
+if [[ -n "${BACKUP_PING_URL:-}" ]]; then
+  curl -fsS -m 10 --retry 3 -o /dev/null "$BACKUP_PING_URL" || echo "Backup ping failed" >&2
+fi

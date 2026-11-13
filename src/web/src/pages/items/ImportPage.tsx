@@ -23,6 +23,7 @@ import { type ApiErrorItem, fieldErrorMessages, formErrorMessage } from '../../a
 import { useAnalyzeItemImport, useImportItems, usePreviewItemImport } from '../../api/generated/imports/imports'
 import { getListItemsQueryKey } from '../../api/generated/items/items'
 import {
+  FeedbackPrompt,
   type ImportAnalysisDto,
   type ImportPreviewDto,
   type ImportResultDto,
@@ -31,6 +32,7 @@ import {
 } from '../../api/generated/model'
 import { getGetStockSummaryQueryKey } from '../../api/generated/stock/stock'
 import feedbackClasses from '../../components/feedback.module.css'
+import { FeedbackQuestion } from '../../components/FeedbackQuestion'
 import { formatNumber } from '../../lib/format'
 import { useAnimatedNumber } from '../../lib/useAnimatedNumber'
 import { useCountUp } from '../../lib/useCountUp'
@@ -569,6 +571,7 @@ function Done({ result, onRestart }: { result: ImportResultDto; onRestart: () =>
             {t('items.import.done.again')}
           </Button>
         </Group>
+        {imported.finished && <FeedbackQuestion prompt={FeedbackPrompt.csvImport} question={t('feedback.question.csvImport')} />}
       </Stack>
     </Section>
   )

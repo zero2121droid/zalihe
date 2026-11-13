@@ -1,0 +1,86 @@
+/* The icon of a kind pill: muted, accent when chosen (like the current page's icon in the menu). */
+.kindIcon {
+  color: var(--z-muted);
+  transition: color 0.2s;
+}
+
+.kindIcon[data-active] {
+  color: var(--z-accent-text);
+}
+
+/* What goes with the message: dashed, so it reads as a note and not as one more field. */
+.context {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--z-line-strong);
+  border-radius: var(--mantine-radius-sm);
+}
+
+/* The picked screenshot: small, whole, on its own frame so a white screen still has an edge. */
+.preview {
+  max-width: 240px;
+  overflow: hidden;
+  border: 1px solid var(--z-line-strong);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--z-bg);
+}
+
+.preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+}
+
+/* Phones and tablets have no paste shortcut worth naming. */
+@media (hover: none) {
+  .pasteHint {
+    display: none;
+  }
+}
+
+/* After sending: a check that draws itself in a ring, as on the finished first steps. */
+.ring {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--z-accent);
+  border-radius: 50%;
+  background: var(--z-selected);
+  color: var(--z-accent-text);
+}
+
+.ring svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ring polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw 0.5s ease-out 0.1s forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kindIcon {
+    transition: none;
+  }
+
+  .ring polyline {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

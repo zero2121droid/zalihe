@@ -11,6 +11,7 @@ using Zalihe.Application.Alerts;
 using Zalihe.Application.Channels;
 using Zalihe.Application.Common;
 using Zalihe.Application.Dashboard;
+using Zalihe.Application.Feedback;
 using Zalihe.Application.Imports;
 using Zalihe.Application.Items;
 using Zalihe.Application.Orders;
@@ -64,11 +65,13 @@ public static class DependencyInjection
         services.AddScoped<StockPushService>();
         services.AddScoped<LowStockAlertService>();
         services.AddScoped<ChannelFailureAlertService>();
+        services.AddScoped<FeedbackService>();
 
         // Emails: SMTP settings from "Email" (Mailpit locally), texts from resx in the user's language.
         services.AddOptions<EmailOptions>().BindConfiguration(EmailOptions.Section);
         services.AddOptions<PlatformOptions>().BindConfiguration(PlatformOptions.Section);
         services.AddScoped<PlatformStatsService>();
+        services.AddScoped<PlatformFeedbackService>();
         services.AddLocalization();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<AlertEmails>();

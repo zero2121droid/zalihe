@@ -184,6 +184,13 @@ Animacije su tihe i kratke i uvek nešto znače. Pravljene su samo od SVG-a i CS
 - Izabrana stavka ima pozadinu `selected` i okvir `accent`, kao filter pilula, i to otklizi do nove stavke (0,3 s); izabrani deo se pri promeni blago podigne na mesto (0,3 s).
 - Na telefonu je podmeni jedan red pilula iznad dela (bez oznaka grupa), visine `--z-control`.
 
+## Utisci
+
+- „Pošalji utisak” je tih red ispod menija, iznad firme i korisnika: ikona poruke u `accent-text`, tekst `text-2`, hover `surface-2`. Nije stavka navigacije, jer ne vodi na stranicu. Na telefonu je u listi „Više”, iznad naloga.
+- Modal: vrsta kao filter pilule sa ikonom (sijalica, buba, makaze; ikona izabrane je `accent-text`), poruka, „Dodaj sliku ekrana” (link, uz „ili je nalepi (⌘V)” samo gde postoji tastatura), kvačica za kontakt i isprekidan okvir (`line-strong`) „Uz poruku se šalje i” sa ekranom, pregledačem i jezikom u mono fontu. Posle slanja kvačica u krugu (`selected`, okvir `accent`) se iscrta, „Hvala, poslato”.
+- Pitanje posle trenutka stoji u sekciji, ispod tanke linije (`line-soft`), nikad preko ekrana: tekst `text-2` i dve pilule „Jeste” / „Ne baš”.
+- Lista na Platformi: novi redovi imaju podebljan tekst i oznaku „Novo” kao izabranu pilulu (`selected`, okvir `accent`); ikona problema je `status-out`. Slika ekrana je sličica do 120 px visine u okviru `line-strong`.
+
 ## Pristupačnost
 
 - Kontrast teksta najmanje 4.5:1 u obe teme. `muted` se koristi samo na `bg`, `sidebar` i `surface`.

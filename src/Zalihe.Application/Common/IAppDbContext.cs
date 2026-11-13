@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Zalihe.Domain.Channels;
+using Zalihe.Domain.Feedback;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Orders;
 using Zalihe.Domain.Receipts;
@@ -27,6 +28,8 @@ public interface IAppDbContext
     DbSet<Receipt> Receipts { get; }
     DbSet<WebhookEvent> WebhookEvents { get; }
     DbSet<LowStockAlert> LowStockAlerts { get; }
+    DbSet<FeedbackMessage> FeedbackMessages { get; }
+    DbSet<FeedbackScreenshot> FeedbackScreenshots { get; }
 
     /// <summary>The current company's setting <see cref="Tenant.EmployeesSeePurchasePrices"/>.</summary>
     Task<bool> EmployeesSeePurchasePricesAsync(CancellationToken ct);

@@ -81,6 +81,28 @@
   font-size: 11px;
 }
 
+/* "Send feedback": a quiet row above the account, like a menu item but not a page. */
+.feedback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--z-text-2);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.feedback:hover {
+  background: var(--z-surface-2);
+  color: var(--z-text);
+}
+
+.feedbackIcon {
+  flex: none;
+  color: var(--z-accent-text);
+}
+
 .account {
   border-top: 1px solid var(--z-line);
   padding: 12px 10px 0;

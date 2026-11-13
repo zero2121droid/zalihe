@@ -19,4 +19,7 @@ public interface IBackgroundJobs
 
     /// <summary>Tells the platform's owners that a new company registered; a failure never touches the registration.</summary>
     void EmailNewRegistration(Guid tenantId, Guid userId);
+
+    /// <summary>Tells the platform's owners about a message from a user (SPEC 11.10); a failure never touches the message.</summary>
+    void EmailFeedback(Guid tenantId, Guid feedbackId);
 }

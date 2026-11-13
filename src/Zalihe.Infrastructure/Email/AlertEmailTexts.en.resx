@@ -51,4 +51,18 @@
   <data name="NewRegistration_Intro" xml:space="preserve"><value>{0} has just registered. Owner: {1}, {2}.</value></data>
   <data name="NewRegistration_Open" xml:space="preserve"><value>Open Lagerko</value></data>
   <data name="NewRegistration_Footer" xml:space="preserve"><value>Only the platform's owner gets this email, when a new company registers.</value></data>
+  <data name="Feedback_Subject" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="Feedback_Kind_Suggestion" xml:space="preserve"><value>Suggestion</value></data>
+  <data name="Feedback_Kind_Problem" xml:space="preserve"><value>Something doesn't work</value></data>
+  <data name="Feedback_Kind_Confusing" xml:space="preserve"><value>Unneeded or confusing</value></data>
+  <data name="Feedback_Prompt_CsvImport" xml:space="preserve"><value>Was the import clear? {0}</value></data>
+  <data name="Feedback_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Feedback_No" xml:space="preserve"><value>Not really</value></data>
+  <data name="Feedback_From" xml:space="preserve"><value>From: {0}, {1}</value></data>
+  <data name="Feedback_FromContact" xml:space="preserve"><value>From: {0}, {1} · may be contacted: {2}</value></data>
+  <data name="Feedback_Page" xml:space="preserve"><value>Page: {0}</value></data>
+  <data name="Feedback_NoText" xml:space="preserve"><value>(no text)</value></data>
+  <data name="Feedback_Open" xml:space="preserve"><value>Open feedback</value></data>
+  <data name="Feedback_Footer" xml:space="preserve"><value>Only the platform's owner gets this email, for every message from a user.</value></data>
+  <data name="Feedback_HasScreenshot" xml:space="preserve"><value>a screenshot is attached (see it in the app)</value></data>
 </root>

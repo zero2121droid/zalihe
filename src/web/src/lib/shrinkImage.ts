@@ -1,6 +1,9 @@
 /** The longest side of a picture after shrinking: sharp on the item page, small enough for the database. */
 export const MAX_IMAGE_SIDE = 800
 
+/** For a picture of the screen: large enough that its text stays readable. */
+export const MAX_SCREENSHOT_SIDE = 1600
+
 const QUALITY = 0.85
 
 /** The picture could not be opened (not a picture, or a format this browser can't read, e.g. HEIC in Chrome). */
@@ -14,10 +17,10 @@ export function fitWithin(width: number, height: number, max = MAX_IMAGE_SIDE): 
 
 /**
  * Shrinks a picture the user picked before it is sent, so the API never needs an image library:
- * at most MAX_IMAGE_SIDE px, on a white background (product photos; no transparency), as WebP or,
+ * at most `maxSide` px (MAX_IMAGE_SIDE unless told otherwise), on a white background (product photos; no transparency), as WebP or,
  * in a browser that can't write WebP, JPEG. Phone photos are turned upright on the way.
  */
-export async function shrinkImage(file: Blob): Promise<Blob> {
+export async function shrinkImage(file: Blob, maxSide = MAX_IMAGE_SIDE): Promise<Blob> {
   let bitmap: ImageBitmap
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
@@ -25,7 +28,7 @@ export async function shrinkImage(file: Blob): Promise<Blob> {
     throw new UnreadableImageError()
   }
 
-  const { width, height } = fitWithin(bitmap.width, bitmap.height)
+  const { width, height } = fitWithin(bitmap.width, bitmap.height, maxSide)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height

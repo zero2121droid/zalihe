@@ -2,5 +2,5 @@
 export const legal = {
   controller: 'Miljan Milojković',
   email: 'kontakt@lagerko.com',
-  updated: '2026-11-06',
+  updated: '2026-11-13',
 }

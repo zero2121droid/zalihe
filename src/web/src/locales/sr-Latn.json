@@ -271,6 +271,11 @@
     "receipt": {
       "item_not_found": "Artikal ne postoji ili je obrisan.",
       "duplicate_document": "Ovaj dokument je već proknjižen."
+    },
+    "feedback": {
+      "too_many": "Stiglo je mnogo poruka za kratko vreme. Pokušaj ponovo za sat vremena.",
+      "screenshot_too_large": "Slika je prevelika (najviše {{maxMb}} MB).",
+      "screenshot_unsupported": "Ovo nije slika. Izaberi PNG, JPG ili WebP."
     }
   },
   "items": {
@@ -914,6 +919,50 @@
       "postedHint": "Posle knjiženja prijem se ne menja; greška se ispravlja korekcijom."
     }
   },
+  "feedback": {
+    "open": "Pošalji utisak",
+    "title": "Pošalji utisak",
+    "intro": "Čitam svaku poruku. Šta ti fali, šta ne radi ili šta ti smeta?",
+    "kindLabel": "O čemu se radi?",
+    "kinds": {
+      "suggestion": "Predlog",
+      "problem": "Nešto ne radi",
+      "confusing": "Suvišno ili zbunjuje",
+      "prompt": "Odgovor na pitanje"
+    },
+    "message": "Poruka",
+    "placeholders": {
+      "suggestion": "Npr. bilo bi mi lakše da na listi artikala vidim i nabavnu cenu.",
+      "problem": "Šta se desilo, a šta je trebalo da se desi?",
+      "confusing": "Npr. ovo dugme mi ne treba ili mi nije jasno šta radi."
+    },
+    "mayContact": "Možeš da me kontaktiraš na {{email}} ako treba da pojasnim.",
+    "context": "Uz poruku se šalje i",
+    "send": "Pošalji",
+    "sent": {
+      "title": "Hvala, poslato",
+      "text": "Poruka je stigla. Ako ovo napravim, javiću ti kad bude u aplikaciji.",
+      "another": "Pošalji još jedan",
+      "close": "Zatvori"
+    },
+    "question": {
+      "csvImport": "Da li je uvoz bio jasan?",
+      "yes": "Jeste",
+      "no": "Ne baš",
+      "why": "Šta je bilo nejasno? Jedna rečenica je dovoljna.",
+      "skip": "Preskoči",
+      "thanks": "Hvala, zabeleženo."
+    },
+    "screenshot": {
+      "add": "Dodaj sliku ekrana",
+      "paste": "ili je nalepi ({{shortcut}})",
+      "optional": "(nije obavezno)",
+      "preview": "Slika ekrana koja se šalje",
+      "remove": "Ukloni sliku",
+      "preparing": "Priprema slike",
+      "unreadable": "Ova slika ne može da se otvori. Probaj PNG ili JPG."
+    }
+  },
   "platform": {
     "title": "Platforma",
     "description": "Sve firme u Lagerku: ko se registrovao i ko je stvarno počeo da radi.",
@@ -946,7 +995,48 @@
     "noMovements": "još nema",
     "yours": "tvoja",
     "empty": "Još nema registrovanih firmi.",
-    "noResults": "Nijedna firma ne sadrži „{{search}}“."
+    "noResults": "Nijedna firma ne sadrži „{{search}}“.",
+    "tabs": {
+      "label": "Prikaz",
+      "companies": "Firme",
+      "feedback": "Utisci"
+    },
+    "feedback": {
+      "description": "Šta korisnici pišu: predlozi, problemi i šta im je suvišno.",
+      "summary": "Pregled utisaka",
+      "filter": "Status",
+      "filters": {
+        "new": "Novi",
+        "read": "Pročitani",
+        "done": "Urađeno",
+        "all": "Svi"
+      },
+      "statuses": {
+        "new": "Novo",
+        "read": "Pročitano",
+        "done": "Urađeno"
+      },
+      "figures": {
+        "new": "Novi",
+        "suggestions": "Predlozi",
+        "problems": "Problemi",
+        "done": "Urađeno",
+        "csvImport": "Uvoz jasan",
+        "csvImportHint": "„Jeste” od svih odgovora"
+      },
+      "prompts": {
+        "csvImport": "Da li je uvoz bio jasan?"
+      },
+      "actions": {
+        "read": "Pročitano",
+        "done": "Urađeno",
+        "reopen": "Vrati na novo"
+      },
+      "noText": "(bez teksta)",
+      "emptyNew": "Nema novih utisaka.",
+      "empty": "Ovde još nema utisaka.",
+      "openScreenshot": "Otvori sliku ekrana"
+    }
   },
   "privacy": {
     "title": "Politika privatnosti",
@@ -959,7 +1049,7 @@
       },
       "data": {
         "title": "Šta čuvamo",
-        "body": "Nalog: ime, email, jezik i lozinka u obliku hasha, pa je ni mi ne možemo pročitati.\nFirma: naziv firme i ono što u Lagerko uneseš ili uvezeš iz prodavnice, npr. artikli, cene, stanje, kretanja, porudžbine bez podataka o kupcu i nazivi dobavljača.\nProdavnica: API ključevi povezane prodavnice, šifrovani.\nTehnički podaci: server beleži IP adresu i zahteve u logovima, radi bezbednosti i otklanjanja grešaka."
+        "body": "Nalog: ime, email, jezik i lozinka u obliku hasha, pa je ni mi ne možemo pročitati.\nFirma: naziv firme i ono što u Lagerko uneseš ili uvezeš iz prodavnice, npr. artikli, cene, stanje, kretanja, porudžbine bez podataka o kupcu i nazivi dobavljača.\nProdavnica: API ključevi povezane prodavnice, šifrovani.\nTehnički podaci: server beleži IP adresu i zahteve u logovima, radi bezbednosti i otklanjanja grešaka.\nUtisci: poruke koje pošalješ preko „Pošalji utisak” ili odgovora na kratko pitanje u aplikaciji, uz ekran na kom si bio, naziv pregledača i sliku ekrana ako je sam dodaš."
       },
       "notStored": {
         "title": "Šta ne čuvamo",
@@ -971,7 +1061,7 @@
       },
       "platform": {
         "title": "Šta vidi vlasnik Lagerka",
-        "body": "Vlasnik Lagerka vidi nazive firmi, datum registracije, broj artikala, da li je prodavnica povezana i vreme poslednjeg kretanja. Pri registraciji nove firme dobija njen naziv, ime i email osobe koja ju je registrovala. Ovo služi za održavanje usluge i pomoć korisnicima. Ova stranica ne prikazuje artikle, cene ni porudžbine.\nAdmin firme vidi imena i email adrese korisnika svoje firme."
+        "body": "Vlasnik Lagerka vidi nazive firmi, datum registracije, broj artikala, da li je prodavnica povezana i vreme poslednjeg kretanja. Pri registraciji nove firme dobija njen naziv, ime i email osobe koja ju je registrovala. Ovo služi za održavanje usluge i pomoć korisnicima. Ova stranica ne prikazuje artikle, cene ni porudžbine.\nUtiske čita samo vlasnik Lagerka: poruku, ekran, pregledač, naziv firme i ime pošiljaoca, a email adresu samo ako dozvoliš kontakt. Slika ekrana može da prikaže podatke firme, pa je dodaj samo ako želiš da je vlasnik vidi.\nAdmin firme vidi imena i email adrese korisnika svoje firme."
       },
       "processors": {
         "title": "Ko još obrađuje podatke",
@@ -979,7 +1069,7 @@
       },
       "retention": {
         "title": "Koliko dugo čuvamo",
-        "body": "Podatke čuvamo dok nalog postoji. Registracija koja nije potvrđena kodom iz emaila briše se posle 24 sata. Možeš da tražiš brisanje naloga i podataka firme emailom. Posle brisanja podaci mogu ostati u backupu još do 30 dana, a server logovi se čuvaju ograničeno vreme."
+        "body": "Podatke čuvamo dok nalog postoji. Registracija koja nije potvrđena kodom iz emaila briše se posle 24 sata. Možeš da tražiš brisanje naloga i podataka firme emailom. Posle brisanja podaci mogu ostati u backupu još do 30 dana, a server logovi se čuvaju ograničeno vreme. Slika ekrana uz utisak briše se kad vlasnik završi sa porukom."
       },
       "cookies": {
         "title": "Kolačići",

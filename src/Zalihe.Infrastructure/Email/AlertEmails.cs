@@ -110,6 +110,46 @@ public class AlertEmails(
         }
     }
 
+    /// <summary>
+    /// Sends the platform's owners a message from a user of the current company (SPEC 11.10), in the default
+    /// language like <see cref="SendNewRegistrationAsync"/>. The reply address is in it only when the user
+    /// agreed to be contacted. The button opens the owner's list of messages.
+    /// </summary>
+    public async Task SendFeedbackAsync(IReadOnlyList<string> owners, Guid feedbackId, CancellationToken ct)
+    {
+        var feedback = await db.FeedbackMessages.AsNoTracking().SingleAsync(f => f.Id == feedbackId, ct);
+        var hasScreenshot = await db.FeedbackScreenshots.AnyAsync(x => x.FeedbackId == feedbackId, ct);
+        var company = await db.Tenants.Where(t => t.Id == tenant.TenantId).Select(t => t.Name).SingleAsync(ct);
+        var user = await db.Users
+            .Where(u => u.Id == feedback.UserId && u.TenantId == tenant.TenantId)
+            .Select(u => new { u.Name, Email = u.Email! })
+            .SingleAsync(ct);
+
+        var message = InLanguage(Languages.Default, _ =>
+        {
+            string kind = feedback.Prompt is { } prompt
+                ? texts[$"Feedback_Prompt_{prompt}", feedback.PromptAnswer == true ? texts["Feedback_Yes"] : texts["Feedback_No"]]
+                : texts[$"Feedback_Kind_{feedback.Kind}"];
+            string from = feedback.MayContact
+                ? texts["Feedback_FromContact", user.Name, company, user.Email]
+                : texts["Feedback_From", user.Name, company];
+            var where = (string)texts["Feedback_Page", feedback.Page.Length > 0 ? feedback.Page : "/"];
+            var text = feedback.Message.Length > 0 ? feedback.Message : texts["Feedback_NoText"].Value;
+            // The picture stays in the app: emails are small, and it may show the company's data.
+            if (hasScreenshot) where = $"{where} · {texts["Feedback_HasScreenshot"]}";
+
+            var body = $"<p style=\"margin:0 0 4px;font-size:12px;color:#5C6250\">{E(from)}</p>"
+                       + $"<p style=\"margin:0 0 16px;font-size:12px;color:#5C6250\">{E(where)}</p>"
+                       + $"<p style=\"margin:0;font-size:14px;color:#1B1E16;white-space:pre-wrap\">{E(text)}</p>";
+            return Frame(company, texts["Feedback_Subject", kind, company], kind, body, $"{from}\n{where}\n\n{text}",
+                texts["Feedback_Open"], "/platform/feedback", texts["Feedback_Footer"]);
+        });
+        foreach (var owner in owners)
+        {
+            await sender.SendAsync(message with { To = owner, ToName = "" }, ct);
+        }
+    }
+
     /// <summary>Writes the email for each user of the current company in the user's language and sends it.</summary>
     private async Task SendToCompanyAsync(Func<string, CultureInfo, EmailMessage> write, CancellationToken ct)
     {

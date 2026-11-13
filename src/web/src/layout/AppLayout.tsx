@@ -1,6 +1,6 @@
 import { ActionIcon, AppShell, Box, Group, NavLink, Stack, Text, UnstyledButton } from '@mantine/core'
 import { useDisclosure, useHotkeys } from '@mantine/hooks'
-import { IconLogout, IconSearch } from '@tabler/icons-react'
+import { IconLogout, IconMessage2, IconSearch } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { type CSSProperties, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { NavLink as RouterNavLink, Outlet, ScrollRestoration, useNavigate } from
 import { useLogout } from '../api/generated/auth/auth'
 import { usePermissions } from '../auth/permissions'
 import { useCurrentUser } from '../auth/useCurrentUser'
+import { FeedbackModal } from '../components/FeedbackModal'
 import { Logo } from '../components/Logo'
 import { QuickSearch } from '../components/QuickSearch'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -22,6 +23,7 @@ import { PhoneTabs } from './PhoneTabs'
 export function AppLayout() {
   const { t } = useTranslation()
   const [searching, search] = useDisclosure()
+  const [writing, feedback] = useDisclosure()
   // Also from inside a field: Ctrl+K never types anything.
   useHotkeys([['mod+K', search.open]], [])
   const { user } = useCurrentUser()
@@ -64,6 +66,14 @@ export function AppLayout() {
         </ActionIcon>
       </Group>
     </Group>
+  )
+
+  // Under the menu, so it is on every screen without competing with the screen's own actions (SPEC 11.10).
+  const sendFeedback = (
+    <UnstyledButton className={`z-focus ${classes.feedback}`} onClick={feedback.open}>
+      <IconMessage2 size={16} stroke={1.8} className={classes.feedbackIcon} />
+      {t('feedback.open')}
+    </UnstyledButton>
   )
 
   return (
@@ -118,15 +128,19 @@ export function AppLayout() {
             ))}
           </Stack>
 
-          <Box mt="auto">{account}</Box>
+          <Stack mt="auto" gap="xs">
+            {sendFeedback}
+            {account}
+          </Stack>
         </Stack>
       </AppShell.Navbar>
 
       <AppShell.Footer hiddenFrom="sm" className={classes.footer}>
-        <PhoneTabs tabs={items.slice(0, PHONE_TABS)} more={items.slice(PHONE_TABS)} account={account} />
+        <PhoneTabs tabs={items.slice(0, PHONE_TABS)} more={items.slice(PHONE_TABS)} account={account} feedback={sendFeedback} />
       </AppShell.Footer>
 
       {searching && <QuickSearch onClose={search.close} />}
+      <FeedbackModal opened={writing} onClose={feedback.close} />
 
       <AppShell.Main>
         <Box className={classes.main} data-width={pageWidth}>

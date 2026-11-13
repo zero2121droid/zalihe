@@ -5,16 +5,20 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -22,13 +26,17 @@ import type {
 import type {
   ApiProblemDetails,
   ListPlatformCompaniesParams,
+  ListPlatformFeedbackParams,
   PagedResultOfPlatformCompanyDto,
+  PagedResultOfPlatformFeedbackDto,
+  PlatformFeedbackSummaryDto,
   PlatformSummaryDto,
-  ProblemDetails
+  ProblemDetails,
+  SetFeedbackStatusRequest
 } from '../model';
 
 import { customFetch } from '../../http';
-import type { ErrorType } from '../../http';
+import type { ErrorType , BodyType } from '../../http';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -234,6 +242,377 @@ export function useListPlatformCompanies<TData = Awaited<ReturnType<typeof listP
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListPlatformCompaniesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetPlatformFeedbackSummaryUrl = () => {
+
+
+
+
+  return `/api/platform/feedback/summary`
+}
+
+export const getPlatformFeedbackSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<PlatformFeedbackSummaryDto> => {
+
+  return customFetch<PlatformFeedbackSummaryDto>(getGetPlatformFeedbackSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformFeedbackSummaryQueryKey = () => {
+    return [
+    `/api/platform/feedback/summary`
+    ] as const;
+    }
+
+
+export const getGetPlatformFeedbackSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError = ErrorType<ProblemDetails>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformFeedbackSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>> = ({ signal }) => getPlatformFeedbackSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPlatformFeedbackSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>>
+export type GetPlatformFeedbackSummaryQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetPlatformFeedbackSummary<TData = Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError = ErrorType<ProblemDetails>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformFeedbackSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformFeedbackSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlatformFeedbackSummary<TData = Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformFeedbackSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformFeedbackSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlatformFeedbackSummary<TData = Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetPlatformFeedbackSummary<TData = Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPlatformFeedbackSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListPlatformFeedbackUrl = (params?: ListPlatformFeedbackParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/feedback?${stringifiedParams}` : `/api/platform/feedback`
+}
+
+export const listPlatformFeedback = async (params?: ListPlatformFeedbackParams, options?: Parameters<typeof customFetch>[1]): Promise<PagedResultOfPlatformFeedbackDto> => {
+
+  return customFetch<PagedResultOfPlatformFeedbackDto>(getListPlatformFeedbackUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPlatformFeedbackQueryKey = (params?: ListPlatformFeedbackParams,) => {
+    return [
+    `/api/platform/feedback`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPlatformFeedbackQueryOptions = <TData = Awaited<ReturnType<typeof listPlatformFeedback>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(params?: ListPlatformFeedbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformFeedback>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlatformFeedbackQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlatformFeedback>>> = ({ signal }) => listPlatformFeedback(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPlatformFeedback>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPlatformFeedbackQueryResult = NonNullable<Awaited<ReturnType<typeof listPlatformFeedback>>>
+export type ListPlatformFeedbackQueryError = ErrorType<ApiProblemDetails | ProblemDetails>
+
+
+export function useListPlatformFeedback<TData = Awaited<ReturnType<typeof listPlatformFeedback>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ params: undefined |  ListPlatformFeedbackParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformFeedback>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformFeedback>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformFeedback>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformFeedback<TData = Awaited<ReturnType<typeof listPlatformFeedback>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ params?: ListPlatformFeedbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformFeedback>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlatformFeedback>>,
+          TError,
+          Awaited<ReturnType<typeof listPlatformFeedback>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlatformFeedback<TData = Awaited<ReturnType<typeof listPlatformFeedback>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ params?: ListPlatformFeedbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformFeedback>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPlatformFeedback<TData = Awaited<ReturnType<typeof listPlatformFeedback>>, TError = ErrorType<ApiProblemDetails | ProblemDetails>>(
+ params?: ListPlatformFeedbackParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformFeedback>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPlatformFeedbackQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getSetPlatformFeedbackStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/platform/feedback/${id}/status`
+}
+
+export const setPlatformFeedbackStatus = async (id: string,
+    setFeedbackStatusRequest: SetFeedbackStatusRequest, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getSetPlatformFeedbackStatusUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setFeedbackStatusRequest)
+  }
+);}
+
+
+
+
+
+export const getSetPlatformFeedbackStatusMutationKey = () => ['setPlatformFeedbackStatus'] as const;
+
+export const getSetPlatformFeedbackStatusMutationOptions = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlatformFeedbackStatus>>, TError,SetPlatformFeedbackStatusMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPlatformFeedbackStatus>>, TError,SetPlatformFeedbackStatusMutationVariables, TContext> => {
+
+const mutationKey = getSetPlatformFeedbackStatusMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPlatformFeedbackStatus>>, SetPlatformFeedbackStatusMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setPlatformFeedbackStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPlatformFeedbackStatusMutationResult = NonNullable<Awaited<ReturnType<typeof setPlatformFeedbackStatus>>>
+    export type SetPlatformFeedbackStatusMutationBody = BodyType<SetFeedbackStatusRequest>
+    export type SetPlatformFeedbackStatusMutationError = ErrorType<ApiProblemDetails | ProblemDetails>
+    export type SetPlatformFeedbackStatusMutationVariables = {id: string;data: BodyType<SetFeedbackStatusRequest>}
+
+    export const useSetPlatformFeedbackStatus = <TError = ErrorType<ApiProblemDetails | ProblemDetails>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlatformFeedbackStatus>>, TError,SetPlatformFeedbackStatusMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setPlatformFeedbackStatus>>,
+        TError,
+        SetPlatformFeedbackStatusMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetPlatformFeedbackStatusMutationOptions(options), queryClient);
+    }
+    export const getGetPlatformFeedbackScreenshotUrl = (id: string,) => {
+
+
+
+
+  return `/api/platform/feedback/${id}/screenshot`
+}
+
+export const getPlatformFeedbackScreenshot = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetPlatformFeedbackScreenshotUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformFeedbackScreenshotQueryKey = (id: string,) => {
+    return [
+    `/api/platform/feedback/${id}/screenshot`
+    ] as const;
+    }
+
+
+export const getGetPlatformFeedbackScreenshotQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError = ErrorType<ProblemDetails>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformFeedbackScreenshotQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>> = ({ signal }) => getPlatformFeedbackScreenshot(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPlatformFeedbackScreenshotQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>>
+export type GetPlatformFeedbackScreenshotQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetPlatformFeedbackScreenshot<TData = Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlatformFeedbackScreenshot<TData = Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlatformFeedbackScreenshot<TData = Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetPlatformFeedbackScreenshot<TData = Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError = ErrorType<ProblemDetails>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformFeedbackScreenshot>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPlatformFeedbackScreenshotQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Zalihe.Application.Common;
 using Zalihe.Domain.Channels;
+using Zalihe.Domain.Feedback;
 using Zalihe.Domain.Items;
 using Zalihe.Domain.Orders;
 using Zalihe.Domain.Receipts;
@@ -32,6 +33,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
     public DbSet<LowStockAlert> LowStockAlerts => Set<LowStockAlert>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
     public DbSet<PendingRegistration> PendingRegistrations => Set<PendingRegistration>();
+    public DbSet<FeedbackMessage> FeedbackMessages => Set<FeedbackMessage>();
+    public DbSet<FeedbackScreenshot> FeedbackScreenshots => Set<FeedbackScreenshot>();
 
     /// <summary>
     /// Read by the global query filters on every query. Throws when no tenant is set,
@@ -265,6 +268,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext
             line.HasOne<Tenant>().WithMany().HasForeignKey(l => l.TenantId).OnDelete(DeleteBehavior.Restrict);
             line.HasIndex(l => l.TenantId);
             line.HasIndex(l => l.ItemId);
+        });
+
+        builder.Entity<FeedbackMessage>(feedback =>
+        {
+            feedback.Property(f => f.Kind).HasConversion<string>().HasMaxLength(16);
+            feedback.Property(f => f.Prompt).HasConversion<string>().HasMaxLength(32);
+            feedback.Property(f => f.Status).HasConversion<string>().HasMaxLength(16);
+            feedback.Property(f => f.Message).HasMaxLength(FeedbackMessage.MessageMaxLength);
+            feedback.Property(f => f.Page).HasMaxLength(FeedbackMessage.PageMaxLength);
+            feedback.Property(f => f.Client).HasMaxLength(FeedbackMessage.ClientMaxLength);
+            feedback.HasOne<Tenant>().WithMany().HasForeignKey(f => f.TenantId).OnDelete(DeleteBehavior.Restrict);
+            feedback.HasOne<User>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Restrict);
+            // The owner's list is newest first and filtered by status; the limit counts a user's last hour.
+            feedback.HasIndex(f => new { f.Status, f.CreatedAt });
+            feedback.HasIndex(f => new { f.UserId, f.CreatedAt });
+            feedback.HasIndex(f => f.TenantId);
+        });
+
+        builder.Entity<FeedbackScreenshot>(screenshot =>
+        {
+            // One picture per message, so the message is the key.
+            screenshot.HasKey(s => s.FeedbackId);
+            screenshot.Property(s => s.ContentType).HasMaxLength(16);
+            screenshot.HasOne<FeedbackMessage>().WithOne().HasForeignKey<FeedbackScreenshot>(s => s.FeedbackId).OnDelete(DeleteBehavior.Cascade);
+            screenshot.HasOne<Tenant>().WithMany().HasForeignKey(s => s.TenantId).OnDelete(DeleteBehavior.Restrict);
+            screenshot.HasIndex(s => s.TenantId);
         });
 
         ApplyTenantFilters(builder);

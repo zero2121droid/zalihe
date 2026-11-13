@@ -35,6 +35,9 @@ public class HangfireBackgroundJobs(IBackgroundJobClient client, IConfiguration 
 
     public void EmailNewRegistration(Guid tenantId, Guid userId) =>
         client.Enqueue<NewRegistrationEmailJob>(job => job.RunAsync(tenantId, userId, CancellationToken.None));
+
+    public void EmailFeedback(Guid tenantId, Guid feedbackId) =>
+        client.Enqueue<FeedbackEmailJob>(job => job.RunAsync(tenantId, feedbackId, CancellationToken.None));
 }
 
 /// <summary>
@@ -60,6 +63,19 @@ public class NewRegistrationEmailJob(TenantContext tenant, AlertEmails emails, I
     {
         tenant.Set(tenantId);
         await emails.SendNewRegistrationAsync(platform.Value.OwnerEmails, userId, ct);
+    }
+}
+
+/// <summary>
+/// Emails the platform's owners a message from a user. Like the registration email it gets IDs only, so
+/// the message isn't copied into Hangfire's tables; a mail server that is down fails the job and Hangfire tries again.
+/// </summary>
+public class FeedbackEmailJob(TenantContext tenant, AlertEmails emails, IOptions<PlatformOptions> platform)
+{
+    public async Task RunAsync(Guid tenantId, Guid feedbackId, CancellationToken ct)
+    {
+        tenant.Set(tenantId);
+        await emails.SendFeedbackAsync(platform.Value.OwnerEmails, feedbackId, ct);
     }
 }
 

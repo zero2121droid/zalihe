@@ -338,3 +338,14 @@ Vlasnik platforme je osoba koja vodi Lagerko, ne uloga u firmi: admin je svako k
 
 ### 11.9 Politika privatnosti
 Javna stranica `/privacy` (srpski i engleski), dostupna bez prijave, sa linkom na registraciji i u podešavanjima. Opisuje ono što aplikacija stvarno radi, pa se menja kad se promene obrađivači, kolačići ili podaci koji se čuvaju, npr. kad se doda Cloudflare Web Analytics ili backup van servera. Rukovalac, kontakt i datum izmene su u `web/src/pages/legal.ts`. Tekst treba da pregleda pravnik pre prvih pravih korisnika.
+
+### 11.10 Utisci korisnika
+Za betu: korisnik sa bilo kog ekrana šalje vlasniku platforme predlog, problem ili ono što mu je suvišno, a aplikacija posle važnih trenutaka jednom pita kratko pitanje.
+
+- „Pošalji utisak” je na dnu bočne navigacije, iznad korisnika, a na telefonu u listi „Više”. Otvara modal: vrsta (*Predlog*, *Nešto ne radi*, *Suvišno ili zbunjuje*), poruka (obavezna, najviše 4000 znakova) i „Možeš da me kontaktiraš na …” (podrazumevano uključeno). Uz poruku idu putanja ekrana i User-Agent pregledača, a korisnik u modalu vidi šta se šalje.
+- Pitanje posle trenutka: posle završenog CSV uvoza „Da li je uvoz bio jasan? Jeste / Ne baš”. „Ne baš” otvara polje za jednu rečenicu, koje može da se preskoči. Svaki korisnik dobija pitanje jednom; drugi odgovor se ne upisuje.
+- Uz poruku može da ide jedna slika ekrana (nije obavezna): izbor iz fajla ili galerije, ili lepljenje (Ctrl+V / ⌘V) bilo gde u modalu. Browser je smanji na najviše 1600 px, a API prima JPEG, PNG ili WebP do 2 MB (`feedback.screenshot_too_large`, `feedback.screenshot_unsupported`). Aplikacija sama ne slika ekran, da korisnik vidi šta šalje. Slika se čuva u bazi, ne ide u email, i briše se kad vlasnik poruku označi kao urađenu, jer može da sadrži podatke firme ili kupaca.
+- Najviše 20 poruka po korisniku na sat (`feedback.too_many`, 429).
+- Vlasnik dobija email za svaku poruku osim za običan „Jeste” (posao u pozadini, kao za novu firmu). Email adresa korisnika je u emailu i na listi samo ako je dozvolio kontakt.
+- Platforma ima karticu „Utisci” (`/platform/feedback`): brojke (novi, predlozi, problemi, urađeno, koliko je uvoz bio jasan) i lista sa filterom *Novi / Pročitani / Urađeno / Svi*. Status se menja na redu. Običan „Jeste” se samo broji, ne ulazi u listu.
+- Poruka pripada firmi korisnika (`TenantId`), ali je čita samo vlasnik platforme. Ne sadrži podatke firme ni kupaca.

@@ -271,6 +271,11 @@
     "receipt": {
       "item_not_found": "The item doesn't exist or was deleted.",
       "duplicate_document": "This document is already posted."
+    },
+    "feedback": {
+      "too_many": "You've sent many messages in a short time. Try again in an hour.",
+      "screenshot_too_large": "The picture is too large (at most {{maxMb}} MB).",
+      "screenshot_unsupported": "This is not a picture. Choose PNG, JPG or WebP."
     }
   },
   "items": {
@@ -914,6 +919,50 @@
       "postedHint": "After posting, the receipt doesn't change; a mistake is fixed with a correction."
     }
   },
+  "feedback": {
+    "open": "Send feedback",
+    "title": "Send feedback",
+    "intro": "I read every message. What's missing, what doesn't work, or what gets in your way?",
+    "kindLabel": "What is it about?",
+    "kinds": {
+      "suggestion": "Suggestion",
+      "problem": "Something doesn't work",
+      "confusing": "Unneeded or confusing",
+      "prompt": "Answer to a question"
+    },
+    "message": "Message",
+    "placeholders": {
+      "suggestion": "E.g. it would help to see the purchase price in the item list.",
+      "problem": "What did you do, what happened, and what did you expect?",
+      "confusing": "E.g. I don't need this button, or I didn't understand what it does."
+    },
+    "mayContact": "You may contact me at {{email}} if you need more details.",
+    "context": "Sent along with the message",
+    "send": "Send",
+    "sent": {
+      "title": "Thanks, sent",
+      "text": "Your message arrived. If I build this, I'll let you know when it's in the app.",
+      "another": "Send another",
+      "close": "Close"
+    },
+    "question": {
+      "csvImport": "Was the import clear?",
+      "yes": "Yes",
+      "no": "Not really",
+      "why": "What wasn't clear? One sentence is enough.",
+      "skip": "Skip",
+      "thanks": "Thanks, noted."
+    },
+    "screenshot": {
+      "add": "Add a screenshot",
+      "paste": "or paste it ({{shortcut}})",
+      "optional": "(optional)",
+      "preview": "Screenshot to be sent",
+      "remove": "Remove screenshot",
+      "preparing": "Preparing the picture",
+      "unreadable": "This picture can't be opened. Try PNG or JPG."
+    }
+  },
   "platform": {
     "title": "Platform",
     "description": "All companies on Lagerko: who registered and who actually started working.",
@@ -946,7 +995,48 @@
     "noMovements": "none yet",
     "yours": "yours",
     "empty": "No companies have registered yet.",
-    "noResults": "No company contains “{{search}}”."
+    "noResults": "No company contains “{{search}}”.",
+    "tabs": {
+      "label": "View",
+      "companies": "Companies",
+      "feedback": "Feedback"
+    },
+    "feedback": {
+      "description": "What users write: suggestions, problems and what they find unneeded.",
+      "summary": "Feedback overview",
+      "filter": "Status",
+      "filters": {
+        "new": "New",
+        "read": "Read",
+        "done": "Done",
+        "all": "All"
+      },
+      "statuses": {
+        "new": "New",
+        "read": "Read",
+        "done": "Done"
+      },
+      "figures": {
+        "new": "New",
+        "suggestions": "Suggestions",
+        "problems": "Problems",
+        "done": "Done",
+        "csvImport": "Import clear",
+        "csvImportHint": "\"Yes\" out of all answers"
+      },
+      "prompts": {
+        "csvImport": "Was the import clear?"
+      },
+      "actions": {
+        "read": "Read",
+        "done": "Done",
+        "reopen": "Mark as new"
+      },
+      "noText": "(no text)",
+      "emptyNew": "No new feedback.",
+      "empty": "No feedback here yet.",
+      "openScreenshot": "Open the screenshot"
+    }
   },
   "privacy": {
     "title": "Privacy policy",
@@ -959,7 +1049,7 @@
       },
       "data": {
         "title": "What we store",
-        "body": "Account: name, email, language and a password hash, so even we can't read the password.\nCompany: the company's name and what you enter in Lagerko or import from your shop, such as items, prices, stock, movements, orders without customer details and supplier names.\nShop: the connected shop's API keys, encrypted.\nTechnical data: the server records IP addresses and requests in logs, for security and fixing errors."
+        "body": "Account: name, email, language and a password hash, so even we can't read the password.\nCompany: the company's name and what you enter in Lagerko or import from your shop, such as items, prices, stock, movements, orders without customer details and supplier names.\nShop: the connected shop's API keys, encrypted.\nTechnical data: the server records IP addresses and requests in logs, for security and fixing errors.\nFeedback: messages you send with \"Send feedback\" or as an answer to a short question in the app, with the screen you were on, your browser's name and a screenshot if you add one yourself."
       },
       "notStored": {
         "title": "What we don't store",
@@ -971,7 +1061,7 @@
       },
       "platform": {
         "title": "What Lagerko's owner sees",
-        "body": "Lagerko's owner sees company names, registration dates, item counts, whether a shop is connected and the time of the last movement. When a company registers, the owner gets its name and the name and email of the person who registered it. This serves to maintain the service and help users. That page doesn't show items, prices or orders.\nA company's admin sees the names and email addresses of that company's users."
+        "body": "Lagerko's owner sees company names, registration dates, item counts, whether a shop is connected and the time of the last movement. When a company registers, the owner gets its name and the name and email of the person who registered it. This serves to maintain the service and help users. That page doesn't show items, prices or orders.\nOnly Lagerko's owner reads feedback: the message, the screen, the browser, the company name and the sender's name, and the email address only if you allow contact. A screenshot may show your company's data, so add one only if you want the owner to see it.\nA company's admin sees the names and email addresses of that company's users."
       },
       "processors": {
         "title": "Who else processes data",
@@ -979,7 +1069,7 @@
       },
       "retention": {
         "title": "How long we keep it",
-        "body": "We keep data while the account exists. A registration not confirmed with the emailed code is deleted after 24 hours. You can ask by email to delete your account and your company's data. After deletion, data may remain in backups for up to 30 days, and server logs are kept for a limited time."
+        "body": "We keep data while the account exists. A registration not confirmed with the emailed code is deleted after 24 hours. You can ask by email to delete your account and your company's data. After deletion, data may remain in backups for up to 30 days, and server logs are kept for a limited time. A screenshot attached to feedback is deleted once the owner is done with the message."
       },
       "cookies": {
         "title": "Cookies",

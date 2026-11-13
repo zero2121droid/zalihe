@@ -4,10 +4,11 @@ import { IconSearch } from '@tabler/icons-react'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { formErrorMessage } from '../../api/errors'
 import type { PlatformCompanyDto } from '../../api/generated/model'
 import { useGetPlatformSummary, useListPlatformCompanies } from '../../api/generated/platform/platform'
+import { FilterPill, FilterPills } from '../../components/FilterPill'
 import { EmptyBox, SkeletonRows } from '../../components/loaders'
 import { PageTurn } from '../../components/PageTurn'
 import { Pager } from '../../components/Pager'
@@ -15,6 +16,7 @@ import { formatDateTime, formatNumber } from '../../lib/format'
 import { DEFAULT_PAGE_SIZE, parsePageSize } from '../../lib/pageSize'
 import { useLoadingDisplay } from '../../lib/useLoadingDisplay'
 import { useCompactTables } from '../../lib/usePhone'
+import { FeedbackInbox } from './FeedbackInbox'
 
 const sectionStyle = { borderRadius: 'var(--mantine-radius-md)' }
 
@@ -33,8 +35,43 @@ function toParams({ search, page, pageSize }: ListState) {
   }
 }
 
-/** How the companies use Lagerko, for the platform's owner (SPEC 11.8): totals, and who got stuck where. */
+/**
+ * The platform's owner's page: how the companies use Lagerko (SPEC 11.8) and what their users write
+ * (SPEC 11.10), each under its own address so an email can link straight to the messages.
+ */
 export function PlatformPage() {
+  const { t } = useTranslation()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const onFeedback = pathname === '/platform/feedback'
+
+  return (
+    <Stack gap="lg">
+      <Stack gap={4}>
+        <Title order={1} lts="-0.01em">
+          {t('platform.title')}
+        </Title>
+        <Text fz="sm" c="dimmed">
+          {t(onFeedback ? 'platform.feedback.description' : 'platform.description')}
+        </Text>
+      </Stack>
+
+      <FilterPills label={t('platform.tabs.label')}>
+        <FilterPill active={!onFeedback} onClick={() => void navigate('/platform')}>
+          {t('platform.tabs.companies')}
+        </FilterPill>
+        <FilterPill active={onFeedback} onClick={() => void navigate('/platform/feedback')}>
+          {t('platform.tabs.feedback')}
+        </FilterPill>
+      </FilterPills>
+
+      {onFeedback ? <FeedbackInbox /> : <Companies />}
+    </Stack>
+  )
+}
+
+/** Totals, and who got stuck where. */
+function Companies() {
   const { t } = useTranslation()
   const compact = useCompactTables()
   const [params, setParams] = useSearchParams()
@@ -61,15 +98,6 @@ export function PlatformPage() {
 
   return (
     <Stack gap="lg">
-      <Stack gap={4}>
-        <Title order={1} lts="-0.01em">
-          {t('platform.title')}
-        </Title>
-        <Text fz="sm" c="dimmed">
-          {t('platform.description')}
-        </Text>
-      </Stack>
-
       <Summary />
 
       <TextInput

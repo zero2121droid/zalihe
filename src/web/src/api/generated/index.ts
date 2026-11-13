@@ -2,6 +2,7 @@ export * from './account/account';
 export * from './auth/auth';
 export * from './channels/channels';
 export * from './dashboard/dashboard';
+export * from './feedback/feedback';
 export * from './health/health';
 export * from './imports/imports';
 export * from './invitations/invitations';

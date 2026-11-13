@@ -1,4 +1,4 @@
-import { Drawer, NavLink, Stack, UnstyledButton } from '@mantine/core'
+import { Box, Drawer, NavLink, Stack, UnstyledButton } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconDots } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
@@ -11,7 +11,18 @@ import type { NavItem } from './navItems'
  * The menu on a phone (DESIGN.md "Telefon i tablet"): a bar at the bottom, in reach of a thumb, with
  * the screens used every day; "More" opens the rest from the bottom, with the account under them.
  */
-export function PhoneTabs({ tabs, more, account }: { tabs: NavItem[]; more: NavItem[]; account: ReactNode }) {
+export function PhoneTabs({
+  tabs,
+  more,
+  account,
+  feedback,
+}: {
+  tabs: NavItem[]
+  more: NavItem[]
+  account: ReactNode
+  /** "Send feedback", above the account; it opens a modal, so the list closes first. */
+  feedback?: ReactNode
+}) {
   const { t } = useTranslation()
   const { pathname } = useLocation()
   const [opened, { open, close }] = useDisclosure()
@@ -52,6 +63,7 @@ export function PhoneTabs({ tabs, more, account }: { tabs: NavItem[]; more: NavI
               />
             ))}
           </Stack>
+          {feedback && <Box onClickCapture={close}>{feedback}</Box>}
           {account}
         </Stack>
       </Drawer>
